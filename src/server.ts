@@ -29,7 +29,6 @@ app.get("/health", (_req: Request, res: Response) => {
     status: "ok",
     service: "saas-payment-hub",
     uptime: process.uptime(),
-    registeredApps: config.clientApps.map((a) => ({ id: a.id, name: a.name })),
     timestamp: new Date().toISOString(),
   });
 });
@@ -58,10 +57,6 @@ app.listen(PORT, () => {
   console.log("==================================================");
   console.log(`🚀 SaaS Payment Hub démarré sur le port ${PORT}`);
   console.log(`🌍 URL de Base: ${config.baseUrl}`);
-  console.log(`📱 Applications SaaS configurées: ${config.clientApps.length}`);
-  config.clientApps.forEach((app) => {
-    console.log(`   - [${app.id}] ${app.name} -> Webhook: ${app.webhookUrl}`);
-  });
   console.log("==================================================");
 });
 
