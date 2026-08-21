@@ -9,6 +9,7 @@ import {
   exportEnvFormat,
 } from "../config";
 import { PaymentService } from "../services/payment.service";
+import { SessionService } from "../services/session.service";
 import { WebhookDispatcherService } from "../services/webhook-dispatcher.service";
 import { LoggerService } from "../services/logger.service";
 import { providerRegistry } from "../providers";
@@ -184,81 +185,34 @@ export class AdminController {
   }
 
   /**
-   * Test de création de paiement depuis le dashboard
-   * POST /api/v1/admin/test-payment
+   * Création d'un lien de paiement direct (SaaS Checkout Link) depuis le tableau de bord
+   * POST /api/v1/admin/quick-link
    */
-  static async testPayment(req: Request, res: Response) {
+  static async createQuickLink(req: Request, res: Response) {
     try {
-      const { appId, provider, amount, currency, description, orderId, email, name, returnUrl } = req.body;
+      const { title, amount, currency, returnUrl, appId } = req.body;
+      const app = (appId ? getClientAppById(appId) : null) || config.clientApps[0] || {
+        id: "default_app",
+        name: "Mon SaaS",
+      };
 
-      const app = getClientAppById(appId) || config.clientApps[0];
-      if (!app) {
-        return res.status(400).json({ success: false, error: "Aucun SaaS configuré pour tester" });
-      }
-
-      const generatedOrderId = orderId || `test_order_${Date.now()}`;
-      const payload = {
+      const session = SessionService.createSession({
         appId: app.id,
-        provider: provider || "auto",
+        appName: app.name,
+        orderId: `link_${Date.now()}`,
         amount: Number(amount) || 1000,
         currency: currency || "XOF",
-        description: description || `Test de paiement Hub #${generatedOrderId}`,
-        orderId: generatedOrderId,
-        customer: {
-          email: email || "test-client@example.com",
-          name: name || "Client Test",
-        },
+        description: title || "Paiement sécurisé",
         returnUrl: returnUrl || `${config.baseUrl}/health`,
-      };
+      });
 
-      const result = await PaymentService.createPayment(payload);
-      return res.status(200).json(result);
-    } catch (err: any) {
-      return res.status(500).json({ success: false, error: err.message });
-    }
-  }
-
-  /**
-   * Test d'envoi d'un webhook simulé vers un SaaS client
-   * POST /api/v1/admin/test-webhook
-   */
-  static async testWebhook(req: Request, res: Response) {
-    try {
-      const { appId, event, amount, currency, orderId, provider } = req.body;
-
-      const app = getClientAppById(appId);
-      if (!app) {
-        return res.status(404).json({ success: false, error: `SaaS "${appId}" introuvable` });
-      }
-
-      if (!app.webhookUrl) {
-        return res.status(400).json({ success: false, error: `Le SaaS "${app.name}" n'a pas d'URL de webhook configurée` });
-      }
-
-      const samplePayload: UnifiedWebhookPayload = {
-        event: event || "payment.succeeded",
-        appId: app.id,
-        paymentId: `sim_pay_${Date.now()}`,
-        orderId: orderId || `sim_order_${Date.now()}`,
-        provider: provider || "lomopay",
-        amount: Number(amount) || 2500,
-        currency: currency || "XOF",
-        customer: {
-          email: "client-test@example.com",
-          name: "Test Client",
-        },
-        providerTransactionId: `sim_tx_${Date.now()}`,
-        timestamp: Date.now(),
-      };
-
-      const success = await WebhookDispatcherService.dispatchToClientApp(samplePayload);
+      const checkoutUrl = `${config.baseUrl}/checkout/${session.id}`;
 
       return res.status(200).json({
-        success,
-        message: success
-          ? `Webhook transmis avec succès à ${app.name} (${app.webhookUrl})`
-          : `Échec de réception par ${app.name} (${app.webhookUrl}). Vérifiez vos logs.`,
-        payload: samplePayload,
+        success: true,
+        sessionId: session.id,
+        checkoutUrl,
+        session,
       });
     } catch (err: any) {
       return res.status(500).json({ success: false, error: err.message });
@@ -266,26 +220,12 @@ export class AdminController {
   }
 
   /**
-   * Consultation des logs en direct
-   * GET /api/v1/admin/logs
+   * Récupérer les sessions de paiement récentes
+   * GET /api/v1/admin/sessions
    */
-  static getLogs(req: Request, res: Response) {
-    const { type, appId, limit } = req.query;
-    const logs = LoggerService.getLogs({
-      type: type as string,
-      appId: appId as string,
-      limit: limit ? parseInt(limit as string, 10) : 100,
-    });
-    return res.status(200).json({ success: true, logs });
-  }
-
-  /**
-   * Nettoyage des logs
-   * POST /api/v1/admin/logs/clear
-   */
-  static clearLogs(_req: Request, res: Response) {
-    LoggerService.clearLogs();
-    return res.status(200).json({ success: true, message: "Logs effacés" });
+  static getSessions(_req: Request, res: Response) {
+    const sessions = SessionService.listSessions(20);
+    return res.status(200).json({ success: true, sessions });
   }
 
   /**
@@ -298,17 +238,6 @@ export class AdminController {
       success: true,
       env: envString,
       clientAppsJson: JSON.stringify(config.clientApps, null, 2),
-    });
-  }
-
-  /**
-   * Générateur de clés aléatoires sécurisées
-   * GET /api/v1/admin/generate-keys
-   */
-  static generateKeys(_req: Request, res: Response) {
-    return res.status(200).json({
-      apiKey: `vfs_live_sec_${crypto.randomBytes(12).toString("hex")}`,
-      webhookSecret: `whsec_${crypto.randomBytes(16).toString("hex")}`,
     });
   }
 }

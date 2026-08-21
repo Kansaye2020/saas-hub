@@ -11,14 +11,9 @@ adminRouter.post("/config", AdminController.saveConfig);
 adminRouter.post("/client-apps", AdminController.saveClientApp);
 adminRouter.delete("/client-apps/:id", AdminController.removeClientApp);
 
-// Tests et simulations
-adminRouter.post("/test-payment", AdminController.testPayment);
-adminRouter.post("/test-webhook", AdminController.testWebhook);
+// Liens de checkout rapides et sessions
+adminRouter.post("/quick-link", AdminController.createQuickLink);
+adminRouter.get("/sessions", AdminController.getSessions);
 
-// Logs et activité
-adminRouter.get("/logs", AdminController.getLogs);
-adminRouter.post("/logs/clear", AdminController.clearLogs);
-
-// Outils utilitaires
+// Export Render.com
 adminRouter.get("/env-export", AdminController.getEnvExport);
-adminRouter.get("/generate-keys", AdminController.generateKeys);

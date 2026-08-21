@@ -3,6 +3,7 @@ import { providerRegistry } from "../providers";
 import { PaymentProviderType } from "../types";
 import { WebhookDispatcherService } from "../services/webhook-dispatcher.service";
 import { LoggerService } from "../services/logger.service";
+import { SessionService } from "../services/session.service";
 
 export class WebhookController {
   /**
@@ -53,6 +54,15 @@ export class WebhookController {
         `🔔 Webhook unifié généré: [${unifiedEvent.event}] pour l'application [${unifiedEvent.appId}] - Montant: ${unifiedEvent.amount} ${unifiedEvent.currency}`
       );
 
+      // 3. Mise à jour de la session de paiement locale
+      const matchedSession = SessionService.findSessionByOrderId(unifiedEvent.orderId, unifiedEvent.appId) || SessionService.getSession(unifiedEvent.paymentId);
+      if (matchedSession) {
+        SessionService.updateSession(matchedSession.id, {
+          status: unifiedEvent.event === "payment.succeeded" ? "completed" : "failed",
+          providerTransactionId: unifiedEvent.providerTransactionId,
+        });
+      }
+
       LoggerService.addLog({
         type: "webhook_in",
         level: "success",
@@ -66,12 +76,12 @@ export class WebhookController {
         details: unifiedEvent,
       });
 
-      // 3. Dispatch vers le SaaS client en arrière-plan
+      // 4. Dispatch vers le SaaS client en arrière-plan
       WebhookDispatcherService.dispatchToClientApp(unifiedEvent).catch((err) => {
         console.error("Erreur asynchrone lors du dispatch du webhook:", err);
       });
 
-      // 4. Réponse immédiate 200 OK à la passerelle de paiement
+      // 5. Réponse immédiate 200 OK à la passerelle de paiement
       return res.status(200).json({ received: true, success: true });
     } catch (err: any) {
       console.error(`❌ Erreur webhook [${providerName}]:`, err);

@@ -73,6 +73,11 @@ function renderBaseUrl(url) {
     input.value = clean;
   }
 
+  const formatPreview = document.getElementById("format-preview");
+  if (formatPreview) {
+    formatPreview.innerText = `${clean}/checkout/:paymentId`;
+  }
+
   document.getElementById("wh-lomo").innerText = `${clean}/webhooks/lomopay`;
   document.getElementById("wh-whop").innerText = `${clean}/webhooks/whop`;
   document.getElementById("wh-stripe").innerText = `${clean}/webhooks/stripe`;
@@ -118,6 +123,41 @@ function updateBadge(id, isConfigured) {
   }
 }
 
+// Générer un lien de paiement direct
+async function handleQuickLink(e) {
+  e.preventDefault();
+
+  const title = document.getElementById("quick-title").value.trim();
+  const amount = Number(document.getElementById("quick-amount").value);
+  const currency = document.getElementById("quick-currency").value;
+
+  try {
+    const res = await fetch("/api/v1/admin/quick-link", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, amount, currency }),
+    });
+
+    const data = await res.json();
+    if (data.success && data.checkoutUrl) {
+      const box = document.getElementById("quick-result-box");
+      const urlEl = document.getElementById("quick-link-url");
+      const openEl = document.getElementById("quick-link-open");
+
+      box.classList.remove("hidden");
+      urlEl.href = data.checkoutUrl;
+      urlEl.innerText = data.checkoutUrl;
+      openEl.href = data.checkoutUrl;
+
+      showToast("Lien de Checkout généré avec succès !", "success");
+    } else {
+      showToast(data.error || "Erreur", "error");
+    }
+  } catch (err) {
+    showToast("Erreur de communication", "error");
+  }
+}
+
 // Rendu des outils connectés
 function renderClientApps(apps = []) {
   const container = document.getElementById("apps-list");
@@ -135,11 +175,11 @@ function renderClientApps(apps = []) {
   container.innerHTML = apps
     .map(
       (app) => `
-    <div class="bg-[#121620] p-5 rounded-2xl border border-white/[0.06] space-y-3">
+    <div class="bg-[#121620] p-4 rounded-2xl border border-white/[0.06] space-y-3">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <span class="font-medium text-sm text-white">${escapeHtml(app.name)}</span>
-          <span class="text-[11px] px-2 py-0.5 rounded-full bg-[#0c0e14] text-blue-400 border border-white/[0.05] font-mono">ID: ${escapeHtml(app.id)}</span>
+          <span class="font-medium text-xs text-white">${escapeHtml(app.name)}</span>
+          <span class="text-[10px] px-2 py-0.5 rounded-full bg-[#0c0e14] text-blue-400 border border-white/[0.05] font-mono">ID: ${escapeHtml(app.id)}</span>
         </div>
         <div class="flex items-center gap-2">
           <button onclick='editApp(${JSON.stringify(app)})' class="text-xs text-slate-400 hover:text-white transition">Modifier</button>
@@ -147,20 +187,20 @@ function renderClientApps(apps = []) {
         </div>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
         <div class="bg-[#0c0e14] p-2.5 rounded-xl border border-white/[0.05] space-y-1">
           <div class="flex items-center justify-between text-slate-400 text-[11px]">
-            <span>Clé API (à mettre dans votre outil)</span>
+            <span>Clé API (X-Hub-Api-Key)</span>
             <button onclick="copyToClipboard('${app.apiKey}', 'Clé API copiée !')" class="text-blue-400 hover:underline">Copier</button>
           </div>
-          <code class="text-emerald-400 font-mono block truncate">${escapeHtml(app.apiKey)}</code>
+          <code class="text-emerald-400 font-mono block truncate text-[11px]">${escapeHtml(app.apiKey)}</code>
         </div>
 
         <div class="bg-[#0c0e14] p-2.5 rounded-xl border border-white/[0.05] space-y-1">
           <div class="flex items-center justify-between text-slate-400 text-[11px]">
-            <span>Webhook destination (votre outil)</span>
+            <span>Webhook destination</span>
           </div>
-          <code class="text-slate-300 font-mono block truncate">${escapeHtml(app.webhookUrl || "Aucun webhook configuré")}</code>
+          <code class="text-slate-300 font-mono block truncate text-[11px]">${escapeHtml(app.webhookUrl || "Aucun webhook configuré")}</code>
         </div>
       </div>
     </div>

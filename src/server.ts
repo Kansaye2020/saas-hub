@@ -6,6 +6,7 @@ import { config } from "./config";
 import { paymentRouter } from "./routes/payment.routes";
 import { webhookRouter } from "./routes/webhook.routes";
 import { adminRouter } from "./routes/admin.routes";
+import { PaymentController } from "./controllers/payment.controller";
 
 const app = express();
 
@@ -50,7 +51,20 @@ app.use("/api/v1/admin", adminRouter);
 app.use("/api/v1/payments", paymentRouter);
 app.use("/webhooks", webhookRouter);
 
-// Interface Web (Fallback pour l'UI SPA)
+// Page de Checkout hébergée (ex: /checkout/chk_123456)
+app.get("/checkout/:id", (_req: Request, res: Response) => {
+  const checkoutHtml = path.join(publicDir, "checkout.html");
+  if (fs.existsSync(checkoutHtml)) {
+    res.sendFile(checkoutHtml);
+  } else {
+    res.status(404).send("Page de Checkout introuvable");
+  }
+});
+
+// Callback de retour après paiement
+app.get("/checkout/:id/return", PaymentController.handleCheckoutReturn);
+
+// Interface Web Dashboard (Accueil)
 app.get("/", (_req: Request, res: Response) => {
   const indexPath = path.join(publicDir, "index.html");
   if (fs.existsSync(indexPath)) {
@@ -59,7 +73,6 @@ app.get("/", (_req: Request, res: Response) => {
     res.status(200).json({
       service: "SaaS Payment Hub",
       status: "running",
-      adminUi: "Interface public/index.html introuvable",
     });
   }
 });
@@ -74,11 +87,9 @@ const PORT = config.port;
 app.listen(PORT, () => {
   console.log("==================================================");
   console.log(`🚀 SaaS Payment Hub démarré sur le port ${PORT}`);
-  console.log(`🌍 Dashboard UI accessible sur: http://localhost:${PORT}`);
+  console.log(`🌍 Dashboard UI: ${config.baseUrl}`);
+  console.log(`💳 Pages de Checkout: ${config.baseUrl}/checkout/:id`);
   console.log(`📱 Applications SaaS configurées: ${config.clientApps.length}`);
-  config.clientApps.forEach((app) => {
-    console.log(`   - [${app.id}] ${app.name} -> Webhook: ${app.webhookUrl || "Non configuré"}`);
-  });
   console.log("==================================================");
 });
 

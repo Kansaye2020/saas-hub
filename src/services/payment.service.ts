@@ -2,12 +2,14 @@ import { z } from "zod";
 import { CreatePaymentRequest, PaymentProviderType, UnifiedPaymentResponse } from "../types";
 import { providerRegistry } from "../providers";
 import { LoggerService } from "./logger.service";
+import { SessionService, CheckoutSession } from "./session.service";
+import { config, getClientAppById } from "../config";
 
 const CreatePaymentSchema = z.object({
   appId: z.string().min(1, "appId requis"),
-  provider: z.enum(["lomopay", "whop", "stripe", "chariow", "auto"]),
+  provider: z.enum(["lomopay", "whop", "stripe", "chariow", "auto"]).optional().default("auto"),
   amount: z.number().positive("Le montant doit être supérieur à 0"),
-  currency: z.string().optional(),
+  currency: z.string().optional().default("XOF"),
   description: z.string().optional(),
   orderId: z.string().min(1, "orderId requis"),
   customer: z
@@ -24,20 +26,19 @@ const CreatePaymentSchema = z.object({
 
 export class PaymentService {
   /**
-   * Valide et initialise un paiement auprès de la passerelle appropriée
+   * Crée une session de Checkout SaaS hébergée avec URL unique
    */
-  static async createPayment(rawParams: any): Promise<UnifiedPaymentResponse> {
+  static async createPaymentSession(rawParams: any): Promise<UnifiedPaymentResponse> {
     const parseResult = CreatePaymentSchema.safeParse(rawParams);
     if (!parseResult.success) {
       const errorMsg = parseResult.error.errors.map((e) => `${e.path.join(".")}: ${e.message}`).join(", ");
       LoggerService.addLog({
         type: "payment_error",
         level: "error",
-        title: "Validation de paiement échouée",
+        title: "Validation session échouée",
         message: errorMsg,
         appId: rawParams?.appId,
         orderId: rawParams?.orderId,
-        details: rawParams,
       });
       return {
         success: false,
@@ -46,69 +47,123 @@ export class PaymentService {
     }
 
     const data = parseResult.data;
+    const clientApp = getClientAppById(data.appId);
 
-    // Détermination automatique du provider si 'auto'
+    const session = SessionService.createSession({
+      appId: data.appId,
+      appName: clientApp?.name || data.appId,
+      orderId: data.orderId,
+      amount: data.amount,
+      currency: data.currency,
+      description: data.description || `Commande #${data.orderId}`,
+      customer: data.customer,
+      returnUrl: data.returnUrl,
+      cancelUrl: data.cancelUrl,
+      metadata: data.metadata,
+      provider: data.provider,
+    });
+
+    const checkoutUrl = `${config.baseUrl}/checkout/${session.id}`;
+
+    LoggerService.addLog({
+      type: "payment_created",
+      level: "success",
+      title: `Checkout Session créée (${session.appName})`,
+      appId: session.appId,
+      orderId: session.orderId,
+      amount: session.amount,
+      currency: session.currency,
+      message: `URL: ${checkoutUrl}`,
+      details: session,
+    });
+
+    return {
+      success: true,
+      paymentId: session.id,
+      orderId: session.orderId,
+      checkoutUrl,
+      status: "pending",
+    };
+  }
+
+  /**
+   * Exécute le paiement auprès du processeur choisi depuis la page de checkout
+   */
+  static async processCheckoutPayment(sessionId: string, chosenProvider?: PaymentProviderType, customerInfo?: any): Promise<{
+    success: boolean;
+    redirectUrl?: string;
+    error?: string;
+  }> {
+    const session = SessionService.getSession(sessionId);
+    if (!session) {
+      return { success: false, error: "Session de paiement introuvable ou expirée" };
+    }
+
+    if (session.status === "completed") {
+      return { success: true, redirectUrl: session.returnUrl };
+    }
+
+    // Déterminer la passerelle
     let targetProvider: PaymentProviderType;
-    if (data.provider === "auto") {
-      const cur = (data.currency || "XOF").toUpperCase();
-      if (cur === "XOF" || cur === "XAF") {
-        targetProvider = "lomopay";
-      } else {
-        targetProvider = "whop";
-      }
+    if (chosenProvider && chosenProvider !== ("auto" as any)) {
+      targetProvider = chosenProvider;
+    } else if (session.preferredProvider && session.preferredProvider !== "auto") {
+      targetProvider = session.preferredProvider;
     } else {
-      targetProvider = data.provider;
+      const cur = session.currency.toUpperCase();
+      targetProvider = (cur === "XOF" || cur === "XAF") ? "lomopay" : "whop";
     }
 
     const providerInstance = providerRegistry.getProvider(targetProvider);
-    
+
+    const customer = {
+      ...(session.customer || {}),
+      ...(customerInfo || {}),
+    };
+
     const request: CreatePaymentRequest = {
-      ...data,
+      appId: session.appId,
       provider: targetProvider,
+      amount: session.amount,
+      currency: session.currency,
+      description: session.description,
+      orderId: session.orderId,
+      customer,
+      returnUrl: `${config.baseUrl}/checkout/${session.id}/return`,
+      cancelUrl: session.cancelUrl || session.returnUrl,
+      metadata: {
+        ...(session.metadata || {}),
+        sessionId: session.id,
+      },
     };
 
     try {
-      const response = await providerInstance.createPayment(request);
+      const providerRes = await providerInstance.createPayment(request);
 
-      if (response.success) {
-        LoggerService.addLog({
-          type: "payment_created",
-          level: "success",
-          title: `Paiement créé [${targetProvider.toUpperCase()}]`,
-          appId: data.appId,
-          provider: targetProvider,
-          orderId: data.orderId,
-          amount: data.amount,
-          currency: data.currency || "XOF",
-          message: `Lien: ${response.checkoutUrl}`,
-          details: response,
-        });
-      } else {
-        LoggerService.addLog({
-          type: "payment_error",
-          level: "warn",
-          title: `Échec création paiement [${targetProvider.toUpperCase()}]`,
-          appId: data.appId,
-          provider: targetProvider,
-          orderId: data.orderId,
-          message: response.error,
-          details: response,
-        });
+      if (!providerRes.success || !providerRes.checkoutUrl) {
+        return {
+          success: false,
+          error: providerRes.error || "Impossible d'initialiser le paiement avec ce processeur",
+        };
       }
 
-      return response;
-    } catch (err: any) {
-      LoggerService.addLog({
-        type: "payment_error",
-        level: "error",
-        title: `Exception paiement [${targetProvider.toUpperCase()}]`,
-        appId: data.appId,
+      SessionService.updateSession(session.id, {
         provider: targetProvider,
-        orderId: data.orderId,
-        message: err.message,
-        details: err.stack,
+        providerPaymentId: providerRes.paymentId,
+        providerRedirectUrl: providerRes.checkoutUrl,
+        customer,
       });
-      throw err;
+
+      return {
+        success: true,
+        redirectUrl: providerRes.checkoutUrl,
+      };
+    } catch (err: any) {
+      console.error(`Erreur lors du traitement checkout [${targetProvider}]:`, err);
+      return {
+        success: false,
+        error: err.message || "Erreur interne du processeur de paiement",
+      };
     }
   }
 }
