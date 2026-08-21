@@ -35,6 +35,15 @@
             </div>
         <% } %>
 
+        <% if (apps.length === 0) { %>
+            <div class="text-center py-16 bg-base-100 rounded-box shadow-sm border border-base-200">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-base-content/30 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                <h3 class="text-xl font-bold text-base-content/70">Aucun site configuré</h3>
+                <p class="text-base-content/50 mt-2 mb-6">Ajoutez votre premier site pour générer une clé API.</p>
+                <button class="btn btn-primary" onclick="document.getElementById('add_app_modal').showModal()">Ajouter mon premier site</button>
+            </div>
+        <% } %>
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <% apps.forEach(function(app) { %>
                 <div class="card bg-base-100 shadow-xl border border-base-200">
