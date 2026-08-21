@@ -1,19 +1,93 @@
-import { Router } from "express";
-import { AdminController } from "../controllers/admin.controller";
+import { Router, Request, Response } from "express";
+import { requireAdminAuth } from "../middleware/adminAuth";
+import { dbQuery } from "../database/db";
 
 export const adminRouter = Router();
 
-// Gestion de configuration
-adminRouter.get("/config", AdminController.getConfig);
-adminRouter.post("/config", AdminController.saveConfig);
+// Apply basic auth to all admin routes
+adminRouter.use(requireAdminAuth);
 
-// Gestion des SaaS clients
-adminRouter.post("/client-apps", AdminController.saveClientApp);
-adminRouter.delete("/client-apps/:id", AdminController.removeClientApp);
+adminRouter.get("/", async (req: Request, res: Response) => {
+  try {
+    // Get total revenue
+    const revenueRows = await dbQuery("SELECT SUM(amount) as total FROM transactions WHERE status = 'succeeded'");
+    const totalRevenue = revenueRows[0]?.total || 0;
 
-// Liens de checkout rapides et sessions
-adminRouter.post("/quick-link", AdminController.createQuickLink);
-adminRouter.get("/sessions", AdminController.getSessions);
+    // Get total transactions
+    const countRows = await dbQuery("SELECT COUNT(*) as count FROM transactions");
+    const totalTransactions = countRows[0]?.count || 0;
 
-// Export Render.com
-adminRouter.get("/env-export", AdminController.getEnvExport);
+    // Get recent transactions
+    const recentTransactions = await dbQuery("SELECT * FROM transactions ORDER BY createdAt DESC LIMIT 20");
+
+    res.render("admin/dashboard", {
+      totalRevenue,
+      totalTransactions,
+      recentTransactions
+    });
+  } catch (error) {
+    console.error("Dashboard error:", error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+adminRouter.get("/settings", async (req: Request, res: Response) => {
+  try {
+    const rows = await dbQuery("SELECT * FROM providers_config");
+    const configs: Record<string, any> = {};
+    
+    // Default configs to prevent undefined errors in EJS
+    ['lomopay', 'whop', 'ikeepay'].forEach(p => {
+      configs[p] = { isActive: false, publicKey: '', secretKey: '', extraConfig: '' };
+    });
+
+    rows.forEach(row => {
+      configs[row.providerId] = {
+        isActive: row.isActive === 1,
+        publicKey: row.publicKey || '',
+        secretKey: row.secretKey || '',
+        extraConfig: row.extraConfig || ''
+      };
+    });
+
+    const successMessage = req.query.success === '1' ? 'Configuration sauvegardée avec succès.' : null;
+
+    res.render("admin/settings", { configs, successMessage });
+  } catch (error) {
+    console.error("Settings error:", error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+adminRouter.post("/settings/provider", async (req: Request, res: Response) => {
+  try {
+    const { providerId, publicKey, secretKey, extraConfig } = req.body;
+    const isActive = req.body.isActive === '1' ? 1 : 0;
+
+    await dbRun(
+      `INSERT INTO providers_config (providerId, isActive, publicKey, secretKey, extraConfig)
+       VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT(providerId) DO UPDATE SET 
+       isActive=excluded.isActive, 
+       publicKey=excluded.publicKey, 
+       secretKey=excluded.secretKey, 
+       extraConfig=excluded.extraConfig`,
+      [providerId, isActive, publicKey, secretKey, extraConfig]
+    );
+
+    res.redirect("/admin/settings?success=1");
+  } catch (error) {
+    console.error("Save provider error:", error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+adminRouter.get("/api/stats", async (req: Request, res: Response) => {
+  try {
+    const revenueRows = await dbQuery("SELECT SUM(amount) as total FROM transactions WHERE status = 'succeeded'");
+    const totalRevenue = revenueRows[0]?.total || 0;
+    res.json({ totalRevenue });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch stats" });
+  }
+});

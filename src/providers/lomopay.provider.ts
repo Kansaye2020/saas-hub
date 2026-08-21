@@ -1,16 +1,17 @@
 import crypto from "crypto";
 import { IPaymentProvider } from "./base";
 import { CreatePaymentRequest, UnifiedPaymentResponse, UnifiedWebhookPayload } from "../types";
-import { config } from "../config";
+import { config, getProviderConfig } from "../config";
 
 export class LomoPayProvider implements IPaymentProvider {
   readonly name = "lomopay" as const;
 
   async createPayment(request: CreatePaymentRequest): Promise<UnifiedPaymentResponse> {
-    const { publicKey, secretKey, apiUrl } = config.lomopay;
+    const { publicKey, secretKey } = await getProviderConfig(this.name);
+    const apiUrl = config.lomopay.apiUrl;
 
     if (!publicKey || !secretKey) {
-      throw new Error("LOMOPAY_PUBLIC_KEY ou LOMOPAY_SECRET_KEY non configurés.");
+      throw new Error("LOMOPAY_PUBLIC_KEY ou LOMOPAY_SECRET_KEY non configurés (DB ou ENV).");
     }
 
     // On encode l'appId et l'orderId dans l'external_reference pour le routage au retour
@@ -77,8 +78,8 @@ export class LomoPayProvider implements IPaymentProvider {
     };
   }
 
-  verifyWebhookSignature(rawBody: string, headers: Record<string, string | string[] | undefined>): boolean {
-    const secretKey = config.lomopay.secretKey;
+  async verifyWebhookSignature(rawBody: string, headers: Record<string, string | string[] | undefined>): Promise<boolean> {
+    const { secretKey } = await getProviderConfig(this.name);
     const signatureHeader = (headers["x-lomopay-signature"] || headers["X-Lomopay-Signature"]) as string;
 
     if (!secretKey || !signatureHeader) {

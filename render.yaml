@@ -1,37 +1,21 @@
 services:
   - type: web
     name: saas-payment-hub
-    runtime: node
-    plan: free
+    env: node
     buildCommand: npm install && npm run build
     startCommand: npm start
-    healthCheckPath: /health
+    disk:
+      name: sqlite-data
+      mountPath: /data
+      sizeGB: 1
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 10000
+      - key: DB_PATH
+        value: /data/database.sqlite
+      - key: ADMIN_PASSWORD
+        generateValue: true
       - key: HUB_BASE_URL
-        sync: false
+        value: https://saas-payment-hub.onrender.com # Change this once deployed or using custom domain
       - key: CLIENT_APPS
-        sync: false
-      - key: LOMOPAY_PUBLIC_KEY
-        sync: false
-      - key: LOMOPAY_SECRET_KEY
-        sync: false
-      - key: LOMOPAY_API_URL
-        value: https://lomopay.net/api/v1/payments.php
-      - key: WHOP_API_KEY
-        sync: false
-      - key: WHOP_COMPANY_ID
-        sync: false
-      - key: WHOP_SANDBOX
-        value: "false"
-      - key: STRIPE_SECRET_KEY
-        sync: false
-      - key: STRIPE_WEBHOOK_SECRET
-        sync: false
-      - key: CHARIOW_SECRET_KEY
-        sync: false
-      - key: CHARIOW_PUBLIC_KEY
-        sync: false
+        value: '[{"id":"boutique1","name":"Ma Boutique Demo","apiKey":"secret_api_key_123","webhookUrl":""}]'

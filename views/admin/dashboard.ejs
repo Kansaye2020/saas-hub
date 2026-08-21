@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | SaaS Payment Hub</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.10.2/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-base-200 min-h-screen">
+    
+    <div class="navbar bg-base-100 shadow-sm border-b border-base-300">
+        <div class="flex-1">
+            <a class="btn btn-ghost text-xl">SaaS Hub Admin</a>
+        </div>
+        <div class="flex-none gap-2">
+            <ul class="menu menu-horizontal px-1 font-medium">
+                <li><a class="active" href="/admin">Dashboard</a></li>
+                <li><a href="/admin/settings">Processeurs</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        
+        <div class="mb-8 flex justify-between items-center">
+            <h1 class="text-3xl font-bold">Vue d'ensemble</h1>
+            <div class="badge badge-primary badge-outline">Connecté</div>
+        </div>
+
+        <div class="stats shadow w-full mb-8">
+            <div class="stat">
+                <div class="stat-figure text-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                </div>
+                <div class="stat-title">Revenu Total</div>
+                <div class="stat-value text-primary"><%= totalRevenue.toLocaleString() %> FCFA</div>
+                <div class="stat-desc">Toutes applications confondues</div>
+            </div>
+            
+            <div class="stat">
+                <div class="stat-figure text-secondary">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                </div>
+                <div class="stat-title">Transactions Réussies</div>
+                <div class="stat-value text-secondary"><%= totalTransactions %></div>
+                <div class="stat-desc">Depuis le lancement</div>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body p-0">
+                <h2 class="card-title p-6 pb-2">Transactions Récentes</h2>
+                <div class="overflow-x-auto">
+                    <table class="table table-zebra w-full">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Client (App)</th>
+                                <th>Order ID</th>
+                                <th>Processeur</th>
+                                <th>Montant</th>
+                                <th>Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% if (recentTransactions.length === 0) { %>
+                                <tr>
+                                    <td colspan="6" class="text-center text-base-content/50 py-8">Aucune transaction trouvée</td>
+                                </tr>
+                            <% } %>
+                            <% recentTransactions.forEach(function(tx) { %>
+                                <tr>
+                                    <td class="whitespace-nowrap"><%= new Date(tx.createdAt).toLocaleString() %></td>
+                                    <td><%= tx.appId %></td>
+                                    <td class="font-mono text-xs"><%= tx.orderId %></td>
+                                    <td class="capitalize"><%= tx.provider || '-' %></td>
+                                    <td class="font-bold"><%= tx.amount %> <%= tx.currency %></td>
+                                    <td>
+                                        <% if (tx.status === 'succeeded') { %>
+                                            <div class="badge badge-success gap-2">Succès</div>
+                                        <% } else if (tx.status === 'pending') { %>
+                                            <div class="badge badge-warning gap-2">En cours</div>
+                                        <% } else { %>
+                                            <div class="badge badge-error gap-2"><%= tx.status %></div>
+                                        <% } %>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

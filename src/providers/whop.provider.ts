@@ -1,15 +1,18 @@
 import { IPaymentProvider } from "./base";
 import { CreatePaymentRequest, UnifiedPaymentResponse, UnifiedWebhookPayload } from "../types";
-import { config } from "../config";
+import { config, getProviderConfig } from "../config";
 
 export class WhopProvider implements IPaymentProvider {
   readonly name = "whop" as const;
 
   async createPayment(request: CreatePaymentRequest): Promise<UnifiedPaymentResponse> {
-    const { apiKey, companyId, isSandbox } = config.whop;
+    const providerConfig = await getProviderConfig(this.name);
+    const companyId = providerConfig.publicKey;
+    const apiKey = providerConfig.secretKey;
+    const isSandbox = config.whop.isSandbox;
 
     if (!apiKey || !companyId) {
-      throw new Error("WHOP_API_KEY ou WHOP_COMPANY_ID non configurés.");
+      throw new Error("WHOP_API_KEY ou WHOP_COMPANY_ID non configurés (DB ou ENV).");
     }
 
     // Calcul du montant USD si la devise fournie est XOF (1 USD ~ 600 XOF par défaut si non spécifié)
@@ -81,7 +84,7 @@ export class WhopProvider implements IPaymentProvider {
     };
   }
 
-  verifyWebhookSignature(_rawBody: string, _headers: Record<string, string | string[] | undefined>): boolean {
+  async verifyWebhookSignature(_rawBody: string, _headers: Record<string, string | string[] | undefined>): Promise<boolean> {
     // Whop signature verification si en-tête fourni, ou validation par défaut
     return true;
   }

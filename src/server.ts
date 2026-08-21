@@ -1,12 +1,11 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
 import path from "path";
-import fs from "fs";
 import { config } from "./config";
 import { paymentRouter } from "./routes/payment.routes";
 import { webhookRouter } from "./routes/webhook.routes";
 import { adminRouter } from "./routes/admin.routes";
-import { PaymentController } from "./controllers/payment.controller";
+import { checkoutRouter } from "./routes/checkout.routes";
 
 const app = express();
 
@@ -24,17 +23,6 @@ app.use(
 
 app.use(express.urlencoded({ extended: true }));
 
-// Résolution du dossier public pour l'interface UI
-let publicDir = path.join(__dirname, "../public");
-if (!fs.existsSync(publicDir)) {
-  publicDir = path.join(__dirname, "public");
-}
-if (!fs.existsSync(publicDir)) {
-  publicDir = path.join(process.cwd(), "public");
-}
-
-app.use(express.static(publicDir));
-
 // Healthcheck
 app.get("/health", (_req: Request, res: Response) => {
   res.status(200).json({
@@ -46,36 +34,18 @@ app.get("/health", (_req: Request, res: Response) => {
   });
 });
 
+// Setup View Engine
+app.set("view engine", "ejs");
+app.set("views", path.join(__dirname, "../views"));
+
+// Setup static files
+app.use("/public", express.static(path.join(__dirname, "../public")));
+
 // Routes API
-app.use("/api/v1/admin", adminRouter);
 app.use("/api/v1/payments", paymentRouter);
 app.use("/webhooks", webhookRouter);
-
-// Page de Checkout hébergée (ex: /checkout/chk_123456)
-app.get("/checkout/:id", (_req: Request, res: Response) => {
-  const checkoutHtml = path.join(publicDir, "checkout.html");
-  if (fs.existsSync(checkoutHtml)) {
-    res.sendFile(checkoutHtml);
-  } else {
-    res.status(404).send("Page de Checkout introuvable");
-  }
-});
-
-// Callback de retour après paiement
-app.get("/checkout/:id/return", PaymentController.handleCheckoutReturn);
-
-// Interface Web Dashboard (Accueil)
-app.get("/", (_req: Request, res: Response) => {
-  const indexPath = path.join(publicDir, "index.html");
-  if (fs.existsSync(indexPath)) {
-    res.sendFile(indexPath);
-  } else {
-    res.status(200).json({
-      service: "SaaS Payment Hub",
-      status: "running",
-    });
-  }
-});
+app.use("/admin", adminRouter);
+app.use("/checkout", checkoutRouter);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
@@ -87,9 +57,11 @@ const PORT = config.port;
 app.listen(PORT, () => {
   console.log("==================================================");
   console.log(`🚀 SaaS Payment Hub démarré sur le port ${PORT}`);
-  console.log(`🌍 Dashboard UI: ${config.baseUrl}`);
-  console.log(`💳 Pages de Checkout: ${config.baseUrl}/checkout/:id`);
+  console.log(`🌍 URL de Base: ${config.baseUrl}`);
   console.log(`📱 Applications SaaS configurées: ${config.clientApps.length}`);
+  config.clientApps.forEach((app) => {
+    console.log(`   - [${app.id}] ${app.name} -> Webhook: ${app.webhookUrl}`);
+  });
   console.log("==================================================");
 });
 

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Redirection | SaaS Payment Hub</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.10.2/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-base-200 flex flex-col items-center justify-center min-h-screen">
+    
+    <!-- Navbar simulée du site du client -->
+    <div class="navbar bg-primary text-primary-content absolute top-0 w-full shadow-md">
+        <div class="flex-1">
+            <a class="btn btn-ghost text-xl">Boutique de Test (Le Client)</a>
+        </div>
+    </div>
+
+    <!-- Contenu principal -->
+    <div class="card bg-base-100 shadow-xl max-w-md w-full mt-16">
+        <div class="card-body text-center">
+            <h1 class="card-title justify-center text-3xl font-bold mb-2">Panier</h1>
+            <p class="text-base-content/70 mb-4">Paire de baskets "AirMax" - 35000 FCFA</p>
+            
+            <div class="bg-base-200 rounded-box p-4 mb-6 text-left text-sm">
+                <p class="font-bold mb-2">Comment ça marche ?</p>
+                <p class="text-base-content/70">En cliquant sur ce bouton, nous allons appeler le Hub pour générer une session, puis nous allons <strong>rediriger complètement la page</strong> vers l'URL générée.</p>
+            </div>
+
+            <button id="redirect-btn" class="btn btn-primary btn-block btn-lg shadow-sm">
+                Payer (Redirection Sécurisée)
+            </button>
+            <p class="text-xs text-base-content/40 mt-4">Vous allez quitter cette page pour aller sur le Hub.</p>
+        </div>
+    </div>
+
+    <!-- Page de succès simulée -->
+    <dialog id="success-modal" class="modal">
+        <div class="modal-box text-center">
+            <div class="text-success text-5xl mb-4 flex justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </div>
+            <h3 class="font-bold text-lg">Paiement Réussi !</h3>
+            <p class="py-4">Vous avez été redirigé ici après un paiement réussi.</p>
+            <div class="modal-action justify-center">
+                <form method="dialog">
+                    <button class="btn btn-primary">Fermer</button>
+                </form>
+            </div>
+        </div>
+    </dialog>
+
+    <script>
+        // Si on revient de la page de paiement
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('status') === 'success') {
+            document.getElementById('success-modal').showModal();
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        document.getElementById('redirect-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('redirect-btn');
+            btn.innerHTML = '<span class="loading loading-spinner"></span> Génération...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('http://localhost:4000/checkout/session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Hub-Api-Key': 'default_verifsms_secret_key_change_me'
+                    },
+                    body: JSON.stringify({
+                        amount: 35000,
+                        currency: 'FCFA',
+                        description: 'Baskets AirMax',
+                        orderId: 'baskets_' + Date.now(),
+                        returnUrl: window.location.href + '?status=success',
+                        cancelUrl: window.location.href,
+                    })
+                });
+
+                const data = await res.json();
+                
+                if (data.checkoutUrl) {
+                    // C'est ici que la magie opère : REDIRECTION SIMPLE
+                    window.location.href = data.checkoutUrl;
+                } else {
+                    alert('Erreur: ' + JSON.stringify(data));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Erreur réseau');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout | SaaS Payment Hub</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.10.2/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="<%= mode === 'widget' ? 'bg-transparent' : 'bg-base-200' %> flex items-center justify-center min-h-screen">
+    
+    <div class="card w-full max-w-md <%= mode === 'widget' ? 'bg-base-100' : 'bg-base-100 shadow-xl' %> m-4">
+        <div class="card-body">
+            
+            <div class="text-center mb-6">
+                <h2 class="card-title justify-center text-2xl font-bold"><%= storeName %></h2>
+                <p class="text-base-content/60 text-sm">Paiement sécurisé</p>
+            </div>
+
+            <div class="text-center bg-base-200 rounded-box p-6 mb-8">
+                <div class="text-sm font-semibold text-base-content/60 uppercase tracking-widest mb-1">Montant à payer</div>
+                <div class="text-4xl font-black text-primary">
+                    <%= session.amount.toLocaleString() %> <span class="text-xl font-bold"><%= session.currency %></span>
+                </div>
+                <% if (session.description) { %>
+                    <div class="badge badge-outline mt-3 font-medium"><%= session.description %></div>
+                <% } %>
+            </div>
+
+            <form id="payment-form" action="/checkout/pay" method="POST">
+                <input type="hidden" name="token" value="<%= session.token %>">
+                
+                <div class="form-control mb-8">
+                    <label class="label">
+                        <span class="label-text font-bold uppercase tracking-wider text-xs">Moyen de paiement</span>
+                    </label>
+                    <div class="flex flex-col gap-3 mt-2">
+                        <% providers.forEach(function(provider, index) { %>
+                            <label class="label cursor-pointer justify-start gap-4 border border-base-300 rounded-xl p-4 hover:bg-base-200 transition-colors">
+                                <input type="radio" name="provider" value="<%= provider.id %>" class="radio radio-primary" <%= index === 0 ? 'checked' : '' %> required />
+                                
+                                <div class="flex flex-col">
+                                    <% if (provider.id === 'lomopay' || provider.id === 'chariow' || provider.id === 'ikeepay') { %>
+                                        <span class="label-text font-bold text-base">Mobile Money</span>
+                                        <span class="label-text-alt text-base-content/60">Momo, Wave, Orange</span>
+                                    <% } else if (provider.id === 'stripe' || provider.id === 'whop') { %>
+                                        <span class="label-text font-bold text-base">Carte Bancaire</span>
+                                        <span class="label-text-alt text-base-content/60">Visa, Mastercard</span>
+                                    <% } else { %>
+                                        <span class="label-text font-bold text-base"><%= provider.name %></span>
+                                    <% } %>
+                                </div>
+                            </label>
+                        <% }); %>
+                    </div>
+                </div>
+
+                <div class="card-actions flex-col">
+                    <button type="submit" id="submit-btn" class="btn btn-primary btn-block btn-lg shadow-sm">
+                        Confirmer le paiement
+                    </button>
+                    <% if (session.cancelUrl) { %>
+                        <a href="<%= session.cancelUrl %>" class="btn btn-ghost btn-sm btn-block mt-2">Annuler</a>
+                    <% } %>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('payment-form');
+        const submitBtn = document.getElementById('submit-btn');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const providerInput = document.querySelector('input[name="provider"]:checked');
+            if (!providerInput) return;
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="loading loading-spinner"></span> Traitement...';
+
+            try {
+                const response = await fetch('/checkout/pay', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        token: document.querySelector('input[name="token"]').value,
+                        provider: providerInput.value
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.checkoutUrl) {
+                    if (window.self !== window.top) {
+                        window.top.location.href = data.checkoutUrl;
+                    } else {
+                        window.location.href = data.checkoutUrl;
+                    }
+                } else {
+                    alert(data.error || 'Une erreur est survenue');
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = 'Réessayer';
+                }
+            } catch (err) {
+                alert('Erreur réseau');
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'Réessayer';
+            }
+        });
+    </script>
+</body>
+</html>

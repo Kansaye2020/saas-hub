@@ -3,6 +3,7 @@ import { LomoPayProvider } from "./lomopay.provider";
 import { WhopProvider } from "./whop.provider";
 import { StripeProvider } from "./stripe.provider";
 import { ChariowProvider } from "./chariow.provider";
+import { iKeepayProvider } from "./ikeepay.provider";
 import { PaymentProviderType } from "../types";
 
 export class ProviderRegistry {
@@ -13,6 +14,7 @@ export class ProviderRegistry {
     this.register(new WhopProvider());
     this.register(new StripeProvider());
     this.register(new ChariowProvider());
+    this.register(new iKeepayProvider());
   }
 
   public register(provider: IPaymentProvider) {

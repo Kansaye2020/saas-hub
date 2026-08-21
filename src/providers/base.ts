@@ -11,7 +11,7 @@ export interface IPaymentProvider {
   /**
    * Vérifie la signature cryptographique du webhook provenant de la passerelle
    */
-  verifyWebhookSignature(rawBody: string, headers: Record<string, string | string[] | undefined>): boolean;
+  verifyWebhookSignature(rawBody: string, headers: Record<string, string | string[] | undefined>): Promise<boolean> | boolean;
 
   /**
    * Transforme le payload brut du webhook passerelle en payload unifié standard

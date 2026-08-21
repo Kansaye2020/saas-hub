@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Widget | SaaS Payment Hub</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.10.2/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/public/sdk/widget.js"></script>
+</head>
+<body class="bg-base-200 flex flex-col items-center justify-center min-h-screen">
+    
+    <div class="card bg-base-100 shadow-xl max-w-md w-full">
+        <div class="card-body text-center">
+            <h1 class="card-title justify-center text-3xl font-bold mb-2">Mon Super SaaS</h1>
+            <p class="text-base-content/70 mb-8">Abonnement Mensuel Pro - 5000 FCFA</p>
+            
+            <button id="pay-btn" class="btn btn-primary btn-block btn-lg shadow-sm">
+                Acheter l'abonnement
+            </button>
+            <p class="text-xs text-base-content/40 mt-4">Le widget va générer un test token et s'ouvrir.</p>
+            
+            <div class="divider mt-8">Simulateur Manuel</div>
+            
+            <div class="text-left bg-base-200 p-4 rounded-box">
+                <p class="text-xs text-base-content/60 mb-2">Collez un "token" généré manuellement :</p>
+                <div class="flex gap-2">
+                    <input type="text" id="token-input" placeholder="Token..." class="input input-bordered input-sm flex-1">
+                    <button id="manual-pay-btn" class="btn btn-secondary btn-sm">Ouvrir</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        HubWidget.init({ hubUrl: 'http://localhost:4000' });
+
+        document.getElementById('manual-pay-btn').addEventListener('click', () => {
+            const token = document.getElementById('token-input').value;
+            if (!token) return alert('Entrez un token');
+            HubWidget.open(token);
+        });
+
+        // Test automatisé : On appelle directement notre propre backend (Hub) pour générer un token
+        document.getElementById('pay-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('pay-btn');
+            const originalText = btn.innerText;
+            btn.innerHTML = '<span class="loading loading-spinner"></span> Préparation...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('http://localhost:4000/checkout/session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Hub-Api-Key': 'default_verifsms_secret_key_change_me' // Clé de test par défaut
+                    },
+                    body: JSON.stringify({
+                        amount: 5000,
+                        currency: 'FCFA',
+                        description: 'Abonnement Mensuel Pro',
+                        orderId: 'test_order_' + Date.now(),
+                        returnUrl: window.location.href,
+                        customer: { email: 'test@example.com' }
+                    })
+                });
+
+                const data = await res.json();
+                
+                if (data.token) {
+                    HubWidget.open(data.token);
+                } else {
+                    alert('Erreur: ' + JSON.stringify(data));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Erreur de connexion au serveur local. Le serveur est-il lancé sur le port 4000 ?');
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

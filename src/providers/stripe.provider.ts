@@ -5,24 +5,26 @@ import { config } from "../config";
 
 export class StripeProvider implements IPaymentProvider {
   readonly name = "stripe" as const;
+  private stripeClient: Stripe | null = null;
 
-  private getStripeClient(): Stripe {
-    if (!config.stripe.secretKey) {
-      throw new Error("STRIPE_SECRET_KEY non configuré.");
+  constructor() {
+    if (config.stripe.secretKey) {
+      this.stripeClient = new Stripe(config.stripe.secretKey, {
+        apiVersion: "2024-06-20",
+      });
     }
-    return new Stripe(config.stripe.secretKey, {
-      apiVersion: "2024-06-20",
-    });
   }
 
   async createPayment(request: CreatePaymentRequest): Promise<UnifiedPaymentResponse> {
-    const stripe = this.getStripeClient();
+    if (!this.stripeClient) {
+      throw new Error("STRIPE_SECRET_KEY non configuré.");
+    }
 
     const currency = (request.currency || "EUR").toLowerCase();
     // Stripe requiert les montants en centimes pour EUR / USD
     const unitAmount = Math.round(request.amount * 100);
 
-    const session = await stripe.checkout.sessions.create({
+    const session = await this.stripeClient.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
         {
@@ -59,7 +61,7 @@ export class StripeProvider implements IPaymentProvider {
   }
 
   verifyWebhookSignature(rawBody: string, headers: Record<string, string | string[] | undefined>): boolean {
-    if (!config.stripe.secretKey || !config.stripe.webhookSecret) {
+    if (!this.stripeClient || !config.stripe.webhookSecret) {
       return false;
     }
 
@@ -67,8 +69,7 @@ export class StripeProvider implements IPaymentProvider {
     if (!signature) return false;
 
     try {
-      const stripe = this.getStripeClient();
-      stripe.webhooks.constructEvent(
+      this.stripeClient.webhooks.constructEvent(
         rawBody,
         signature,
         config.stripe.webhookSecret
@@ -81,13 +82,12 @@ export class StripeProvider implements IPaymentProvider {
   }
 
   async parseWebhookEvent(rawBody: string, headers: Record<string, string | string[] | undefined>): Promise<UnifiedWebhookPayload | null> {
-    if (!config.stripe.secretKey || !config.stripe.webhookSecret) {
+    if (!this.stripeClient || !config.stripe.webhookSecret) {
       return null;
     }
 
     const signature = (headers["stripe-signature"] || headers["Stripe-Signature"]) as string;
-    const stripe = this.getStripeClient();
-    const event = stripe.webhooks.constructEvent(
+    const event = this.stripeClient.webhooks.constructEvent(
       rawBody,
       signature,
       config.stripe.webhookSecret
