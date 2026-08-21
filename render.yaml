@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: saas-payment-hub
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: HUB_BASE_URL
+        sync: false
+      - key: CLIENT_APPS
+        sync: false
+      - key: LOMOPAY_PUBLIC_KEY
+        sync: false
+      - key: LOMOPAY_SECRET_KEY
+        sync: false
+      - key: LOMOPAY_API_URL
+        value: https://lomopay.net/api/v1/payments.php
+      - key: WHOP_API_KEY
+        sync: false
+      - key: WHOP_COMPANY_ID
+        sync: false
+      - key: WHOP_SANDBOX
+        value: "false"
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: CHARIOW_SECRET_KEY
+        sync: false
+      - key: CHARIOW_PUBLIC_KEY
+        sync: false

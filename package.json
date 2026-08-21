@@ -1,0 +1,38 @@
+{
+  "name": "saas-payment-hub",
+  "version": "1.0.0",
+  "description": "Serveur unificateur et passerelle de paiement multi-SaaS auto-hébergé (LomoPay, Whop, Stripe, Chariow)",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "lint": "eslint src/**/*.ts"
+  },
+  "keywords": [
+    "payment",
+    "gateway",
+    "lomopay",
+    "whop",
+    "stripe",
+    "chariow",
+    "microservice",
+    "saas"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "stripe": "^16.2.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.14.9",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.5.2"
+  }
+}

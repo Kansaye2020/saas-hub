@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  payment-hub:
+    build: .
+    container_name: saas-payment-hub
+    restart: always
+    ports:
+      - "4000:4000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=4000

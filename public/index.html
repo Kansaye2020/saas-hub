@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SaaS Payment Hub - Tableau de Bord</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            },
+            darkbg: {
+              900: '#0f172a',
+              800: '#1e293b',
+              700: '#334155',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- TOP HEADER -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/20 text-white font-bold text-lg">
+          <i data-lucide="credit-card" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h1 class="text-base font-bold text-white flex items-center gap-2">
+            SaaS Payment Hub
+            <span id="service-status-badge" class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-normal flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              En ligne
+            </span>
+          </h1>
+          <p class="text-xs text-slate-400 flex items-center gap-1">
+            <span id="header-base-url">http://localhost:4000</span>
+            <button onclick="copyToClipboard(currentConfig.baseUrl || window.location.origin, 'URL du Hub copiée !')" class="text-slate-400 hover:text-indigo-400 transition" title="Copier l'URL de base">
+              <i data-lucide="copy" class="w-3 h-3"></i>
+            </button>
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button onclick="refreshData()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 flex items-center gap-1.5 transition border border-slate-700">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5" id="refresh-icon"></i>
+          Actualiser
+        </button>
+        <button onclick="openEnvExportModal()" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-medium flex items-center gap-1.5 shadow-md shadow-indigo-600/20 transition">
+          <i data-lucide="cloud" class="w-3.5 h-3.5"></i>
+          Export Render.com
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- NAVIGATION TABS -->
+  <div class="bg-slate-900 border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex overflow-x-auto no-scrollbar gap-1 py-2">
+      <button onclick="switchTab('tab-apps')" class="nav-tab active px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition text-slate-300 hover:text-white" data-target="tab-apps">
+        <i data-lucide="layout-grid" class="w-4 h-4"></i>
+        <span>Mes Outils & SaaS</span>
+        <span id="apps-count-badge" class="text-xs bg-slate-800 text-indigo-400 px-2 py-0.5 rounded-full border border-slate-700">0</span>
+      </button>
+
+      <button onclick="switchTab('tab-gateways')" class="nav-tab px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition text-slate-300 hover:text-white" data-target="tab-gateways">
+        <i data-lucide="wallet" class="w-4 h-4"></i>
+        <span>Passerelles de Paiement</span>
+        <span id="gateways-active-badge" class="text-xs bg-slate-800 text-emerald-400 px-2 py-0.5 rounded-full border border-slate-700">0/4</span>
+      </button>
+
+      <button onclick="switchTab('tab-simulator')" class="nav-tab px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition text-slate-300 hover:text-white" data-target="tab-simulator">
+        <i data-lucide="flask-conical" class="w-4 h-4"></i>
+        <span>Simulateur & Tests</span>
+      </button>
+
+      <button onclick="switchTab('tab-logs')" class="nav-tab px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition text-slate-300 hover:text-white" data-target="tab-logs">
+        <i data-lucide="activity" class="w-4 h-4"></i>
+        <span>Journal d'Activité</span>
+        <span id="logs-count-badge" class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full border border-slate-700">0</span>
+      </button>
+
+      <button onclick="switchTab('tab-render')" class="nav-tab px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition text-slate-300 hover:text-white" data-target="tab-render">
+        <i data-lucide="cloud-upload" class="w-4 h-4 text-indigo-400"></i>
+        <span>Déploiement Render.com</span>
+      </button>
+
+      <button onclick="switchTab('tab-docs')" class="nav-tab px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition text-slate-300 hover:text-white" data-target="tab-docs">
+        <i data-lucide="book-open" class="w-4 h-4"></i>
+        <span>Documentation</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT AREA -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+
+    <!-- ================================================================= -->
+    <!-- TAB 1: APPLICATIONS & SAAS CLIENTS -->
+    <!-- ================================================================= -->
+    <section id="tab-apps" class="tab-pane active space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/60 p-6 rounded-2xl border border-slate-800">
+        <div>
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <i data-lucide="plug" class="w-5 h-5 text-indigo-400"></i>
+            Applications SaaS Connectées
+          </h2>
+          <p class="text-sm text-slate-400 mt-1">
+            Enregistrez ici vos différents outils (VerifSMS, Make.com, n8n, Bubble, Next.js, etc.). Chaque outil reçoit une clé API et configure son URL de Webhook pour recevoir les paiements validés.
+          </p>
+        </div>
+        <button onclick="openAppModal()" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold flex items-center gap-2 shadow-lg shadow-indigo-600/20 shrink-0 transition">
+          <i data-lucide="plus-circle" class="w-4 h-4"></i>
+          Connecter un nouvel outil / SaaS
+        </button>
+      </div>
+
+      <!-- Apps List -->
+      <div id="apps-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Injected via JS -->
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- TAB 2: PASSERELLES DE PAIEMENT (LomoPay, Whop, Stripe, Chariow) -->
+    <!-- ================================================================= -->
+    <section id="tab-gateways" class="tab-pane hidden space-y-6">
+      <div class="bg-slate-900/60 p-6 rounded-2xl border border-slate-800">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <i data-lucide="wallet-cards" class="w-5 h-5 text-indigo-400"></i>
+              Configuration des Passerelles de Paiement
+            </h2>
+            <p class="text-sm text-slate-400 mt-1">
+              Renseignez vos clés API et copiez les URLs de webhooks correspondantes dans vos comptes LomoPay, Whop, Stripe ou Chariow.
+            </p>
+          </div>
+          <button onclick="saveGatewaysConfig()" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold flex items-center gap-2 shadow-lg shadow-emerald-600/20 transition shrink-0">
+            <i data-lucide="save" class="w-4 h-4"></i>
+            Enregistrer les clés
+          </button>
+        </div>
+      </div>
+
+      <!-- Paramètre URL Publique du Hub -->
+      <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-2">
+          <i data-lucide="globe" class="w-4 h-4 text-indigo-400"></i>
+          URL Publique de votre Hub (HUB_BASE_URL)
+        </label>
+        <div class="flex gap-2">
+          <input type="text" id="config-baseUrl" placeholder="https://votre-app.onrender.com" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" />
+          <button onclick="autoDetectBaseUrl()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 rounded-xl border border-slate-700 transition flex items-center gap-1.5">
+            <i data-lucide="locate" class="w-3.5 h-3.5"></i>
+            Détecter auto
+          </button>
+        </div>
+        <p class="text-xs text-slate-500 mt-2">
+          Cette URL sert à générer les liens de webhooks que vous devez coller dans LomoPay, Whop et Stripe.
+        </p>
+      </div>
+
+      <!-- Grid des 4 Passerelles -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- 1. LOMOPAY -->
+        <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden flex flex-col justify-between">
+          <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-400 flex items-center justify-center font-bold">
+                  <i data-lucide="smartphone" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <h3 class="font-bold text-white flex items-center gap-2">
+                    LomoPay
+                    <span id="badge-lomopay" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">En attente</span>
+                  </h3>
+                  <p class="text-xs text-slate-400">Mobile Money Afrique (Wave, Orange, MTN, Moov, Djamo)</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Webhook Box -->
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 mb-4">
+              <span class="text-xs font-semibold text-slate-400 block mb-1">🔗 URL de Webhook à coller dans votre Dashboard LomoPay :</span>
+              <div class="flex items-center justify-between gap-2">
+                <code id="webhook-url-lomopay" class="text-xs text-indigo-300 font-mono break-all">.../webhooks/lomopay</code>
+                <button onclick="copyToClipboard(document.getElementById('webhook-url-lomopay').innerText, 'URL Webhook LomoPay copiée !')" class="p-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition shrink-0" title="Copier">
+                  <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Inputs -->
+            <div class="space-y-3">
+              <div>
+                <label class="block text-xs text-slate-400 mb-1 font-medium">Clé Publique (LOMOPAY_PUBLIC_KEY)</label>
+                <input type="text" id="lomopay-publicKey" placeholder="lp_pub_..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono" />
+              </div>
+              <div>
+                <label class="block text-xs text-slate-400 mb-1 font-medium">Clé Secrète (LOMOPAY_SECRET_KEY)</label>
+                <div class="relative">
+                  <input type="password" id="lomopay-secretKey" placeholder="lp_sec_..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono pr-10" />
+                  <button type="button" onclick="togglePasswordVisibility('lomopay-secretKey')" class="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300">
+                    <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs text-slate-400 mb-1 font-medium">URL API LomoPay</label>
+                <input type="text" id="lomopay-apiUrl" placeholder="https://lomopay.net/api/v1/payments.php" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. WHOP -->
+        <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden flex flex-col justify-between">
+          <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold">
+                  <i data-lucide="globe-2" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <h3 class="font-bold text-white flex items-center gap-2">
+                    Whop
+                    <span id="badge-whop" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">En attente</span>
+                  </h3>
+                  <p class="text-xs text-slate-400">Cartes Bancaires Internationales, Apple Pay, Google Pay</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Webhook Box -->
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 mb-4">
+              <span class="text-xs font-semibold text-slate-400 block mb-1">🔗 URL de Webhook à coller dans votre Dashboard Whop :</span>
+              <div class="flex items-center justify-between gap-2">
+                <code id="webhook-url-whop" class="text-xs text-indigo-300 font-mono break-all">.../webhooks/whop</code>
+                <button onclick="copyToClipboard(document.getElementById('webhook-url-whop').innerText, 'URL Webhook Whop copiée !')" class="p-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition shrink-0" title="Copier">
+                  <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Inputs -->
+            <div class="space-y-3">
+              <div>
+                <label class="block text-xs text-slate-400 mb-1 font-medium">Clé API (WHOP_API_KEY)</label>
+                <div class="relative">
+                  <input type="password" id="whop-apiKey" placeholder="whop_api_..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono pr-10" />
+                  <button type="button" onclick="togglePasswordVisibility('whop-apiKey')" class="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300">
+                    <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs text-slate-400 mb-1 font-medium">Company ID (WHOP_COMPANY_ID)</label>
+                <input type="text" id="whop-companyId" placeholder="biz_..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono" />
+              </div>
+              <div class="flex items-center justify-between pt-2">
+                <span class="text-xs text-slate-400 font-medium">Mode Sandbox (Test Whop)</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" id="whop-isSandbox" class="sr-only peer">
+                  <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. STRIPE -->
+        <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden flex flex-col justify-between">
+          <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-400 flex items-center justify-center font-bold">
+                  <i data-lucide="zap" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <h3 class="font-bold text-white flex items-center gap-2">
+                    Stripe
+                    <span id="badge-stripe" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">Optionnel</span>
+                  </h3>
+                  <p class="text-xs text-slate-400">Checkout Stripe direct & cartes bancaires</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Webhook Box -->
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 mb-4">
+              <span class="text-xs font-semibold text-slate-400 block mb-1">🔗 URL de Webhook à coller dans votre Dashboard Stripe :</span>
+              <div class="flex items-center justify-between gap-2">
+                <code id="webhook-url-stripe" class="text-xs text-indigo-300 font-mono break-all">.../webhooks/stripe</code>
+                <button onclick="copyToClipboard(document.getElementById('webhook-url-stripe').innerText, 'URL Webhook Stripe copiée !')" class="p-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition shrink-0" title="Copier">
+                  <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Inputs -->
+            <div class="space-y-3">
+              <div>
+                <label class="block text-xs text-slate-400 mb-1 font-medium">Clé Secrète (STRIPE_SECRET_KEY)</label>
+                <div class="relative">
+                  <input type="password" id="stripe-secretKey" placeholder="sk_live_..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono pr-10" />
+                  <button type="button" onclick="togglePasswordVisibility('stripe-secretKey')" class="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300">
+                    <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs text-slate-400 mb-1 font-medium">Secret du Webhook Stripe (STRIPE_WEBHOOK_SECRET)</label>
+                <div class="relative">
+                  <input type="password" id="stripe-webhookSecret" placeholder="whsec_..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono pr-10" />
+                  <button type="button" onclick="togglePasswordVisibility('stripe-webhookSecret')" class="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300">
+                    <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. CHARIOW -->
+        <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden flex flex-col justify-between">
+          <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center font-bold">
+                  <i data-lucide="arrow-left-right" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <h3 class="font-bold text-white flex items-center gap-2">
+                    Chariow
+                    <span id="badge-chariow" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">Optionnel</span>
+                  </h3>
+                  <p class="text-xs text-slate-400">Passerelle Mobile Money alternative</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Webhook Box -->
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 mb-4">
+              <span class="text-xs font-semibold text-slate-400 block mb-1">🔗 URL de Webhook à coller dans votre Dashboard Chariow :</span>
+              <div class="flex items-center justify-between gap-2">
+                <code id="webhook-url-chariow" class="text-xs text-indigo-300 font-mono break-all">.../webhooks/chariow</code>
+                <button onclick="copyToClipboard(document.getElementById('webhook-url-chariow').innerText, 'URL Webhook Chariow copiée !')" class="p-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition shrink-0" title="Copier">
+                  <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Inputs -->
+            <div class="space-y-3">
+              <div>
+                <label class="block text-xs text-slate-400 mb-1 font-medium">Clé Secrète (CHARIOW_SECRET_KEY)</label>
+                <div class="relative">
+                  <input type="password" id="chariow-secretKey" placeholder="ch_sec_..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono pr-10" />
+                  <button type="button" onclick="togglePasswordVisibility('chariow-secretKey')" class="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300">
+                    <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs text-slate-400 mb-1 font-medium">Clé Publique (CHARIOW_PUBLIC_KEY)</label>
+                <input type="text" id="chariow-publicKey" placeholder="ch_pub_..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- TAB 3: SIMULATEUR & TESTS -->
+    <!-- ================================================================= -->
+    <section id="tab-simulator" class="tab-pane hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- 1. Test Création de Paiement -->
+        <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 space-y-4">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+              <i data-lucide="play-circle" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h3 class="font-bold text-white">Tester la Création d'un Paiement</h3>
+              <p class="text-xs text-slate-400">Générer une session de paiement réelle ou sandbox</p>
+            </div>
+          </div>
+
+          <form id="form-test-payment" onsubmit="handleTestPayment(event)" class="space-y-3">
+            <div>
+              <label class="block text-xs text-slate-400 mb-1 font-medium">Application SaaS émettrice</label>
+              <select id="test-pay-appId" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                <!-- Injected via JS -->
+              </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs text-slate-400 mb-1 font-medium">Passerelle</label>
+                <select id="test-pay-provider" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                  <option value="auto">Auto (Devise)</option>
+                  <option value="lomopay">LomoPay (Mobile Money)</option>
+                  <option value="whop">Whop (CB)</option>
+                  <option value="stripe">Stripe</option>
+                  <option value="chariow">Chariow</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs text-slate-400 mb-1 font-medium">Montant & Devise</label>
+                <div class="flex gap-2">
+                  <input type="number" id="test-pay-amount" value="1000" class="w-2/3 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono" />
+                  <select id="test-pay-currency" class="w-1/3 bg-slate-950 border border-slate-700 rounded-xl px-2 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                    <option value="XOF">XOF</option>
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs text-slate-400 mb-1 font-medium">Email du client</label>
+              <input type="email" id="test-pay-email" value="client-test@example.com" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500" />
+            </div>
+
+            <button type="submit" id="btn-submit-pay-test" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20 transition">
+              <i data-lucide="zap" class="w-4 h-4"></i>
+              Générer le lien de paiement
+            </button>
+          </form>
+
+          <!-- Result Box -->
+          <div id="test-pay-result" class="hidden bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-slate-300">Résultat du paiement :</span>
+              <span id="test-pay-status-badge" class="text-xs px-2 py-0.5 rounded-full font-mono"></span>
+            </div>
+            <div id="test-pay-checkout-box" class="hidden pt-1">
+              <a id="test-pay-checkout-link" href="#" target="_blank" class="w-full inline-flex items-center justify-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg shadow transition">
+                <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                Ouvrir la page de paiement générée
+              </a>
+            </div>
+            <pre id="test-pay-json" class="text-[11px] font-mono text-slate-400 overflow-x-auto max-h-40 p-2 bg-slate-900 rounded-lg"></pre>
+          </div>
+        </div>
+
+        <!-- 2. Test Simulateur de Webhook -->
+        <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 space-y-4">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-violet-500/10 text-violet-400 flex items-center justify-center">
+              <i data-lucide="send" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h3 class="font-bold text-white">Simulateur de Webhook Sortant</h3>
+              <p class="text-xs text-slate-400">Tester la réception et signature HMAC sur votre SaaS</p>
+            </div>
+          </div>
+
+          <form id="form-test-webhook" onsubmit="handleTestWebhook(event)" class="space-y-3">
+            <div>
+              <label class="block text-xs text-slate-400 mb-1 font-medium">SaaS cible à notifier</label>
+              <select id="test-wh-appId" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                <!-- Injected via JS -->
+              </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs text-slate-400 mb-1 font-medium">Type d'Événement</label>
+                <select id="test-wh-event" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                  <option value="payment.succeeded">payment.succeeded (Succès)</option>
+                  <option value="payment.failed">payment.failed (Échec)</option>
+                  <option value="payment.canceled">payment.canceled (Annulé)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs text-slate-400 mb-1 font-medium">Passerelle simulée</label>
+                <select id="test-wh-provider" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                  <option value="lomopay">LomoPay</option>
+                  <option value="whop">Whop</option>
+                  <option value="stripe">Stripe</option>
+                  <option value="chariow">Chariow</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs text-slate-400 mb-1 font-medium">Montant simulé (XOF)</label>
+              <input type="number" id="test-wh-amount" value="5000" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono" />
+            </div>
+
+            <button type="submit" id="btn-submit-wh-test" class="w-full py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 shadow-lg shadow-violet-600/20 transition">
+              <i data-lucide="radio" class="w-4 h-4"></i>
+              Envoyer le Webhook signé HMAC au SaaS
+            </button>
+          </form>
+
+          <!-- Webhook Result Box -->
+          <div id="test-wh-result" class="hidden bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-slate-300">Statut du webhook :</span>
+              <span id="test-wh-status-badge" class="text-xs px-2 py-0.5 rounded-full font-mono"></span>
+            </div>
+            <p id="test-wh-message" class="text-xs text-slate-400"></p>
+            <pre id="test-wh-json" class="text-[11px] font-mono text-slate-400 overflow-x-auto max-h-40 p-2 bg-slate-900 rounded-lg"></pre>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- TAB 4: JOURNAL D'ACTIVITÉ (LOGS) -->
+    <!-- ================================================================= -->
+    <section id="tab-logs" class="tab-pane hidden space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/60 p-6 rounded-2xl border border-slate-800">
+        <div>
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <i data-lucide="history" class="w-5 h-5 text-indigo-400"></i>
+            Journal d'Activité en Temps Réel
+          </h2>
+          <p class="text-sm text-slate-400 mt-1">
+            Visualisez les paiements créés, les webhooks entrants reçus des passerelles et les webhooks sortants transmis à vos SaaS.
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="fetchLogs()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 rounded-xl border border-slate-700 flex items-center gap-1.5 transition">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+            Actualiser
+          </button>
+          <button onclick="clearLogs()" class="px-3 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs rounded-xl border border-rose-500/20 flex items-center gap-1.5 transition">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            Effacer
+          </button>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="flex flex-wrap gap-2">
+        <button onclick="filterLogs('all')" class="log-filter-btn active px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white transition" data-filter="all">Tous</button>
+        <button onclick="filterLogs('payment_created')" class="log-filter-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-900 hover:bg-slate-800 text-slate-400 transition" data-filter="payment_created">Paiements créés</button>
+        <button onclick="filterLogs('webhook_in')" class="log-filter-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-900 hover:bg-slate-800 text-slate-400 transition" data-filter="webhook_in">Webhooks entrants</button>
+        <button onclick="filterLogs('webhook_out')" class="log-filter-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-900 hover:bg-slate-800 text-slate-400 transition" data-filter="webhook_out">Webhooks sortants (vers SaaS)</button>
+        <button onclick="filterLogs('payment_error')" class="log-filter-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-900 hover:bg-slate-800 text-slate-400 transition" data-filter="payment_error">Erreurs</button>
+      </div>
+
+      <!-- Logs Table / Container -->
+      <div id="logs-container" class="space-y-3">
+        <!-- Injected via JS -->
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- TAB 5: GUIDE RENDER.COM & EXPORT DES VARIABLES -->
+    <!-- ================================================================= -->
+    <section id="tab-render" class="tab-pane hidden space-y-6">
+      <div class="bg-gradient-to-br from-indigo-950/40 via-slate-900 to-slate-900 p-6 sm:p-8 rounded-2xl border border-indigo-500/20 space-y-6">
+        <div>
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs font-semibold mb-3">
+            <i data-lucide="cloud" class="w-3.5 h-3.5"></i>
+            Guide de Déploiement Render.com
+          </div>
+          <h2 class="text-xl font-bold text-white">Comment héberger votre Hub sur Render.com</h2>
+          <p class="text-sm text-slate-300 mt-2">
+            Suivez ces 3 étapes simples pour déployer votre hub en production et obtenir votre URL publique permanente.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="bg-slate-950/80 p-5 rounded-xl border border-slate-800 flex flex-col justify-between">
+            <div>
+              <span class="w-7 h-7 rounded-lg bg-indigo-600 text-white text-xs font-bold flex items-center justify-center mb-3">1</span>
+              <h4 class="font-bold text-sm text-white mb-1">Créer le dépôt GitHub</h4>
+              <p class="text-xs text-slate-400">Poussez ce dossier sur votre compte GitHub privé ou public.</p>
+            </div>
+          </div>
+
+          <div class="bg-slate-950/80 p-5 rounded-xl border border-slate-800 flex flex-col justify-between">
+            <div>
+              <span class="w-7 h-7 rounded-lg bg-indigo-600 text-white text-xs font-bold flex items-center justify-center mb-3">2</span>
+              <h4 class="font-bold text-sm text-white mb-1">Nouveau Web Service Render</h4>
+              <p class="text-xs text-slate-400">Sur Render.com, cliquez sur <b>New +</b> &rarr; <b>Web Service</b> &rarr; connectez votre repo.</p>
+            </div>
+          </div>
+
+          <div class="bg-slate-950/80 p-5 rounded-xl border border-slate-800 flex flex-col justify-between">
+            <div>
+              <span class="w-7 h-7 rounded-lg bg-indigo-600 text-white text-xs font-bold flex items-center justify-center mb-3">3</span>
+              <h4 class="font-bold text-sm text-white mb-1">Coller les Variables d'Env</h4>
+              <p class="text-xs text-slate-400">Collez le bloc ci-dessous dans l'onglet <b>Environment</b> de Render.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Render Settings Table -->
+        <div class="bg-slate-950 p-5 rounded-xl border border-slate-800">
+          <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-3">Paramètres recommandés pour Render.com</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs font-mono">
+            <div class="bg-slate-900 p-3 rounded-lg border border-slate-800">
+              <span class="text-slate-500 block mb-1">Environment</span>
+              <span class="text-indigo-400 font-bold">Node</span>
+            </div>
+            <div class="bg-slate-900 p-3 rounded-lg border border-slate-800">
+              <span class="text-slate-500 block mb-1">Build Command</span>
+              <span class="text-emerald-400 font-bold">npm run build</span>
+            </div>
+            <div class="bg-slate-900 p-3 rounded-lg border border-slate-800">
+              <span class="text-slate-500 block mb-1">Start Command</span>
+              <span class="text-emerald-400 font-bold">npm start</span>
+            </div>
+            <div class="bg-slate-900 p-3 rounded-lg border border-slate-800">
+              <span class="text-slate-500 block mb-1">Plan</span>
+              <span class="text-white font-bold">Free ou Starter</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Export Env Block -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-slate-300">Variables d'environnement générées prêtes pour Render :</span>
+            <button onclick="copyToClipboard(document.getElementById('render-env-text').value, 'Variables copiées dans le presse-papier !')" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow transition">
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+              Copier tout le bloc .env
+            </button>
+          </div>
+          <textarea id="render-env-text" rows="12" readonly class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-xs text-indigo-300 focus:outline-none"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- TAB 6: DOCUMENTATION & EXEMPLES D'INTÉGRATION -->
+    <!-- ================================================================= -->
+    <section id="tab-docs" class="tab-pane hidden space-y-6">
+      <div class="bg-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-800 space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            <i data-lucide="code" class="w-5 h-5 text-indigo-400"></i>
+            Guide d'Intégration API & Webhooks
+          </h2>
+          <p class="text-sm text-slate-400 mt-1">
+            Comment connecter n'importe quel SaaS, script, ou outil No-Code (Make, n8n) à ce Hub de paiement.
+          </p>
+        </div>
+
+        <!-- Step 1 -->
+        <div class="space-y-3">
+          <h3 class="text-sm font-bold text-indigo-400 flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full bg-indigo-500/20 flex items-center justify-center text-xs text-indigo-400">1</span>
+            Créer un paiement depuis votre SaaS (Requête HTTP POST)
+          </h3>
+          <p class="text-xs text-slate-400">
+            Votre application SaaS envoie une requête <code>POST /api/v1/payments/create</code> avec le header <code>X-Hub-Api-Key</code>.
+          </p>
+          <pre class="bg-slate-950 p-4 rounded-xl text-xs font-mono text-slate-300 overflow-x-auto border border-slate-800">
+curl -X POST <span class="text-indigo-400" id="docs-curl-url">http://localhost:4000/api/v1/payments/create</span> \
+  -H "Content-Type: application/json" \
+  -H "X-Hub-Api-Key: <span class="text-amber-400">VOTRE_CLE_API_SAAS</span>" \
+  -d '{
+    "provider": "auto",
+    "amount": 2000,
+    "currency": "XOF",
+    "orderId": "commande_12345",
+    "description": "Recharge de crédits",
+    "returnUrl": "https://monsaas.com/success",
+    "customer": {
+      "email": "client@example.com",
+      "name": "Jean Dupont"
+    }
+  }'</pre>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="space-y-3">
+          <h3 class="text-sm font-bold text-indigo-400 flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full bg-indigo-500/20 flex items-center justify-center text-xs text-indigo-400">2</span>
+            Vérifier la signature HMAC-SHA256 du Webhook reçu sur votre SaaS
+          </h3>
+          <p class="text-xs text-slate-400">
+            Lorsque le client valide son paiement (Mobile Money ou Carte), le Hub appelle votre <code>webhookUrl</code> avec le header <code>X-Hub-Signature: sha256=...</code>.
+          </p>
+          <div class="bg-slate-950 p-4 rounded-xl text-xs font-mono text-slate-300 overflow-x-auto border border-slate-800">
+            <span class="text-slate-500">// Exemple de vérification de signature en Node.js (Express / Next.js) :</span><br/>
+            const crypto = require("crypto");<br/><br/>
+            function verifyHubWebhook(rawBody, receivedSignature, webhookSecret) {<br/>
+            &nbsp;&nbsp;const hmac = crypto.createHmac("sha256", webhookSecret).update(rawBody).digest("hex");<br/>
+            &nbsp;&nbsp;const expected = `sha256=${hmac}`;<br/>
+            &nbsp;&nbsp;return crypto.timingSafeEqual(Buffer.from(receivedSignature), Buffer.from(expected));<br/>
+            }
+          </div>
+        </div>
+
+        <!-- SDK -->
+        <div class="bg-indigo-950/20 p-5 rounded-xl border border-indigo-500/20">
+          <h4 class="text-sm font-bold text-white mb-2 flex items-center gap-2">
+            <i data-lucide="package-check" class="w-4 h-4 text-indigo-400"></i>
+            SDK TypeScript / Node.js inclus
+          </h4>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Un client SDK prêt à l'emploi est inclus directement dans le dossier <code class="text-indigo-400">sdk/client.ts</code> de ce projet. Vous pouvez simplement le copier-coller dans votre projet SaaS pour créer des paiements et vérifier les signatures en 2 lignes de code !
+          </p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================================================================= -->
+  <!-- MODAL: AJOUTER / MODIFIER UN SAAS CLIENT -->
+  <!-- ================================================================= -->
+  <div id="modal-app" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-2xl">
+      <div class="flex items-center justify-between">
+        <h3 id="modal-app-title" class="font-bold text-base text-white flex items-center gap-2">
+          <i data-lucide="plus-circle" class="w-5 h-5 text-indigo-400"></i>
+          Connecter un nouvel outil / SaaS
+        </h3>
+        <button onclick="closeAppModal()" class="text-slate-400 hover:text-white transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="form-app" onsubmit="handleSaveApp(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1 font-medium">Identifiant unique du SaaS (ID)</label>
+          <input type="text" id="app-id" required placeholder="ex: verifsms, n8n_app, saas2" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono" />
+          <span class="text-[11px] text-slate-500">Lettres minuscules, chiffres et tirets uniquement</span>
+        </div>
+
+        <div>
+          <label class="block text-xs text-slate-400 mb-1 font-medium">Nom affiché</label>
+          <input type="text" id="app-name" required placeholder="ex: VerifSMS Production" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500" />
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="text-xs text-slate-400 font-medium">Clé API SaaS (X-Hub-Api-Key)</label>
+            <button type="button" onclick="generateNewApiKey()" class="text-[11px] text-indigo-400 hover:underline flex items-center gap-1">
+              <i data-lucide="sparkles" class="w-3 h-3"></i> Générer
+            </button>
+          </div>
+          <input type="text" id="app-apiKey" required placeholder="vfs_live_sec_..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono" />
+        </div>
+
+        <div>
+          <label class="block text-xs text-slate-400 mb-1 font-medium">URL de Webhook de votre SaaS (Destination)</label>
+          <input type="url" id="app-webhookUrl" placeholder="https://monsaas.com/api/webhooks/hub-payment" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono" />
+          <span class="text-[11px] text-slate-500">L'URL où votre SaaS reçoit la validation des paiements</span>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="text-xs text-slate-400 font-medium">Secret du Webhook (Signature HMAC-SHA256)</label>
+            <button type="button" onclick="generateNewWebhookSecret()" class="text-[11px] text-indigo-400 hover:underline flex items-center gap-1">
+              <i data-lucide="sparkles" class="w-3 h-3"></i> Générer
+            </button>
+          </div>
+          <input type="text" id="app-webhookSecret" required placeholder="whsec_..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono" />
+        </div>
+
+        <div class="flex justify-end gap-3 pt-3 border-t border-slate-800">
+          <button type="button" onclick="closeAppModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 rounded-xl transition">
+            Annuler
+          </button>
+          <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white rounded-xl shadow-lg shadow-indigo-600/20 transition flex items-center gap-2">
+            <i data-lucide="check" class="w-4 h-4"></i>
+            Enregistrer le SaaS
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- MODAL: SNIPPETS D'INTÉGRATION DU SAAS -->
+  <!-- ================================================================= -->
+  <div id="modal-integration" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 id="modal-integ-title" class="font-bold text-base text-white">Intégration de [SaaS]</h3>
+          <p class="text-xs text-slate-400">Snippets pré-remplis avec vos identifiants réels</p>
+        </div>
+        <button onclick="closeIntegrationModal()" class="text-slate-400 hover:text-white transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="flex border-b border-slate-800 gap-2 pb-2">
+        <button onclick="switchIntegLang('curl')" class="integ-lang-btn active px-3 py-1 rounded-lg text-xs font-medium bg-indigo-600 text-white" data-lang="curl">cURL</button>
+        <button onclick="switchIntegLang('js')" class="integ-lang-btn px-3 py-1 rounded-lg text-xs font-medium bg-slate-800 text-slate-400" data-lang="js">JavaScript / TypeScript</button>
+        <button onclick="switchIntegLang('python')" class="integ-lang-btn px-3 py-1 rounded-lg text-xs font-medium bg-slate-800 text-slate-400" data-lang="python">Python</button>
+        <button onclick="switchIntegLang('php')" class="integ-lang-btn px-3 py-1 rounded-lg text-xs font-medium bg-slate-800 text-slate-400" data-lang="php">PHP</button>
+      </div>
+
+      <div class="relative">
+        <pre id="integ-code-content" class="bg-slate-950 p-4 rounded-xl text-xs font-mono text-slate-300 max-h-72 overflow-y-auto border border-slate-800"></pre>
+        <button onclick="copyToClipboard(document.getElementById('integ-code-content').innerText, 'Code copié !')" class="absolute top-3 right-3 px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-200 rounded-md border border-slate-700 flex items-center gap-1">
+          <i data-lucide="copy" class="w-3 h-3"></i> Copier
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
+
+  <!-- App Script -->
+  <script src="app.js"></script>
+</body>
+</html>
