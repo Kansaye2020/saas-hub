@@ -1,88 +1,93 @@
-import sqlite3 from "sqlite3";
-import path from "path";
-import fs from "fs";
+import { Pool } from "pg";
 
-// Determine DB path (can be overridden by Render Persistent Disk via env variable)
-const dbPath = process.env.DB_PATH || path.join(__dirname, "../../data/database.sqlite");
-const dataDir = path.dirname(dbPath);
+const dbUrl = process.env.DATABASE_URL;
 
-// Ensure data directory exists
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
+if (!dbUrl) {
+  console.error("ERREUR FATALE: La variable DATABASE_URL n'est pas définie dans .env !");
+  process.exit(1);
 }
 
-const db = new sqlite3.Database(dbPath);
-
-// Initialize tables
-db.serialize(() => {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS transactions (
-      id TEXT PRIMARY KEY,
-      appId TEXT NOT NULL,
-      provider TEXT NOT NULL,
-      amount REAL NOT NULL,
-      currency TEXT NOT NULL,
-      status TEXT NOT NULL,
-      orderId TEXT NOT NULL,
-      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-
-  db.run(`
-    CREATE TABLE IF NOT EXISTS checkout_sessions (
-      token TEXT PRIMARY KEY,
-      appId TEXT NOT NULL,
-      amount REAL NOT NULL,
-      currency TEXT NOT NULL,
-      returnUrl TEXT,
-      cancelUrl TEXT,
-      provider TEXT,
-      status TEXT NOT NULL,
-      orderId TEXT NOT NULL,
-      description TEXT,
-      customerEmail TEXT,
-      customerName TEXT,
-      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-
-  db.run(`
-    CREATE TABLE IF NOT EXISTS providers_config (
-      providerId TEXT PRIMARY KEY,
-      isActive INTEGER DEFAULT 1,
-      publicKey TEXT,
-      secretKey TEXT,
-      extraConfig TEXT
-    )
-  `);
+const pool = new Pool({
+  connectionString: dbUrl,
+  ssl: {
+    rejectUnauthorized: false // Requis par Neon.tech et Render
+  }
 });
 
-// Helper functions for easy querying (Promises)
-export const dbQuery = (sql: string, params: any[] = []): Promise<any[]> => {
-  return new Promise((resolve, reject) => {
-    db.all(sql, params, (err, rows) => {
-      if (err) reject(err);
-      else resolve(rows);
-    });
-  });
+// Helper pour convertir les `?` de SQLite vers les `$1`, `$2` de PostgreSQL
+function convertToPgSql(sql: string): string {
+  let i = 1;
+  return sql.replace(/\?/g, () => `$${i++}`);
+}
+
+export const dbQuery = async (sql: string, params: any[] = []): Promise<any[]> => {
+  const pgSql = convertToPgSql(sql);
+  const result = await pool.query(pgSql, params);
+  return result.rows;
 };
 
-export const dbRun = (sql: string, params: any[] = []): Promise<void> => {
-  return new Promise((resolve, reject) => {
-    db.run(sql, params, function (err) {
-      if (err) reject(err);
-      else resolve();
-    });
-  });
+export const dbRun = async (sql: string, params: any[] = []): Promise<void> => {
+  const pgSql = convertToPgSql(sql);
+  await pool.query(pgSql, params);
 };
 
-export const dbGet = (sql: string, params: any[] = []): Promise<any> => {
-  return new Promise((resolve, reject) => {
-    db.get(sql, params, (err, row) => {
-      if (err) reject(err);
-      else resolve(row);
-    });
-  });
+export const dbGet = async (sql: string, params: any[] = []): Promise<any> => {
+  const pgSql = convertToPgSql(sql);
+  const result = await pool.query(pgSql, params);
+  return result.rows[0]; // Retourne la première ligne ou undefined
 };
 
-export default db;
+// Initialisation des tables PostgreSQL
+export const initDB = async () => {
+  try {
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS transactions (
+        id VARCHAR(255) PRIMARY KEY,
+        appId VARCHAR(255) NOT NULL,
+        provider VARCHAR(50) NOT NULL,
+        amount NUMERIC NOT NULL,
+        currency VARCHAR(10) NOT NULL,
+        status VARCHAR(50) NOT NULL,
+        orderId VARCHAR(255) NOT NULL,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS checkout_sessions (
+        token VARCHAR(255) PRIMARY KEY,
+        appId VARCHAR(255) NOT NULL,
+        amount NUMERIC NOT NULL,
+        currency VARCHAR(10) NOT NULL,
+        returnUrl TEXT,
+        cancelUrl TEXT,
+        provider VARCHAR(50),
+        status VARCHAR(50) NOT NULL,
+        orderId VARCHAR(255) NOT NULL,
+        description TEXT,
+        customerEmail VARCHAR(255),
+        customerName VARCHAR(255),
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS providers_config (
+        providerId VARCHAR(50) PRIMARY KEY,
+        isActive INTEGER DEFAULT 1,
+        publicKey TEXT,
+        secretKey TEXT,
+        extraConfig TEXT
+      )
+    `);
+    
+    console.log("✅ Base de données PostgreSQL initialisée avec succès !");
+  } catch (err) {
+    console.error("❌ Erreur lors de l'initialisation de PostgreSQL:", err);
+  }
+};
+
+// Auto-init
+initDB();
+
+export default pool;

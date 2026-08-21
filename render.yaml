@@ -4,15 +4,12 @@ services:
     env: node
     buildCommand: npm install && npm run build
     startCommand: npm start
-    disk:
-      name: sqlite-data
-      mountPath: /data
-      sizeGB: 1
     envVars:
       - key: NODE_ENV
         value: production
-      - key: DB_PATH
-        value: /data/database.sqlite
+      # /!\ RENSEIGNEZ VOTRE URL NEON.TECH ICI LORS DU DEPLOIEMENT /!\
+      - key: DATABASE_URL
+        value: postgres://user:password@ep-nom-de-base.region.aws.neon.tech/neondb
       - key: ADMIN_PASSWORD
         generateValue: true
       - key: HUB_BASE_URL

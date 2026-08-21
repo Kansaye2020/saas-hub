@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { requireAdminAuth } from "../middleware/adminAuth";
-import { dbQuery } from "../database/db";
+import { dbQuery, dbRun } from "../database/db";
 
 export const adminRouter = Router();
 
