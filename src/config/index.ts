@@ -3,33 +3,10 @@ import { ClientAppConfig } from "../types";
 
 dotenv.config();
 
-function parseClientApps(): ClientAppConfig[] {
-  const raw = process.env.CLIENT_APPS;
-  if (!raw) {
-    return [
-      {
-        id: "verifsms",
-        name: "VerifSMS",
-        apiKey: process.env.VERIFSMS_API_KEY || "default_verifsms_secret_key_change_me",
-        webhookUrl: process.env.VERIFSMS_WEBHOOK_URL || "https://verifsms.relyx.xyz/api/webhooks/lomopay",
-        webhookSecret: process.env.VERIFSMS_WEBHOOK_SECRET || "default_verifsms_webhook_secret",
-      },
-    ];
-  }
-
-  try {
-    return JSON.parse(raw);
-  } catch (error) {
-    console.error("❌ Erreur lors du parsing de CLIENT_APPS JSON:", error);
-    return [];
-  }
-}
-
 export const config = {
   port: parseInt(process.env.PORT || "4000", 10),
   nodeEnv: process.env.NODE_ENV || "development",
   baseUrl: (process.env.HUB_BASE_URL || "http://localhost:4000").replace(/\/$/, ""),
-  clientApps: parseClientApps(),
 
   // Lomopay config
   lomopay: {
@@ -58,12 +35,14 @@ export const config = {
   },
 };
 
-export function getClientAppById(appId: string): ClientAppConfig | undefined {
-  return config.clientApps.find((app) => app.id === appId);
+export async function getClientAppById(appId: string): Promise<ClientAppConfig | undefined> {
+  const { dbGet } = require("../database/db");
+  return await dbGet("SELECT * FROM client_apps WHERE id = ?", [appId]);
 }
 
-export function getClientAppByApiKey(apiKey: string): ClientAppConfig | undefined {
-  return config.clientApps.find((app) => app.apiKey === apiKey);
+export async function getClientAppByApiKey(apiKey: string): Promise<ClientAppConfig | undefined> {
+  const { dbGet } = require("../database/db");
+  return await dbGet("SELECT * FROM client_apps WHERE apiKey = ?", [apiKey]);
 }
 
 export async function getProviderConfig(providerId: string): Promise<{ publicKey: string; secretKey: string; isActive: boolean; extraConfig?: any }> {

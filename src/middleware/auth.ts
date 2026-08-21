@@ -6,7 +6,7 @@ export interface AuthenticatedRequest extends Request {
   clientApp?: ClientAppConfig;
 }
 
-export function requireAppAuth(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+export async function requireAppAuth(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   const apiKeyHeader = req.headers["x-hub-api-key"] || req.headers["authorization"];
 
   if (!apiKeyHeader) {
@@ -20,7 +20,7 @@ export function requireAppAuth(req: AuthenticatedRequest, res: Response, next: N
     ? apiKeyHeader.replace(/^Bearer\s+/i, "").trim()
     : apiKeyHeader[0];
 
-  const app = getClientAppByApiKey(rawKey);
+  const app = await getClientAppByApiKey(rawKey);
 
   if (!app) {
     return res.status(403).json({

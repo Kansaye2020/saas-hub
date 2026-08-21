@@ -7,7 +7,7 @@ export class WebhookDispatcherService {
    * Transmet l'événement unifié au SaaS concerné avec signature cryptographique
    */
   static async dispatchToClientApp(event: UnifiedWebhookPayload): Promise<boolean> {
-    const app = getClientAppById(event.appId);
+    const app = await getClientAppById(event.appId);
 
     if (!app) {
       console.warn(`⚠️ Application SaaS inconnue "${event.appId}". Impossible de dispatcher le webhook.`);

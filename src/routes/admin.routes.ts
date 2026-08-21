@@ -59,6 +59,39 @@ adminRouter.get("/settings", async (req: Request, res: Response) => {
   }
 });
 
+adminRouter.get("/apps", async (req: Request, res: Response) => {
+  try {
+    const apps = await dbQuery("SELECT * FROM client_apps ORDER BY createdAt DESC");
+    const successMessage = req.query.success === '1' ? 'Application sauvegardée avec succès.' : null;
+    res.render("admin/apps", { apps, successMessage });
+  } catch (error) {
+    console.error("Apps error:", error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+adminRouter.post("/apps", async (req: Request, res: Response) => {
+  try {
+    const { id, name, apiKey, webhookUrl, webhookSecret } = req.body;
+    
+    await dbRun(
+      `INSERT INTO client_apps (id, name, apiKey, webhookUrl, webhookSecret)
+       VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET 
+       name=excluded.name, 
+       apiKey=excluded.apiKey, 
+       webhookUrl=excluded.webhookUrl, 
+       webhookSecret=excluded.webhookSecret`,
+      [id, name, apiKey, webhookUrl, webhookSecret]
+    );
+
+    res.redirect("/admin/apps?success=1");
+  } catch (error) {
+    console.error("Save app error:", error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
 adminRouter.post("/settings/provider", async (req: Request, res: Response) => {
   try {
     const { providerId, publicKey, secretKey, extraConfig } = req.body;

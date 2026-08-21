@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mes Applications | SaaS Payment Hub</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.10.2/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-base-200 min-h-screen">
+    
+    <div class="navbar bg-base-100 shadow-sm border-b border-base-300">
+        <div class="flex-1">
+            <a class="btn btn-ghost text-xl">SaaS Hub Admin</a>
+        </div>
+        <div class="flex-none gap-2">
+            <ul class="menu menu-horizontal px-1 font-medium">
+                <li><a href="/admin">Dashboard</a></li>
+                <li><a class="active" href="/admin/apps">Mes Applications (Sites)</a></li>
+                <li><a href="/admin/settings">Processeurs</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        <div class="mb-8 flex justify-between items-center">
+            <h1 class="text-3xl font-bold">Mes Applications (Sites Clients)</h1>
+            <button class="btn btn-primary" onclick="document.getElementById('add_app_modal').showModal()">Ajouter un site</button>
+        </div>
+
+        <% if (successMessage) { %>
+            <div class="alert alert-success mb-8">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <span><%= successMessage %></span>
+            </div>
+        <% } %>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <% apps.forEach(function(app) { %>
+                <div class="card bg-base-100 shadow-xl border border-base-200">
+                    <div class="card-body">
+                        <h2 class="card-title text-2xl mb-4">
+                            <%= app.name %>
+                            <div class="badge badge-secondary text-xs"><%= app.id %></div>
+                        </h2>
+                        
+                        <div class="form-control w-full mb-4">
+                            <label class="label"><span class="label-text font-bold">Clé API (X-Hub-Api-Key)</span></label>
+                            <input type="text" value="<%= app.apiKey %>" class="input input-bordered w-full bg-base-200" readonly />
+                            <label class="label"><span class="label-text-alt text-base-content/60">Utilisez cette clé pour créer une session depuis votre site.</span></label>
+                        </div>
+
+                        <div class="form-control w-full mb-4">
+                            <label class="label"><span class="label-text font-bold">URL du Webhook de votre site</span></label>
+                            <input type="text" value="<%= app.webhookUrl %>" class="input input-bordered w-full bg-base-200" readonly />
+                            <label class="label"><span class="label-text-alt text-base-content/60">Le Hub enverra un POST sur cette URL quand un paiement réussit.</span></label>
+                        </div>
+                        
+                        <div class="form-control w-full mb-4">
+                            <label class="label"><span class="label-text font-bold">Secret Webhook (Signature)</span></label>
+                            <input type="text" value="<%= app.webhookSecret %>" class="input input-bordered w-full bg-base-200" readonly />
+                        </div>
+
+                        <div class="card-actions justify-end mt-4">
+                            <button class="btn btn-outline btn-sm" onclick="editApp('<%= app.id %>', '<%= app.name %>', '<%= app.apiKey %>', '<%= app.webhookUrl %>', '<%= app.webhookSecret %>')">Modifier</button>
+                        </div>
+                    </div>
+                </div>
+            <% }); %>
+        </div>
+
+    </div>
+
+    <!-- Modal Ajouter / Modifier -->
+    <dialog id="add_app_modal" class="modal">
+        <div class="modal-box">
+            <h3 class="font-bold text-lg mb-4" id="modal-title">Ajouter un site</h3>
+            <form method="POST" action="/admin/apps">
+                <div class="form-control w-full mb-4">
+                    <label class="label"><span class="label-text">ID Technique du site (sans espace, ex: "boutique1")</span></label>
+                    <input type="text" name="id" id="form-id" class="input input-bordered w-full" required />
+                </div>
+                <div class="form-control w-full mb-4">
+                    <label class="label"><span class="label-text">Nom Public de la Boutique (affiché au client)</span></label>
+                    <input type="text" name="name" id="form-name" class="input input-bordered w-full" required />
+                </div>
+                <div class="form-control w-full mb-4">
+                    <label class="label"><span class="label-text">Clé API Secrète (inventez-en une)</span></label>
+                    <input type="text" name="apiKey" id="form-apiKey" class="input input-bordered w-full" required />
+                </div>
+                <div class="form-control w-full mb-4">
+                    <label class="label"><span class="label-text">URL du Webhook (Optionnel, URL de votre site recevant les validations)</span></label>
+                    <input type="text" name="webhookUrl" id="form-webhookUrl" placeholder="https://..." class="input input-bordered w-full" />
+                </div>
+                <div class="form-control w-full mb-6">
+                    <label class="label"><span class="label-text">Secret Webhook (pour vérifier la signature)</span></label>
+                    <input type="text" name="webhookSecret" id="form-webhookSecret" class="input input-bordered w-full" required />
+                </div>
+                <div class="modal-action">
+                    <button type="button" class="btn" onclick="document.getElementById('add_app_modal').close()">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Sauvegarder</button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+
+    <script>
+        function editApp(id, name, apiKey, webhookUrl, webhookSecret) {
+            document.getElementById('modal-title').innerText = "Modifier le site";
+            document.getElementById('form-id').value = id;
+            document.getElementById('form-id').readOnly = true;
+            document.getElementById('form-name').value = name;
+            document.getElementById('form-apiKey').value = apiKey;
+            document.getElementById('form-webhookUrl').value = webhookUrl;
+            document.getElementById('form-webhookSecret').value = webhookSecret;
+            document.getElementById('add_app_modal').showModal();
+        }
+    </script>
+</body>
+</html>

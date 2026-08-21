@@ -81,6 +81,26 @@ export const initDB = async () => {
       )
     `);
     
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS client_apps (
+        id VARCHAR(50) PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        apiKey VARCHAR(255) NOT NULL UNIQUE,
+        webhookUrl TEXT,
+        webhookSecret VARCHAR(255) NOT NULL,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Insert a default test app if the table is empty
+    const { count } = await dbGet("SELECT COUNT(*) as count FROM client_apps");
+    if (Number(count) === 0) {
+      await dbRun(`
+        INSERT INTO client_apps (id, name, apiKey, webhookUrl, webhookSecret) 
+        VALUES ('verifsms', 'Boutique de Test', 'default_verifsms_secret_key_change_me', 'http://localhost:4000/public/test-redirect.html', 'secret_test_123')
+      `);
+    }
+    
     console.log("✅ Base de données PostgreSQL initialisée avec succès !");
   } catch (err) {
     console.error("❌ Erreur lors de l'initialisation de PostgreSQL:", err);

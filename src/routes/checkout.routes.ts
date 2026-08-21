@@ -64,7 +64,7 @@ checkoutRouter.get("/:token", async (req: Request, res: Response) => {
     const { getProviderConfig, getClientAppById } = require("../config");
     
     // Fetch the client app config to get the store name
-    const clientApp = getClientAppById(session.appId);
+    const clientApp = await getClientAppById(session.appId);
     const storeName = clientApp ? clientApp.name : session.appId;
 
     for (const pId of allProviderIds) {
