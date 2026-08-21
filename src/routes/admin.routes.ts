@@ -21,10 +21,15 @@ adminRouter.get("/", async (req: Request, res: Response) => {
     // Get recent transactions
     const recentTransactions = await dbQuery("SELECT * FROM transactions ORDER BY createdAt DESC LIMIT 20");
 
+    // Get active processor
+    const activeProcessorRow = await dbQuery("SELECT providerId FROM providers_config WHERE isActive = 1 LIMIT 1");
+    const activeProcessor = activeProcessorRow.length > 0 ? activeProcessorRow[0].providerId : 'Aucun';
+
     res.render("admin/dashboard", {
       totalRevenue,
       totalTransactions,
-      recentTransactions
+      recentTransactions,
+      activeProcessor
     });
   } catch (error) {
     console.error("Dashboard error:", error);
