@@ -11,11 +11,11 @@ adminRouter.get("/", async (req: Request, res: Response) => {
   try {
     // Get total revenue
     const revenueRows = await dbQuery("SELECT SUM(amount) as total FROM transactions WHERE status = 'succeeded'");
-    const totalRevenue = revenueRows[0]?.total || 0;
+    const totalRevenue = Number(revenueRows[0]?.total || 0);
 
     // Get total transactions
     const countRows = await dbQuery("SELECT COUNT(*) as count FROM transactions");
-    const totalTransactions = countRows[0]?.count || 0;
+    const totalTransactions = Number(countRows[0]?.count || 0);
 
     // Get recent transactions
     const recentTransactions = await dbQuery("SELECT * FROM transactions ORDER BY createdAt DESC LIMIT 20");
@@ -85,7 +85,7 @@ adminRouter.post("/settings/provider", async (req: Request, res: Response) => {
 adminRouter.get("/api/stats", async (req: Request, res: Response) => {
   try {
     const revenueRows = await dbQuery("SELECT SUM(amount) as total FROM transactions WHERE status = 'succeeded'");
-    const totalRevenue = revenueRows[0]?.total || 0;
+    const totalRevenue = Number(revenueRows[0]?.total || 0);
     res.json({ totalRevenue });
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch stats" });
