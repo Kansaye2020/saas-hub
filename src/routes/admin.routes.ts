@@ -1,4 +1,5 @@
 import { Router, Request, Response } from "express";
+import crypto from "crypto";
 import { requireAdminAuth } from "../middleware/adminAuth";
 import { dbQuery, dbRun } from "../database/db";
 
@@ -72,7 +73,10 @@ adminRouter.get("/apps", async (req: Request, res: Response) => {
 
 adminRouter.post("/apps", async (req: Request, res: Response) => {
   try {
-    const { id, name, apiKey, webhookUrl, webhookSecret } = req.body;
+    let { id, name, apiKey, webhookUrl, webhookSecret } = req.body;
+    
+    if (!apiKey) apiKey = 'sk_hub_' + crypto.randomBytes(16).toString('hex');
+    if (!webhookSecret) webhookSecret = 'whsec_' + crypto.randomBytes(16).toString('hex');
     
     await dbRun(
       `INSERT INTO client_apps (id, name, apiKey, webhookUrl, webhookSecret)
@@ -96,6 +100,11 @@ adminRouter.post("/settings/provider", async (req: Request, res: Response) => {
   try {
     const { providerId, publicKey, secretKey, extraConfig } = req.body;
     const isActive = req.body.isActive === '1' ? 1 : 0;
+
+    // Si on active ce processeur, on désactive TOUS les autres (1 seul processeur actif à la fois)
+    if (isActive === 1) {
+      await dbRun("UPDATE providers_config SET isActive = 0");
+    }
 
     await dbRun(
       `INSERT INTO providers_config (providerId, isActive, publicKey, secretKey, extraConfig)

@@ -85,16 +85,16 @@
                     <input type="text" name="name" id="form-name" class="input input-bordered w-full" required />
                 </div>
                 <div class="form-control w-full mb-4">
-                    <label class="label"><span class="label-text">Clé API Secrète (inventez-en une)</span></label>
-                    <input type="text" name="apiKey" id="form-apiKey" class="input input-bordered w-full" required />
+                    <label class="label"><span class="label-text font-bold">Clé API (Laisser vide pour auto-générer)</span></label>
+                    <input type="text" name="apiKey" id="form-apiKey" class="input input-bordered w-full" placeholder="sk_hub_..." />
                 </div>
                 <div class="form-control w-full mb-4">
-                    <label class="label"><span class="label-text">URL du Webhook (Optionnel, URL de votre site recevant les validations)</span></label>
+                    <label class="label"><span class="label-text">URL du Webhook (Optionnel, ex: https://monsite.com/webhook)</span></label>
                     <input type="text" name="webhookUrl" id="form-webhookUrl" placeholder="https://..." class="input input-bordered w-full" />
                 </div>
                 <div class="form-control w-full mb-6">
-                    <label class="label"><span class="label-text">Secret Webhook (pour vérifier la signature)</span></label>
-                    <input type="text" name="webhookSecret" id="form-webhookSecret" class="input input-bordered w-full" required />
+                    <label class="label"><span class="label-text font-bold">Secret Webhook (Laisser vide pour auto-générer)</span></label>
+                    <input type="text" name="webhookSecret" id="form-webhookSecret" class="input input-bordered w-full" placeholder="whsec_..." />
                 </div>
                 <div class="modal-action">
                     <button type="button" class="btn" onclick="document.getElementById('add_app_modal').close()">Annuler</button>
