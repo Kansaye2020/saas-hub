@@ -81,14 +81,15 @@ export const dbGet = async (sql: string, params: any[] = []): Promise<any> => {
   return undefined;
 };
 
-// Initialisation des tables
+// Initialisation et migration automatique des tables
 export const initDB = async () => {
   try {
     if (isPg) {
+      // 1. Transactions
       await dbRun(`
         CREATE TABLE IF NOT EXISTS transactions (
           id VARCHAR(255) PRIMARY KEY,
-          appId VARCHAR(255) NOT NULL,
+          appId VARCHAR(255) NOT NULL DEFAULT 'verifsms',
           provider VARCHAR(50) NOT NULL,
           amount NUMERIC NOT NULL,
           currency VARCHAR(10) NOT NULL,
@@ -97,11 +98,15 @@ export const initDB = async () => {
           createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
       `);
+      try {
+        await dbRun(`ALTER TABLE transactions ADD COLUMN IF NOT EXISTS appId VARCHAR(255) NOT NULL DEFAULT 'verifsms'`);
+      } catch (e) {}
 
+      // 2. Checkout Sessions
       await dbRun(`
         CREATE TABLE IF NOT EXISTS checkout_sessions (
           token VARCHAR(255) PRIMARY KEY,
-          appId VARCHAR(255) NOT NULL,
+          appId VARCHAR(255) NOT NULL DEFAULT 'verifsms',
           amount NUMERIC NOT NULL,
           currency VARCHAR(10) NOT NULL,
           returnUrl TEXT,
@@ -115,7 +120,16 @@ export const initDB = async () => {
           createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
       `);
+      try {
+        await dbRun(`ALTER TABLE checkout_sessions ADD COLUMN IF NOT EXISTS appId VARCHAR(255) NOT NULL DEFAULT 'verifsms'`);
+        await dbRun(`ALTER TABLE checkout_sessions ADD COLUMN IF NOT EXISTS returnUrl TEXT`);
+        await dbRun(`ALTER TABLE checkout_sessions ADD COLUMN IF NOT EXISTS cancelUrl TEXT`);
+        await dbRun(`ALTER TABLE checkout_sessions ADD COLUMN IF NOT EXISTS description TEXT`);
+        await dbRun(`ALTER TABLE checkout_sessions ADD COLUMN IF NOT EXISTS customerEmail VARCHAR(255)`);
+        await dbRun(`ALTER TABLE checkout_sessions ADD COLUMN IF NOT EXISTS customerName VARCHAR(255)`);
+      } catch (e) {}
 
+      // 3. Providers Config
       await dbRun(`
         CREATE TABLE IF NOT EXISTS providers_config (
           appId VARCHAR(50) NOT NULL DEFAULT 'verifsms',
@@ -129,11 +143,11 @@ export const initDB = async () => {
       `);
       try {
         await dbRun(`ALTER TABLE providers_config ADD COLUMN IF NOT EXISTS appId VARCHAR(50) NOT NULL DEFAULT 'verifsms'`);
+        await dbRun(`ALTER TABLE providers_config ADD COLUMN IF NOT EXISTS extraConfig TEXT`);
         await dbRun(`CREATE UNIQUE INDEX IF NOT EXISTS idx_providers_app_provider ON providers_config(appId, providerId)`);
-      } catch (e) {
-        console.log("Postgres providers_config index note:", e);
-      }
+      } catch (e) {}
       
+      // 4. Client Apps
       await dbRun(`
         CREATE TABLE IF NOT EXISTS client_apps (
           id VARCHAR(50) PRIMARY KEY,
@@ -149,12 +163,15 @@ export const initDB = async () => {
       try {
         await dbRun(`ALTER TABLE client_apps ADD COLUMN IF NOT EXISTS returnUrl TEXT`);
         await dbRun(`ALTER TABLE client_apps ADD COLUMN IF NOT EXISTS cancelUrl TEXT`);
+        await dbRun(`ALTER TABLE client_apps ADD COLUMN IF NOT EXISTS webhookUrl TEXT`);
       } catch (e) {}
+
     } else {
+      // SQLite
       await dbRun(`
         CREATE TABLE IF NOT EXISTS transactions (
           id TEXT PRIMARY KEY,
-          appId TEXT NOT NULL,
+          appId TEXT NOT NULL DEFAULT 'verifsms',
           provider TEXT NOT NULL,
           amount REAL NOT NULL,
           currency TEXT NOT NULL,
@@ -163,11 +180,17 @@ export const initDB = async () => {
           createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
         )
       `);
+      try {
+        const txCols = await dbQuery("PRAGMA table_info(transactions)");
+        if (!txCols.some((c: any) => c.name === 'appId')) {
+          await dbRun(`ALTER TABLE transactions ADD COLUMN appId TEXT NOT NULL DEFAULT 'verifsms'`);
+        }
+      } catch (e) {}
 
       await dbRun(`
         CREATE TABLE IF NOT EXISTS checkout_sessions (
           token TEXT PRIMARY KEY,
-          appId TEXT NOT NULL,
+          appId TEXT NOT NULL DEFAULT 'verifsms',
           amount REAL NOT NULL,
           currency TEXT NOT NULL,
           returnUrl TEXT,
@@ -181,6 +204,18 @@ export const initDB = async () => {
           createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
         )
       `);
+      try {
+        const csCols = await dbQuery("PRAGMA table_info(checkout_sessions)");
+        if (!csCols.some((c: any) => c.name === 'appId')) {
+          await dbRun(`ALTER TABLE checkout_sessions ADD COLUMN appId TEXT NOT NULL DEFAULT 'verifsms'`);
+        }
+        if (!csCols.some((c: any) => c.name === 'returnUrl')) {
+          await dbRun(`ALTER TABLE checkout_sessions ADD COLUMN returnUrl TEXT`);
+        }
+        if (!csCols.some((c: any) => c.name === 'cancelUrl')) {
+          await dbRun(`ALTER TABLE checkout_sessions ADD COLUMN cancelUrl TEXT`);
+        }
+      } catch (e) {}
 
       // SQLite check and migrate providers_config table
       const hasTable = await dbGet("SELECT name FROM sqlite_master WHERE type='table' AND name='providers_config'");
@@ -236,8 +271,15 @@ export const initDB = async () => {
           createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
         )
       `);
-      try { await dbRun(`ALTER TABLE client_apps ADD COLUMN returnUrl TEXT`); } catch {}
-      try { await dbRun(`ALTER TABLE client_apps ADD COLUMN cancelUrl TEXT`); } catch {}
+      try {
+        const caCols = await dbQuery("PRAGMA table_info(client_apps)");
+        if (!caCols.some((c: any) => c.name === 'returnUrl')) {
+          await dbRun(`ALTER TABLE client_apps ADD COLUMN returnUrl TEXT`);
+        }
+        if (!caCols.some((c: any) => c.name === 'cancelUrl')) {
+          await dbRun(`ALTER TABLE client_apps ADD COLUMN cancelUrl TEXT`);
+        }
+      } catch (e) {}
     }
 
     // Insert a default test app if the table is empty
@@ -257,7 +299,7 @@ export const initDB = async () => {
       }
     }
     
-    console.log("✅ Base de données initialisée avec succès !");
+    console.log("✅ Base de données initialisée et synchronisée avec succès !");
   } catch (err) {
     console.error("❌ Erreur lors de l'initialisation de la base de données:", err);
   }

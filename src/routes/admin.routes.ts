@@ -163,9 +163,16 @@ adminRouter.get("/apps", async (req: Request, res: Response) => {
       successMessage,
       errorMessage
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Apps error:", error);
-    res.status(500).send("Internal Server Error");
+    res.render("admin/apps", {
+      apps: [],
+      totalGlobalRevenue: 0,
+      totalGlobalTransactions: 0,
+      totalAppsCount: 0,
+      successMessage: null,
+      errorMessage: "Erreur base de données: " + (error?.message || "Impossible de charger les données.")
+    });
   }
 });
 
@@ -249,9 +256,9 @@ adminRouter.get("/app/:appId", async (req: Request, res: Response) => {
       errorMessage,
       activeTab
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Site Dashboard error:", error);
-    res.status(500).send("Internal Server Error");
+    res.redirect("/admin/apps?error=" + encodeURIComponent("Erreur: " + (error?.message || "Impossible de charger le tableau de bord.")));
   }
 });
 
