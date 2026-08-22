@@ -131,8 +131,8 @@ checkoutRouter.post("/pay", async (req: Request, res: Response) => {
       description: session.description || `Commande #${session.orderId || session.orderid}`,
       orderId: session.orderId || session.orderid,
       customer: {
-        email: session.customerEmail || session.customeremail,
-        name: session.customerName || session.customername
+        email: session.customerEmail || session.customeremail || undefined,
+        name: session.customerName || session.customername || undefined
       },
       returnUrl: returnUrl,
       cancelUrl: cancelUrl || returnUrl
