@@ -1,32 +1,60 @@
 # 💳 SaaS Payment Hub (Unificateur de Paiement Multi-SaaS)
 
-**SaaS Payment Hub** est une passerelle et un microservice unifié de paiement conçu pour être auto-hébergé de manière totalement indépendante. Il centralise la gestion de vos passerelles de paiement (LomoPay, Whop, Stripe, Chariow, etc.) et permet à tous vos projets SaaS de s'y connecter via une API unique et standardisée.
+**SaaS Payment Hub** est une passerelle de paiement unifiée, auto-hébergée et multi-tenant. Elle centralise la gestion de toutes vos passerelles de paiement (**LomoPay, Whop, Stripe, Chariow, iKeepay**) et permet à l'ensemble de vos projets SaaS de s'y connecter via une API unique, unifiée et standardisée.
 
 ---
 
 ## 🌟 Avantages Clés
 
-1. **Isolation Complète** : Hébergez ce service sur son propre sous-domaine (ex: `https://pay.votredomaine.com` ou VPS/Docker) sans dépendre du code d'un SaaS particulier.
-2. **Multi-Passerelles Intégrées** :
-   - 📱 **LomoPay** : Mobile Money pour l'Afrique de l'Ouest et Centrale (Wave, Orange Money, MTN MoMo, Moov Money, Djamo) en XOF / XAF.
-   - 💳 **Whop** : Cartes bancaires internationales, Apple Pay, Google Pay, abonnements et checkout global.
-   - ⚡ **Stripe** : Sessions Checkout directes par Carte / Prélèvements (EUR / USD).
-   - 🔄 **Chariow** : Passerelle Mobile Money alternative.
-3. **Multi-Tenant (Multi-SaaS)** : Connectez autant d'applications SaaS que vous voulez avec un système de clés API (`apiKey`) et de secrets de webhook dédiés.
-4. **Dispatcher de Webhooks Centralisé** : Les passerelles envoient leurs webhooks au Hub, qui valide leurs signatures, normalise les données, puis transmet un événement signé HMAC-SHA256 (`payment.succeeded`, `payment.failed`) à votre SaaS cible.
-5. **Zéro Redondance** : Vous n'avez plus jamais besoin de réécrire l'intégration LomoPay ou Whop lorsque vous lancez un nouveau SaaS.
+1. **Isolation Multi-Tenant Complète** :
+   - Connectez autant de sites et de SaaS que vous voulez.
+   - Chaque site possède son propre Dashboard dédié (`/admin/app/:appId`), ses propres passerelles configurées avec leurs clés API indépendantes, ses statistiques de chiffre d'affaires isolées et ses propres URLs de Webhook et de retour.
+2. **Multi-Passerelles Intégrées aux Normes Officielles** :
+   - 📱 **LomoPay** : Mobile Money pour l'Afrique de l'Ouest et Centrale (Wave, Orange Money, MTN MoMo, Moov Money) en **XOF** et **XAF** avec confirmation par Webhook signé HMAC-SHA256.
+   - 💳 **Whop** : Cartes bancaires internationales (Visa, Mastercard, Amex), Apple Pay, Google Pay et checkout global avec conversion intelligente USD/XOF.
+   - ⚡ **Stripe** : Sessions Checkout directes par Carte bancaire (EUR / USD) avec conversion automatique.
+   - 🔄 **Chariow & iKeepay** : Passerelles Mobile Money et cartes alternatives en Afrique.
+3. **Expérience Checkout Mobile-First & Sous-domaine Dédié** :
+   - Page de paiement responsive ultra-rapide adaptée aux smartphones et ordinateurs (`https://checkout.relyx.xyz/checkout/:token`).
+   - Support des sous-domaines personnalisés (`checkout.votredomaine.com`).
+4. **Dispatcher de Webhooks Sécurisé** :
+   - Les passerelles notifient le Hub, qui vérifie les signatures cryptographiques, met à jour la base de données et transmet un webhook unifié signé HMAC-SHA256 à votre SaaS cible.
+5. **Base de Données Hybride & Migrations Automatiques** :
+   - Support natif de **PostgreSQL (Neon.tech / Supabase / Render)** en production et de **SQLite** en développement local, avec auto-migration des colonnes au démarrage.
 
 ---
 
 ## 🏗️ Architecture du Système
 
 ```text
-  [ Votre SaaS 1 (ex: VerifSMS) ] ----\
-  [ Votre SaaS 2 (ex: MonApp)   ] ------> [ SaaS Payment Hub ] <======> [ LomoPay / Whop / Stripe / Chariow ]
-  [ Votre SaaS 3 (ex: FuturSaas)] ----/          |
-                                                 | Webhook unifié & signé HMAC
-                                                 v
-                                    [ Callback vers le SaaS émetteur ]
+┌─────────────────────────┐     ┌─────────────────────────┐     ┌─────────────────────────┐
+│   SaaS 1 (ex: VerifSMS) │     │    SaaS 2 (ex: MonApp)  │     │   SaaS 3 (Futur SaaS)   │
+└────────────┬────────────┘     └────────────┬────────────┘     └────────────┬────────────┘
+             │                               │                               │
+             └───────────────────────┬───────┴───────────────────────────────┘
+                                     │  Appel API (POST /checkout/session)
+                                     ▼
+                      ┌─────────────────────────────┐
+                      │      SaaS Payment Hub       │
+                      │  (https://checkout....xyz)  │
+                      └──────────────┬──────────────┘
+                                     │
+         ┌───────────────────────────┼───────────────────────────┐
+         ▼                           ▼                           ▼
+┌──────────────────┐       ┌──────────────────┐       ┌──────────────────┐
+│     LomoPay      │       │       Whop       │       │  Stripe / Autres │
+│ (Wave, OM, MTN)  │       │ (Cartes, AppleP) │       │ (Cartes Directes)│
+└────────┬─────────┘       └────────┬─────────┘       └────────┬─────────┘
+         │                          │                          │
+         └──────────────────────────┼──────────────────────────┘
+                                    │ Webhook Validé (HMAC-SHA256)
+                                    ▼
+                      ┌─────────────────────────────┐
+                      │    Dispatcher de Webhooks   │
+                      └─────────────┬───────────────┘
+                                    │ Notification POST sécurisée
+                                    ▼
+                      [ Callback vers le SaaS émetteur ]
 ```
 
 ---
@@ -35,204 +63,126 @@
 
 ```text
 saas-payment-hub/
-├── Dockerfile                  # Image Docker optimisée
-├── docker-compose.yml          # Déploiement en 1 commande
+├── Dockerfile                  # Image Docker Alpine multi-stage optimisée
 ├── package.json                # Dépendances Node.js & TypeScript
 ├── tsconfig.json               # Configuration TypeScript
 ├── .env.example                # Modèle de variables d'environnement
-├── README.md                   # Guide complet d'hébergement & d'utilisation
-├── sdk/
-│   ├── client.ts               # SDK TypeScript prêt à l'emploi pour vos SaaS
-│   └── README.md               # Guide d'utilisation du SDK
+├── README.md                   # Présentation générale du Hub
+├── INTEGRATION_GUIDE.md        # Guide pas-à-pas pour connecter vos SaaS (Node, PHP, Python)
+├── public/                     # Fichiers statiques, pages de test et widget SDK
+│   ├── sdk/widget.js           # SDK Pop-up Iframe pour intégration in-app
+│   ├── test-redirect.html      # Page de démonstration redirection
+│   └── test-widget.html        # Page de démonstration modal pop-up
+├── views/                      # Vues EJS (Dashboard Admin & Checkout)
+│   ├── admin/                  # Login, liste des sites, dashboard site & processeurs
+│   └── checkout/               # Page de paiement client mobile-first
 └── src/
-    ├── config/                 # Gestion des configurations et SaaS connectés
-    ├── controllers/            # Contrôleurs API et Webhooks
-    ├── middleware/             # Authentification par clé API pour les SaaS
-    ├── providers/              # Adaptateurs passerelles (LomoPay, Whop, Stripe, Chariow)
-    ├── routes/                 # Définition des routes Express
-    ├── services/               # Logique de paiement, signature et dispatch de webhooks
-    ├── types/                  # Types et interfaces TypeScript
-    └── server.ts               # Point d'entrée du serveur
+    ├── config/                 # Gestion des configurations dynamiques
+    ├── database/               # Connecteur Neon PostgreSQL / SQLite & migrations
+    ├── middleware/             # Authentification API SaaS et Session Admin
+    ├── providers/              # Adaptateurs passerelles (LomoPay, Whop, Stripe, etc.)
+    ├── routes/                 # Routes API, Admin, Webhooks et Checkout
+    ├── services/               # Moteurs de paiement et dispatcher de webhooks
+    └── server.ts               # Point d'entrée Express
 ```
 
 ---
 
 ## ⚙️ Configuration (`.env`)
 
-Créez votre fichier `.env` à partir de `.env.example` :
-
-```bash
-cp .env.example .env
-```
-
-### 1. Enregistrement de vos SaaS (`CLIENT_APPS`)
-Définissez la liste de vos applications clientes au format JSON :
+Créez votre fichier `.env` :
 
 ```env
-CLIENT_APPS='[
-  {
-    "id": "verifsms",
-    "name": "VerifSMS",
-    "apiKey": "vfs_live_sec_7a8b9c1d2e3f4g5h6j",
-    "webhookUrl": "https://verifsms.relyx.xyz/api/webhooks/hub-payment",
-    "webhookSecret": "whsec_vfs_998877665544332211"
-  },
-  {
-    "id": "saas2",
-    "name": "MonDeuxiemeSaas",
-    "apiKey": "saas2_live_sec_8976543210fedcba",
-    "webhookUrl": "https://mondeuxiemesaas.com/api/webhooks/payment",
-    "webhookSecret": "whsec_saas2_1234567890abcdef"
-  }
-]'
-```
+PORT=4000
+NODE_ENV=production
 
-### 2. Clés des Passerelles de Paiement
+# URL publique de votre Hub de paiement
+HUB_BASE_URL=https://checkout.relyx.xyz
 
-```env
-# LomoPay (Mobile Money)
-LOMOPAY_PUBLIC_KEY=votre_cle_publique_lomopay
-LOMOPAY_SECRET_KEY=votre_cle_secrete_lomopay
-LOMOPAY_API_URL=https://lomopay.net/api/v1/payments.php
+# Base de données PostgreSQL (ex: Neon.tech / Render) ou laisser vide pour SQLite
+DATABASE_URL=postgresql://user:password@ep-xyz.neon.tech/neondb?sslmode=require
 
-# Whop (Cartes bancaires)
-WHOP_API_KEY=votre_cle_api_whop
-WHOP_COMPANY_ID=votre_company_id_whop
-WHOP_SANDBOX=false
-
-# Stripe (Optionnel)
-STRIPE_SECRET_KEY=sk_live_...
-STRIPE_WEBHOOK_SECRET=whsec_...
+# Identifiants du Master Admin
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=votre_mot_de_passe_robuste
+ADMIN_JWT_SECRET=un_secret_jwt_tres_long_et_securise
 ```
 
 ---
 
-## 🚀 Déploiement et Hébergement Indépendant
+## 🚀 Déploiement
 
-### Option A : Déploiement avec Docker (Recommandé)
+### Déploiement sur Render.com (Recommandé - Gratuit & Automatique)
 
-Sur votre VPS (Ubuntu, Debian, etc.) :
+1. Connectez votre dépôt GitHub à **Render.com**.
+2. Créez un **Web Service** :
+   - **Build Command :** `npm run build`
+   - **Start Command :** `npm start`
+3. Ajoutez vos variables d'environnement (`DATABASE_URL`, `ADMIN_PASSWORD`, `HUB_BASE_URL`).
+4. Dans **Settings > Custom Domains**, ajoutez votre sous-domaine (ex: `checkout.relyx.xyz`) et configurez le `CNAME` chez votre registraire DNS.
+
+---
+
+## 💻 Intégration Rapide dans votre SaaS
+
+Pour connecter votre site ou votre SaaS au Hub en 2 minutes :
+
+### 1. Créer une session de paiement (`POST /checkout/session`)
 
 ```bash
-# 1. Cloner ou transférer le dossier saas-payment-hub sur votre serveur
-cd saas-payment-hub
-
-# 2. Configurer le .env
-nano .env
-
-# 3. Démarrer avec Docker Compose
-docker compose up -d --build
+curl -X POST https://checkout.relyx.xyz/checkout/session \
+  -H "Content-Type: application/json" \
+  -H "X-Hub-Api-Key: sk_hub_votre_cle_api" \
+  -d '{
+    "amount": 5000,
+    "currency": "FCFA",
+    "orderId": "CMD_987654",
+    "description": "Recharge de crédits",
+    "customerEmail": "client@example.com",
+    "returnUrl": "https://monsite.com/merci?orderId=CMD_987654",
+    "cancelUrl": "https://monsite.com/tarifs"
+  }'
 ```
 
-Votre hub est instantanément opérationnel sur le port `4000`.
-
----
-
-### Option B : Déploiement Node.js / PM2 sur VPS
-
-```bash
-cd saas-payment-hub
-npm install
-npm run build
-pm2 start dist/server.js --name "payment-hub"
-```
-
----
-
-### Option C : Hébergement Cloud (Railway, Render, Coolify, Fly.io)
-
-1. Créez un nouveau service sur votre hébergeur à partir de ce dossier / repository.
-2. Ajoutez les variables d'environnement listées dans `.env.example`.
-3. Commande de build : `npm run build`
-4. Commande de démarrage : `npm start`
-
----
-
-## 🔗 Configuration des Webhooks sur les Passerelles
-
-Sur vos tableaux de bord de paiement, configurez les URLs de notification suivantes pointant vers votre Hub hébergé :
-
-| Passerelle | URL de Webhook à renseigner sur le tableau de bord |
-|---|---|
-| **LomoPay** | `https://pay.votredomaine.com/webhooks/lomopay` |
-| **Whop** | `https://pay.votredomaine.com/webhooks/whop` |
-| **Stripe** | `https://pay.votredomaine.com/webhooks/stripe` |
-| **Chariow** | `https://pay.votredomaine.com/webhooks/chariow` |
-
----
-
-## 📡 Utilisation de l'API
-
-### 1. Créer un paiement
-**Endpoint** : `POST /api/v1/payments/create`  
-**Headers** :
-- `Content-Type: application/json`
-- `X-Hub-Api-Key: votre_cle_api_saas`
-
-**Body JSON** :
-```json
-{
-  "provider": "lomopay",
-  "amount": 2000,
-  "currency": "XOF",
-  "orderId": "tx_987654321",
-  "description": "Recharge 2000 FCFA",
-  "returnUrl": "https://monsaas.com/dashboard/billing?status=success",
-  "customer": {
-    "email": "client@example.com",
-    "name": "Jean Dupont"
-  },
-  "metadata": {
-    "packId": "pack_2000"
-  }
-}
-```
-
-**Réponse JSON** :
+**Réponse reçue :**
 ```json
 {
   "success": true,
-  "paymentId": "pay_lomopay_12345",
-  "orderId": "tx_987654321",
-  "checkoutUrl": "https://lomopay.net/pay/checkout_abc123",
-  "provider": "lomopay",
-  "status": "pending"
+  "token": "7a8b9c1d2e3f4g5h6j...",
+  "checkoutUrl": "https://checkout.relyx.xyz/checkout/7a8b9c1d2e3f4g5h6j..."
 }
+```
+
+Redirigez simplement le client vers `checkoutUrl`.
+
+---
+
+### 2. Valider la commande via le Webhook
+
+Lorsque le client finalise son paiement (Wave, Orange Money, MTN ou Carte bancaire), votre serveur reçoit une notification instantanée :
+
+```javascript
+// Exemple en Node.js / Express
+app.post('/api/webhooks/hub-payment', (req, res) => {
+  const event = req.body;
+
+  if (event.event === 'payment.succeeded') {
+    const orderId = event.orderId;
+    const amount = event.amount;
+
+    console.log(`✅ Paiement reçu pour la commande ${orderId} (${amount} FCFA)`);
+    // TODO : Valider la commande dans votre base de données
+  }
+
+  res.status(200).json({ received: true });
+});
 ```
 
 ---
 
-### 2. Format du Webhook reçu par votre SaaS
+## 📚 Documentation Détaillée
 
-Lorsque le client paie, le Hub transmet cette charge utile à l'URL `webhookUrl` configurée pour votre SaaS :
-
-**Headers reçus** :
-- `X-Hub-Signature: sha256=a1b2c3d4...` (Signature HMAC-SHA256 pour vérifier l'authenticité)
-- `X-Hub-App-Id: verifsms`
-
-**Payload reçu** :
-```json
-{
-  "event": "payment.succeeded",
-  "appId": "verifsms",
-  "paymentId": "pay_lomopay_12345",
-  "orderId": "tx_987654321",
-  "provider": "lomopay",
-  "amount": 2000,
-  "currency": "XOF",
-  "customer": {
-    "email": "client@example.com",
-    "name": "Jean Dupont"
-  },
-  "providerTransactionId": "lomo_tx_998877",
-  "timestamp": 1724238000000
-}
-```
-
----
-
-## 🛡️ Sécurité & Bonnes Pratiques
-
-- **Clés API distinctes** : Chaque SaaS possède sa propre clé API et son secret de webhook.
-- **Vérification cryptographique en temps constant** : Protection contre les attaques temporelles (*timing attacks*).
-- **Pas de stockage de données bancaires** : Aucune donnée sensible de carte n'est stockée par le Hub ; tout passe par les passerelles certifiées PCI-DSS.
+Consultez le guide complet : **[`INTEGRATION_GUIDE.md`](./INTEGRATION_GUIDE.md)** contenant :
+* Des exemples complets prêts à copier-coller pour **Next.js (App & Pages Router)**, **PHP / Laravel / WordPress**, **Python (FastAPI / Django)**.
+* La vérification de la signature cryptographique **HMAC-SHA256** pour sécuriser vos webhooks.
+* L'intégration en mode **Pop-up / Widget Iframe** sur votre site.
