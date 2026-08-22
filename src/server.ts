@@ -35,25 +35,37 @@ app.get("/health", (_req: Request, res: Response) => {
 
 // Setup View Engine
 app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "../views"));
+app.set("views", [path.join(__dirname, "../views"), path.join(process.cwd(), "views")]);
 
 // Setup static files
+app.use("/public", express.static(path.join(process.cwd(), "public")));
 app.use("/public", express.static(path.join(__dirname, "../public")));
 
-// Subdomain checkout router middleware (ex: checkout.localhost:4000 ou checkout.mondomaine.com)
+// Subdomain checkout router middleware (ex: checkout.localhost:4000 ou checkout.relyx.xyz)
 app.use((req: Request, _res: Response, next) => {
   const host = req.get("host") || "";
   const hostname = req.hostname || "";
 
+  // Exceptions : Ne jamais intercepter les routes d'admin, login, API, webhooks, fichiers statiques ou healthcheck
+  if (
+    req.path.startsWith("/admin") ||
+    req.path.startsWith("/api") ||
+    req.path.startsWith("/webhooks") ||
+    req.path.startsWith("/public") ||
+    req.path.startsWith("/checkout") ||
+    req.path === "/login" ||
+    req.path === "/health" ||
+    req.path === "/"
+  ) {
+    return next();
+  }
+
   if (hostname.startsWith("checkout.") || host.startsWith("checkout.")) {
-    if (req.path.startsWith("/checkout") || req.path.startsWith("/public") || req.path === "/health") {
-      return next();
-    }
     if (req.path === "/session" || req.path === "/pay") {
       req.url = `/checkout${req.url}`;
       return next();
     }
-    // Token accédé directement à la racine du sous-domaine (ex: checkout.localhost:4000/token123)
+    // Token accédé directement à la racine du sous-domaine (ex: checkout.relyx.xyz/token123)
     req.url = `/checkout${req.url}`;
     return next();
   }
