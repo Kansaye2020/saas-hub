@@ -31,7 +31,7 @@
     <div class="navbar bg-base-100 shadow-sm border-b border-base-300 sticky top-0 z-30 px-3 sm:px-6">
         <div class="flex-1 flex items-center gap-2">
             <a href="/admin/apps" class="btn btn-ghost px-2 text-base sm:text-lg font-black tracking-tight text-primary flex items-center gap-1.5">
-                <span>💳 SaaS Hub</span>
+                <span>SaaS Hub</span>
             </a>
             
             <!-- Sélecteur de Site (Switcher rapide) -->
@@ -123,18 +123,18 @@
         <div class="bg-base-100 p-1 rounded-xl border border-base-300 shadow-sm mb-6 flex overflow-x-auto whitespace-nowrap gap-1 max-w-full">
             <a href="/admin/app/<%= currentApp.id %>?tab=dashboard" 
                class="flex-1 text-center py-2 px-3 sm:px-4 rounded-lg text-xs sm:text-sm font-bold transition-all shrink-0 <%= activeTab === 'dashboard' ? 'bg-primary text-primary-content shadow-sm' : 'text-base-content/70 hover:text-base-content hover:bg-base-200' %>">
-                📊 Tableau de bord
+                Tableau de bord
             </a>
             <a href="/admin/app/<%= currentApp.id %>?tab=processors" 
                class="flex-1 flex items-center justify-center gap-1.5 text-center py-2 px-3 sm:px-4 rounded-lg text-xs sm:text-sm font-bold transition-all shrink-0 <%= activeTab === 'processors' ? 'bg-primary text-primary-content shadow-sm' : 'text-base-content/70 hover:text-base-content hover:bg-base-200' %>">
-                <span>💳 Processeurs</span>
+                <span>Processeurs</span>
                 <span class="badge badge-xs sm:badge-sm font-mono font-bold <%= activeTab === 'processors' ? 'bg-primary-content/20 text-primary-content border-none' : 'badge-neutral' %>">
                     <%= configuredProviders.length %>
                 </span>
             </a>
             <a href="/admin/app/<%= currentApp.id %>?tab=settings" 
                class="flex-1 text-center py-2 px-3 sm:px-4 rounded-lg text-xs sm:text-sm font-bold transition-all shrink-0 <%= activeTab === 'settings' ? 'bg-primary text-primary-content shadow-sm' : 'text-base-content/70 hover:text-base-content hover:bg-base-200' %>">
-                ⚙️ Clés API & Webhook
+                Clés API & Webhook
             </a>
         </div>
 
