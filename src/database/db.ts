@@ -129,7 +129,10 @@ export const initDB = async () => {
       `);
       try {
         await dbRun(`ALTER TABLE providers_config ADD COLUMN IF NOT EXISTS appId VARCHAR(50) NOT NULL DEFAULT 'verifsms'`);
-      } catch {}
+        await dbRun(`CREATE UNIQUE INDEX IF NOT EXISTS idx_providers_app_provider ON providers_config(appId, providerId)`);
+      } catch (e) {
+        console.log("Postgres providers_config index note:", e);
+      }
       
       await dbRun(`
         CREATE TABLE IF NOT EXISTS client_apps (
@@ -146,7 +149,7 @@ export const initDB = async () => {
       try {
         await dbRun(`ALTER TABLE client_apps ADD COLUMN IF NOT EXISTS returnUrl TEXT`);
         await dbRun(`ALTER TABLE client_apps ADD COLUMN IF NOT EXISTS cancelUrl TEXT`);
-      } catch {}
+      } catch (e) {}
     } else {
       await dbRun(`
         CREATE TABLE IF NOT EXISTS transactions (

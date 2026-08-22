@@ -270,23 +270,23 @@ adminRouter.post("/apps", async (req: Request, res: Response) => {
     if (!apiKey) apiKey = 'sk_hub_' + crypto.randomBytes(16).toString('hex');
     if (!webhookSecret) webhookSecret = 'whsec_' + crypto.randomBytes(16).toString('hex');
     
-    await dbRun(
-      `INSERT INTO client_apps (id, name, apiKey, webhookUrl, webhookSecret, returnUrl, cancelUrl)
-       VALUES (?, ?, ?, ?, ?, ?, ?)
-       ON CONFLICT(id) DO UPDATE SET 
-       name=excluded.name, 
-       apiKey=excluded.apiKey, 
-       webhookUrl=excluded.webhookUrl, 
-       webhookSecret=excluded.webhookSecret,
-       returnUrl=excluded.returnUrl,
-       cancelUrl=excluded.cancelUrl`,
-      [id, name, apiKey, webhookUrl || '', webhookSecret, returnUrl || '', cancelUrl || '']
-    );
+    const existingApp = await dbQuery("SELECT * FROM client_apps WHERE id = ?", [id]);
+    if (existingApp.length > 0) {
+      await dbRun(
+        `UPDATE client_apps SET name = ?, apiKey = ?, webhookUrl = ?, webhookSecret = ?, returnUrl = ?, cancelUrl = ? WHERE id = ?`,
+        [name, apiKey, webhookUrl || '', webhookSecret, returnUrl || '', cancelUrl || '', id]
+      );
+    } else {
+      await dbRun(
+        `INSERT INTO client_apps (id, name, apiKey, webhookUrl, webhookSecret, returnUrl, cancelUrl) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [id, name, apiKey, webhookUrl || '', webhookSecret, returnUrl || '', cancelUrl || '']
+      );
+    }
 
     res.redirect(`/admin/app/${id}?success=` + encodeURIComponent(`Site "${name}" configuré avec succès !`));
-  } catch (error) {
+  } catch (error: any) {
     console.error("Save app error:", error);
-    res.redirect("/admin/apps?error=" + encodeURIComponent("Erreur lors de l'enregistrement du site."));
+    res.redirect("/admin/apps?error=" + encodeURIComponent("Erreur: " + (error?.message || "Erreur lors de l'enregistrement du site.")));
   }
 });
 
@@ -302,9 +302,9 @@ adminRouter.post("/apps/delete", async (req: Request, res: Response) => {
     await dbRun("DELETE FROM providers_config WHERE appId = ?", [appId]);
 
     res.redirect("/admin/apps?success=" + encodeURIComponent(`Le site "${appId}" et ses processeurs ont été supprimés.`));
-  } catch (error) {
+  } catch (error: any) {
     console.error("Delete app error:", error);
-    res.redirect("/admin/apps?error=" + encodeURIComponent("Erreur lors de la suppression du site."));
+    res.redirect("/admin/apps?error=" + encodeURIComponent("Erreur: " + (error?.message || "Erreur lors de la suppression.")));
   }
 });
 
@@ -326,25 +326,26 @@ adminRouter.post("/app/:appId/provider", async (req: Request, res: Response) => 
       return res.redirect(`/admin/app/${appId}?tab=processors&error=` + encodeURIComponent("Ce processeur est déjà configuré pour ce site. Vous pouvez modifier sa configuration."));
     }
 
-    await dbRun(
-      `INSERT INTO providers_config (appId, providerId, isActive, publicKey, secretKey, extraConfig)
-       VALUES (?, ?, ?, ?, ?, ?)
-       ON CONFLICT(appId, providerId) DO UPDATE SET 
-       isActive=excluded.isActive, 
-       publicKey=excluded.publicKey, 
-       secretKey=excluded.secretKey, 
-       extraConfig=excluded.extraConfig`,
-      [appId, providerId, isActive, publicKey || '', secretKey || '', extraConfig || '']
-    );
+    if (isAlreadyConfigured) {
+      await dbRun(
+        `UPDATE providers_config SET isActive = ?, publicKey = ?, secretKey = ?, extraConfig = ? WHERE appId = ? AND providerId = ?`,
+        [isActive, publicKey || '', secretKey || '', extraConfig || '', appId, providerId]
+      );
+    } else {
+      await dbRun(
+        `INSERT INTO providers_config (appId, providerId, isActive, publicKey, secretKey, extraConfig) VALUES (?, ?, ?, ?, ?, ?)`,
+        [appId, providerId, isActive, publicKey || '', secretKey || '', extraConfig || '']
+      );
+    }
 
     const match = ALL_PROVIDERS.find(p => p.id === providerId);
     const providerName = match ? match.name : providerId;
     const statusText = isActive === 1 ? 'Actif' : 'Inactif';
 
     res.redirect(`/admin/app/${appId}?tab=processors&success=` + encodeURIComponent(`Le processeur ${providerName} a été enregistré pour ce site. Statut : ${statusText}.`));
-  } catch (error) {
+  } catch (error: any) {
     console.error("Save site provider error:", error);
-    res.redirect(`/admin/app/${appId}?tab=processors&error=` + encodeURIComponent("Une erreur est survenue lors de l'enregistrement du processeur."));
+    res.redirect(`/admin/app/${appId}?tab=processors&error=` + encodeURIComponent("Erreur: " + (error?.message || "Une erreur est survenue lors de l'enregistrement.")));
   }
 });
 
