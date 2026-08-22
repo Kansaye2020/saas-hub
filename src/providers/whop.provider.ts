@@ -74,16 +74,7 @@ export class WhopProvider implements IPaymentProvider {
         ? "https://sandbox.whop.com/checkout"
         : "https://whop.com/checkout";
 
-      let paymentUrl = checkoutConfig.purchase_url || checkoutConfig.url || `${baseCheckoutUrl}/${checkoutConfig.id}`;
-
-      if (request.customer?.email) {
-        try {
-          const urlObj = new URL(paymentUrl);
-          urlObj.searchParams.set("email", request.customer.email);
-          urlObj.searchParams.set("email.hidden", "1");
-          paymentUrl = urlObj.toString();
-        } catch (e) {}
-      }
+      const paymentUrl = checkoutConfig.purchase_url || checkoutConfig.url || `${baseCheckoutUrl}/${checkoutConfig.id}`;
 
       return {
         success: true,

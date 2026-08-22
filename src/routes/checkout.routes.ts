@@ -3,7 +3,6 @@ import crypto from "crypto";
 import { dbRun, dbGet } from "../database/db";
 import { requireAppAuth, AuthenticatedRequest } from "../middleware/auth";
 import { PaymentService } from "../services/payment.service";
-import { providerRegistry } from "../providers";
 import { getCheckoutUrl, getAppActiveProviders, getClientAppById } from "../config";
 
 export const checkoutRouter = Router();
@@ -43,12 +42,45 @@ checkoutRouter.post("/session", requireAppAuth, async (req: AuthenticatedRequest
   }
 });
 
+// Confirmation de paiement intelligente (Popup vs Redirection directe)
+checkoutRouter.get("/complete", async (req: Request, res: Response) => {
+  const token = (req.query.token as string) || "";
+  const orderId = (req.query.orderId as string) || (req.query.order_id as string) || "";
+
+  try {
+    let session = null;
+    if (token) {
+      session = await dbGet("SELECT * FROM checkout_sessions WHERE token = ?", [token]);
+    } else if (orderId) {
+      session = await dbGet("SELECT * FROM checkout_sessions WHERE orderId = ? ORDER BY createdAt DESC", [orderId]);
+    }
+
+    let returnUrl = session?.returnUrl || session?.returnurl || "/public/test-redirect.html?status=success";
+    let storeName = "Boutique";
+
+    if (session) {
+      const clientApp = await getClientAppById(session.appId);
+      if (clientApp) storeName = clientApp.name;
+    }
+
+    res.render("checkout/complete", {
+      session,
+      token,
+      returnUrl,
+      storeName
+    });
+  } catch (error) {
+    console.error("Error rendering complete page:", error);
+    res.redirect("/public/test-redirect.html?status=success");
+  }
+});
+
 // Render the checkout page (Browser)
 checkoutRouter.get("/:token", async (req: Request, res: Response) => {
   const token = req.params.token;
   const mode = req.query.mode as string; // 'widget' or undefined
 
-  if (!token || token === 'session' || token === 'pay') {
+  if (!token || token === 'session' || token === 'pay' || token === 'complete') {
     return res.status(404).send("Not found");
   }
 
