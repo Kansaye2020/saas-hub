@@ -204,25 +204,26 @@ adminRouter.get("/app/:appId", async (req: Request, res: Response) => {
     const providerRows = await dbQuery("SELECT * FROM providers_config WHERE appId = ?", [appId]);
     
     const configuredProviders = providerRows.map((row: any) => {
-      const meta = ALL_PROVIDERS.find(p => p.id === row.providerId) || {
-        id: row.providerId,
-        name: row.providerId.charAt(0).toUpperCase() + row.providerId.slice(1),
+      const pId = row.providerId || row.providerid || '';
+      const meta = ALL_PROVIDERS.find(p => p.id === pId) || {
+        id: pId,
+        name: pId ? (pId.charAt(0).toUpperCase() + pId.slice(1)) : 'Processeur',
         tagline: "Processeur de paiement personnalisé",
         category: "Paiement",
         publicKeyLabel: "Clé Publique",
         publicKeyPlaceholder: "",
         secretKeyLabel: "Clé Secrète",
         secretKeyPlaceholder: "",
-        hasExtraConfig: !!row.extraConfig,
+        hasExtraConfig: !!(row.extraConfig || row.extraconfig),
         extraConfigLabel: "Configuration additionnelle"
       };
 
       return {
-        providerId: row.providerId,
-        isActive: row.isActive === 1,
-        publicKey: row.publicKey || '',
-        secretKey: row.secretKey || '',
-        extraConfig: row.extraConfig || '',
+        providerId: pId,
+        isActive: (row.isActive ?? row.isactive) === 1,
+        publicKey: row.publicKey || row.publickey || '',
+        secretKey: row.secretKey || row.secretkey || '',
+        extraConfig: row.extraConfig || row.extraconfig || '',
         meta
       };
     });

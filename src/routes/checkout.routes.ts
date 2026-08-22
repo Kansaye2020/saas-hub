@@ -72,10 +72,13 @@ checkoutRouter.get("/:token", async (req: Request, res: Response) => {
     const providers: Array<{ id: string; name: string }> = [];
 
     for (const p of appActiveProviders) {
-      providers.push({
-        id: p.providerId,
-        name: p.providerId.charAt(0).toUpperCase() + p.providerId.slice(1)
-      });
+      const pId = p.providerId || (p as any).providerid || '';
+      if (pId) {
+        providers.push({
+          id: pId,
+          name: pId.charAt(0).toUpperCase() + pId.slice(1)
+        });
+      }
     }
 
     // Fallback if no providers are active yet so the test UI isn't empty

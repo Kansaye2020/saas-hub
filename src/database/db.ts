@@ -35,16 +35,40 @@ function convertToPgSql(sql: string): string {
   return sql.replace(/\?/g, () => `$${i++}`);
 }
 
+// Helper pour normaliser les colonnes PostgreSQL (qui sont en minuscules par défaut)
+function normalizeRow(row: any): any {
+  if (!row || typeof row !== "object") return row;
+  const normalized: any = { ...row };
+  
+  if (row.providerid !== undefined && row.providerId === undefined) normalized.providerId = row.providerid;
+  if (row.appid !== undefined && row.appId === undefined) normalized.appId = row.appid;
+  if (row.isactive !== undefined && row.isActive === undefined) normalized.isActive = row.isactive;
+  if (row.publickey !== undefined && row.publicKey === undefined) normalized.publicKey = row.publickey;
+  if (row.secretkey !== undefined && row.secretKey === undefined) normalized.secretKey = row.secretkey;
+  if (row.extraconfig !== undefined && row.extraConfig === undefined) normalized.extraConfig = row.extraconfig;
+  if (row.apikey !== undefined && row.apiKey === undefined) normalized.apiKey = row.apikey;
+  if (row.webhookurl !== undefined && row.webhookUrl === undefined) normalized.webhookUrl = row.webhookurl;
+  if (row.webhooksecret !== undefined && row.webhookSecret === undefined) normalized.webhookSecret = row.webhooksecret;
+  if (row.returnurl !== undefined && row.returnUrl === undefined) normalized.returnUrl = row.returnurl;
+  if (row.cancelurl !== undefined && row.cancelUrl === undefined) normalized.cancelUrl = row.cancelurl;
+  if (row.orderid !== undefined && row.orderId === undefined) normalized.orderId = row.orderid;
+  if (row.createdat !== undefined && row.createdAt === undefined) normalized.createdAt = row.createdat;
+  if (row.customeremail !== undefined && row.customerEmail === undefined) normalized.customerEmail = row.customeremail;
+  if (row.customername !== undefined && row.customerName === undefined) normalized.customerName = row.customername;
+
+  return normalized;
+}
+
 export const dbQuery = async (sql: string, params: any[] = []): Promise<any[]> => {
   if (isPg && pgPool) {
     const pgSql = convertToPgSql(sql);
     const result = await pgPool.query(pgSql, params);
-    return result.rows;
+    return (result.rows || []).map(normalizeRow);
   } else if (sqliteDb) {
     return new Promise((resolve, reject) => {
       sqliteDb!.all(sql, params, (err, rows) => {
         if (err) reject(err);
-        else resolve(rows || []);
+        else resolve((rows || []).map(normalizeRow));
       });
     });
   }
@@ -69,12 +93,12 @@ export const dbGet = async (sql: string, params: any[] = []): Promise<any> => {
   if (isPg && pgPool) {
     const pgSql = convertToPgSql(sql);
     const result = await pgPool.query(pgSql, params);
-    return result.rows[0];
+    return normalizeRow(result.rows[0]);
   } else if (sqliteDb) {
     return new Promise((resolve, reject) => {
       sqliteDb!.get(sql, params, (err, row) => {
         if (err) reject(err);
-        else resolve(row);
+        else resolve(normalizeRow(row));
       });
     });
   }
