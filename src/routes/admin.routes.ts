@@ -188,6 +188,9 @@ adminRouter.get("/app/:appId", async (req: Request, res: Response) => {
     const countRows = await dbQuery("SELECT COUNT(*) as count FROM transactions WHERE appId = ?", [appId]);
     const totalTransactions = Number(countRows[0]?.count || 0);
 
+    const successCountRows = await dbQuery("SELECT COUNT(*) as count FROM transactions WHERE appId = ? AND status = 'succeeded'", [appId]);
+    const successfulTransactions = Number(successCountRows[0]?.count || 0);
+
     const recentTransactions = await dbQuery("SELECT * FROM transactions WHERE appId = ? ORDER BY createdAt DESC LIMIT 25", [appId]);
 
     // 2. Processeurs configurés pour ce site
@@ -234,6 +237,7 @@ adminRouter.get("/app/:appId", async (req: Request, res: Response) => {
       allApps,
       totalRevenue,
       totalTransactions,
+      successfulTransactions,
       recentTransactions,
       configuredProviders,
       activeProviders,

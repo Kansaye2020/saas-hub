@@ -157,7 +157,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-7 h-7 sm:w-9 sm:h-9 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                     </div>
                     <div class="stat-title text-[11px] font-bold uppercase text-base-content/60">Transactions Réussies</div>
-                    <div class="stat-value text-xl sm:text-2xl font-black text-secondary mt-1"><%= successfulTransactions %></div>
+                    <div class="stat-value text-xl sm:text-2xl font-black text-secondary mt-1"><%= locals.successfulTransactions ?? locals.totalTransactions ?? 0 %></div>
                     <div class="stat-desc text-xs mt-1">Paiements validés</div>
                 </div>
 
