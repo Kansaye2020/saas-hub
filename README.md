@@ -15,7 +15,7 @@
    - ⚡ **Stripe** : Sessions Checkout directes par Carte bancaire (EUR / USD) avec conversion automatique.
    - 🔄 **Chariow & iKeepay** : Passerelles Mobile Money et cartes alternatives en Afrique.
 3. **Expérience Checkout Mobile-First & Sous-domaine Dédié** :
-   - Page de paiement responsive ultra-rapide adaptée aux smartphones et ordinateurs (`https://checkout.relyx.xyz/checkout/:token`).
+   - Page de paiement responsive ultra-rapide adaptée aux smartphones et ordinateurs (`https://checkout.inquart.xyz/checkout/:token`).
    - Support des sous-domaines personnalisés (`checkout.votredomaine.com`).
 4. **Dispatcher de Webhooks Sécurisé** :
    - Les passerelles notifient le Hub, qui vérifie les signatures cryptographiques, met à jour la base de données et transmet un webhook unifié signé HMAC-SHA256 à votre SaaS cible.
@@ -97,7 +97,7 @@ PORT=4000
 NODE_ENV=production
 
 # URL publique de votre Hub de paiement
-HUB_BASE_URL=https://checkout.relyx.xyz
+HUB_BASE_URL=https://checkout.inquart.xyz
 
 # Base de données PostgreSQL (ex: Neon.tech / Render) ou laisser vide pour SQLite
 DATABASE_URL=postgresql://user:password@ep-xyz.neon.tech/neondb?sslmode=require
@@ -119,7 +119,7 @@ ADMIN_JWT_SECRET=un_secret_jwt_tres_long_et_securise
    - **Build Command :** `npm run build`
    - **Start Command :** `npm start`
 3. Ajoutez vos variables d'environnement (`DATABASE_URL`, `ADMIN_PASSWORD`, `HUB_BASE_URL`).
-4. Dans **Settings > Custom Domains**, ajoutez votre sous-domaine (ex: `checkout.relyx.xyz`) et configurez le `CNAME` chez votre registraire DNS.
+4. Dans **Settings > Custom Domains**, ajoutez votre sous-domaine (ex: `checkout.inquart.xyz`) et configurez le `CNAME` chez votre registraire DNS.
 
 ---
 
@@ -130,7 +130,7 @@ Pour connecter votre site ou votre SaaS au Hub en 2 minutes :
 ### 1. Créer une session de paiement (`POST /checkout/session`)
 
 ```bash
-curl -X POST https://checkout.relyx.xyz/checkout/session \
+curl -X POST https://checkout.inquart.xyz/checkout/session \
   -H "Content-Type: application/json" \
   -H "X-Hub-Api-Key: sk_hub_votre_cle_api" \
   -d '{
@@ -149,7 +149,7 @@ curl -X POST https://checkout.relyx.xyz/checkout/session \
 {
   "success": true,
   "token": "7a8b9c1d2e3f4g5h6j...",
-  "checkoutUrl": "https://checkout.relyx.xyz/checkout/7a8b9c1d2e3f4g5h6j..."
+  "checkoutUrl": "https://checkout.inquart.xyz/checkout/7a8b9c1d2e3f4g5h6j..."
 }
 ```
 

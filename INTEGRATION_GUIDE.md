@@ -28,7 +28,7 @@ Ce guide vous explique étape par étape comment connecter n'importe quel site o
 
 ## 🔑 Étape 1 : Récupérer vos identifiants sur le Hub
 
-1. Connectez-vous à votre Hub d'administration : `https://checkout.relyx.xyz/admin` (ou votre URL).
+1. Connectez-vous à votre Hub d'administration : `https://checkout.inquart.xyz/admin` (ou votre URL).
 2. Cliquez sur votre site ou créez-en un nouveau (ex: `verifsms`).
 3. Dans l'onglet **"⚙️ Clés API & Webhook"**, copiez :
    - **`X-Hub-Api-Key`** : Votre clé API secrète (ex: `sk_hub_abcdef123456...`).
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
     const { amount, orderId, customerEmail } = await req.json();
 
     // Appel à votre SaaS Payment Hub
-    const response = await fetch("https://checkout.relyx.xyz/checkout/session", {
+    const response = await fetch("https://checkout.inquart.xyz/checkout/session", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -113,7 +113,7 @@ async function payer() {
 ```php
 <?php
 // Exemple en PHP Vanilla
-$hubUrl = "https://checkout.relyx.xyz/checkout/session";
+$hubUrl = "https://checkout.inquart.xyz/checkout/session";
 $apiKey = "sk_hub_votre_cle_api_ici";
 
 $payload = [
@@ -157,7 +157,7 @@ if (!empty($data['checkoutUrl'])) {
 ```python
 import requests
 
-HUB_URL = "https://checkout.relyx.xyz/checkout/session"
+HUB_URL = "https://checkout.inquart.xyz/checkout/session"
 API_KEY = "sk_hub_votre_cle_api"
 
 def create_payment_session(order_id, amount, email):
@@ -289,7 +289,7 @@ Si vous préférez ouvrir le paiement dans une fenêtre modale sur votre site sa
 
 1. Insérez le script dans votre page HTML :
 ```html
-<script src="https://checkout.relyx.xyz/public/sdk/widget.js"></script>
+<script src="https://checkout.inquart.xyz/public/sdk/widget.js"></script>
 ```
 
 2. Ouvrez le widget avec le `token` reçu :
@@ -299,7 +299,7 @@ const res = await fetch('/api/checkout', { method: 'POST' });
 const { token } = await res.json();
 
 // 2. Ouvrir la modale de paiement
-HubWidget.init({ hubUrl: 'https://checkout.relyx.xyz' });
+HubWidget.init({ hubUrl: 'https://checkout.inquart.xyz' });
 HubWidget.open(token);
 ```
 

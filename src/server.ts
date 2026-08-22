@@ -41,7 +41,7 @@ app.set("views", [path.join(__dirname, "../views"), path.join(process.cwd(), "vi
 app.use("/public", express.static(path.join(process.cwd(), "public")));
 app.use("/public", express.static(path.join(__dirname, "../public")));
 
-// Subdomain checkout router middleware (ex: checkout.localhost:4000 ou checkout.relyx.xyz)
+// Subdomain checkout router middleware (ex: checkout.localhost:4000 ou checkout.inquart.xyz)
 app.use((req: Request, _res: Response, next) => {
   const host = req.get("host") || "";
   const hostname = req.hostname || "";
@@ -65,7 +65,7 @@ app.use((req: Request, _res: Response, next) => {
       req.url = `/checkout${req.url}`;
       return next();
     }
-    // Token accédé directement à la racine du sous-domaine (ex: checkout.relyx.xyz/token123)
+    // Token accédé directement à la racine du sous-domaine (ex: checkout.inquart.xyz/token123)
     req.url = `/checkout${req.url}`;
     return next();
   }

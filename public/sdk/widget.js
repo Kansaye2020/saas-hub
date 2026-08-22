@@ -7,7 +7,7 @@ class HubWidgetClass {
         this.iframe = null;
         this.container = null;
         this.overlay = null;
-        this.hubUrl = window.location.origin || 'https://checkout.relyx.xyz';
+        this.hubUrl = window.location.origin || 'https://checkout.inquart.xyz';
         this._setupPostMessageListener();
     }
 
