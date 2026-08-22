@@ -17,8 +17,8 @@ const CreatePaymentSchema = z.object({
       phone: z.string().optional(),
     })
     .optional(),
-  returnUrl: z.string().url("returnUrl doit être une URL valide"),
-  cancelUrl: z.string().url().optional(),
+  returnUrl: z.string().min(1, "returnUrl requis"),
+  cancelUrl: z.string().optional(),
   metadata: z.record(z.any()).optional(),
 });
 

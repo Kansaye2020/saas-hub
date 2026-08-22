@@ -12,97 +12,114 @@ export class WhopProvider implements IPaymentProvider {
     const isSandbox = config.whop.isSandbox;
 
     if (!apiKey || !companyId) {
-      throw new Error(`WHOP_API_KEY ou WHOP_COMPANY_ID non configurés pour le site ${request.appId}.`);
+      return {
+        success: false,
+        error: `Whop : Company ID ou API Key non configurés pour le site "${request.appId}". Veuillez les renseigner dans l'onglet Processeurs de ce site.`
+      };
     }
 
-    // Calcul du montant USD si la devise fournie est XOF (1 USD ~ 600 XOF par défaut si non spécifié)
-    let amountUSD = request.amount;
-    if ((request.currency || "").toUpperCase() === "XOF") {
-      amountUSD = Number((request.amount / 600).toFixed(2));
+    // Normalisation de la devise et conversion USD si nécessaire
+    let currency = (request.currency || "XOF").toUpperCase();
+    if (currency === "FCFA" || currency === "CFA") currency = "XOF";
+
+    let amountUSD = Number(request.amount);
+    if (currency === "XOF" || currency === "XAF") {
+      amountUSD = Math.max(1, Number((request.amount / 600).toFixed(2)));
+    } else if (currency === "EUR") {
+      amountUSD = Number((request.amount * 1.08).toFixed(2));
     }
 
     const apiBaseUrl = isSandbox
       ? "https://sandbox-api.whop.com/api/v1/checkout_configurations"
       : "https://api.whop.com/api/v1/checkout_configurations";
 
-    const response = await fetch(apiBaseUrl, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        redirect_url: request.returnUrl,
-        plan: {
-          company_id: companyId,
-          initial_price: amountUSD,
-          plan_type: "one_time",
-          currency: "usd",
-        },
-        metadata: {
-          appId: request.appId,
-          orderId: request.orderId,
-          originalAmount: request.amount.toString(),
-          originalCurrency: request.currency || "XOF",
-          ...(request.metadata || {}),
-        },
-      }),
-    });
+    try {
+      console.log(`[Whop] Envoi de la requête pour ${request.appId}: ${amountUSD} USD`);
 
-    if (!response.ok) {
-      const errorText = await response.text();
+      const response = await fetch(apiBaseUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey.trim()}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          redirect_url: request.returnUrl,
+          plan: {
+            company_id: companyId.trim(),
+            initial_price: amountUSD,
+            plan_type: "one_time",
+            currency: "usd",
+          },
+          metadata: {
+            appId: request.appId,
+            orderId: request.orderId,
+            originalAmount: request.amount.toString(),
+            originalCurrency: request.currency || "XOF",
+            ...(request.metadata || {}),
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("[Whop] Erreur API:", response.status, errorText);
+        return {
+          success: false,
+          error: `Erreur API Whop (${response.status}): ${errorText.substring(0, 200)}`,
+        };
+      }
+
+      const checkoutConfig: any = await response.json();
+      const baseCheckoutUrl = isSandbox
+        ? "https://sandbox.whop.com/checkout"
+        : "https://whop.com/checkout";
+
+      let paymentUrl = checkoutConfig.purchase_url || checkoutConfig.url || `${baseCheckoutUrl}/${checkoutConfig.id}`;
+
+      if (request.customer?.email) {
+        try {
+          const urlObj = new URL(paymentUrl);
+          urlObj.searchParams.set("email", request.customer.email);
+          urlObj.searchParams.set("email.hidden", "1");
+          paymentUrl = urlObj.toString();
+        } catch (e) {}
+      }
+
+      return {
+        success: true,
+        paymentId: checkoutConfig.id,
+        orderId: request.orderId,
+        checkoutUrl: paymentUrl,
+        provider: this.name,
+        status: "pending",
+        rawProviderData: checkoutConfig,
+      };
+    } catch (networkError: any) {
+      console.error("[Whop] Erreur réseau / API:", networkError);
       return {
         success: false,
-        error: `Erreur API Whop (${response.status}): ${errorText}`,
+        error: `Erreur de connexion à l'API Whop: ${networkError.message || networkError}`
       };
     }
-
-    const checkoutConfig: any = await response.json();
-    const baseCheckoutUrl = isSandbox
-      ? "https://sandbox.whop.com/checkout"
-      : "https://whop.com/checkout";
-
-    let paymentUrl = checkoutConfig.purchase_url || `${baseCheckoutUrl}/${checkoutConfig.id}`;
-
-    if (request.customer?.email) {
-      try {
-        const urlObj = new URL(paymentUrl);
-        urlObj.searchParams.set("email", request.customer.email);
-        urlObj.searchParams.set("email.hidden", "1");
-        paymentUrl = urlObj.toString();
-      } catch (e) {}
-    }
-
-    return {
-      success: true,
-      paymentId: checkoutConfig.id,
-      orderId: request.orderId,
-      checkoutUrl: paymentUrl,
-      provider: this.name,
-      status: "pending",
-      rawProviderData: checkoutConfig,
-    };
   }
 
   async verifyWebhookSignature(_rawBody: string, _headers: Record<string, string | string[] | undefined>): Promise<boolean> {
-    // Whop signature verification si en-tête fourni, ou validation par défaut
     return true;
   }
 
   async parseWebhookEvent(rawBody: string, _headers: Record<string, string | string[] | undefined>): Promise<UnifiedWebhookPayload | null> {
     const body = JSON.parse(rawBody);
 
-    if (body.type !== "payment.succeeded") {
+    if (body.type !== "payment.succeeded" && body.action !== "payment.succeeded") {
       return null;
     }
 
-    const paymentData = body.data || {};
+    const paymentData = body.data || body;
     const metadata = paymentData.metadata || {};
     const appId = metadata.appId || "verifsms";
     const orderId = metadata.orderId || paymentData.id;
     const providerTransactionId = paymentData.id;
 
-    // Récupérer le montant initial ou converti
     const originalAmount = metadata.originalAmount ? Number(metadata.originalAmount) : (paymentData.amount || 0);
     const originalCurrency = metadata.originalCurrency || "USD";
 

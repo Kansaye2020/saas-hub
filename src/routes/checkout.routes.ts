@@ -107,34 +107,47 @@ checkoutRouter.post("/pay", async (req: Request, res: Response) => {
     const session = await dbGet("SELECT * FROM checkout_sessions WHERE token = ?", [token]);
     
     if (!session) {
-      return res.status(404).json({ error: "Session not found" });
+      return res.status(404).json({ error: "Session introuvable ou expirée" });
+    }
+
+    const host = req.get("host") || "localhost:4000";
+    const protocol = req.protocol || "https";
+    let returnUrl = session.returnUrl || session.returnurl;
+    if (!returnUrl || !returnUrl.startsWith("http")) {
+      returnUrl = `${protocol}://${host}${returnUrl && returnUrl.startsWith("/") ? returnUrl : "/public/test-redirect.html?status=success"}`;
+    }
+
+    let cancelUrl = session.cancelUrl || session.cancelurl;
+    if (cancelUrl && !cancelUrl.startsWith("http")) {
+      cancelUrl = `${protocol}://${host}${cancelUrl.startsWith("/") ? cancelUrl : "/" + cancelUrl}`;
     }
 
     // Call PaymentService directly
     const result = await PaymentService.createPayment({
-      appId: session.appId,
+      appId: session.appId || session.appid,
       provider: provider,
       amount: Number(session.amount),
-      currency: session.currency,
-      description: session.description,
-      orderId: session.orderId,
+      currency: session.currency || "XOF",
+      description: session.description || `Commande #${session.orderId || session.orderid}`,
+      orderId: session.orderId || session.orderid,
       customer: {
-        email: session.customerEmail,
-        name: session.customerName
+        email: session.customerEmail || session.customeremail,
+        name: session.customerName || session.customername
       },
-      returnUrl: session.returnUrl,
-      cancelUrl: session.cancelUrl
+      returnUrl: returnUrl,
+      cancelUrl: cancelUrl || returnUrl
     });
 
-    if (result.success) {
+    if (result.success && result.checkoutUrl) {
       // Update session status and provider
       await dbRun("UPDATE checkout_sessions SET provider = ?, status = 'processing' WHERE token = ?", [provider, token]);
       return res.json({ checkoutUrl: result.checkoutUrl });
     } else {
-      return res.status(400).json({ error: result.error || "Échec de l'initialisation du paiement" });
+      console.error(`[Checkout Pay] Échec initialisation avec le processeur ${provider}:`, result.error);
+      return res.status(400).json({ error: result.error || "Échec de l'initialisation du paiement auprès du processeur" });
     }
   } catch (error: any) {
     console.error("Checkout pay error:", error);
-    res.status(500).json({ error: error.message || "Internal server error" });
+    res.status(500).json({ error: error.message || "Erreur interne lors du paiement" });
   }
 });

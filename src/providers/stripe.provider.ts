@@ -20,10 +20,10 @@ export class StripeProvider implements IPaymentProvider {
     }
 
     if (!secretKey) {
-      throw new Error(`STRIPE_SECRET_KEY non configuré pour le site ${appId}.`);
+      throw new Error(`Stripe : Secret Key non configurée pour le site "${appId}". Veuillez la renseigner dans l'onglet Processeurs de ce site.`);
     }
 
-    const client = new Stripe(secretKey, {
+    const client = new Stripe(secretKey.trim(), {
       apiVersion: "2024-06-20",
     });
 
@@ -31,46 +31,63 @@ export class StripeProvider implements IPaymentProvider {
   }
 
   async createPayment(request: CreatePaymentRequest): Promise<UnifiedPaymentResponse> {
-    const { client } = await this.getStripeClient(request.appId);
+    try {
+      const { client } = await this.getStripeClient(request.appId);
 
-    const currency = (request.currency || "EUR").toLowerCase();
-    // Stripe requiert les montants en centimes pour EUR / USD
-    const unitAmount = Math.round(request.amount * 100);
+      let currency = (request.currency || "EUR").toLowerCase();
+      let unitAmount = Math.round(Number(request.amount) * 100);
 
-    const session = await client.checkout.sessions.create({
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price_data: {
-            currency,
-            product_data: {
-              name: request.description || `Commande #${request.orderId}`,
+      // Conversion FCFA / XOF vers EUR pour Stripe si nécessaire
+      if (currency === "fcfa" || currency === "cfa" || currency === "xof" || currency === "xaf") {
+        currency = "eur";
+        unitAmount = Math.max(50, Math.round((Number(request.amount) / 655.957) * 100)); // Min 50 centimes EUR
+      }
+
+      console.log(`[Stripe] Création checkout session pour ${request.appId}: ${unitAmount / 100} ${currency}`);
+
+      const session = await client.checkout.sessions.create({
+        payment_method_types: ["card"],
+        line_items: [
+          {
+            price_data: {
+              currency,
+              product_data: {
+                name: request.description || `Commande #${request.orderId}`,
+              },
+              unit_amount: unitAmount,
             },
-            unit_amount: unitAmount,
+            quantity: 1,
           },
-          quantity: 1,
+        ],
+        mode: "payment",
+        success_url: request.returnUrl,
+        cancel_url: request.cancelUrl || request.returnUrl,
+        customer_email: request.customer?.email || undefined,
+        metadata: {
+          appId: request.appId,
+          orderId: request.orderId,
+          originalAmount: request.amount.toString(),
+          originalCurrency: request.currency || "XOF",
+          ...(request.metadata || {}),
         },
-      ],
-      mode: "payment",
-      success_url: request.returnUrl,
-      cancel_url: request.cancelUrl || request.returnUrl,
-      customer_email: request.customer?.email,
-      metadata: {
-        appId: request.appId,
-        orderId: request.orderId,
-        ...(request.metadata || {}),
-      },
-    });
+      });
 
-    return {
-      success: true,
-      paymentId: session.id,
-      orderId: request.orderId,
-      checkoutUrl: session.url || undefined,
-      provider: this.name,
-      status: "pending",
-      rawProviderData: session,
-    };
+      return {
+        success: true,
+        paymentId: session.id,
+        orderId: request.orderId,
+        checkoutUrl: session.url || undefined,
+        provider: this.name,
+        status: "pending",
+        rawProviderData: session,
+      };
+    } catch (error: any) {
+      console.error("[Stripe] Erreur initialisation paiement:", error);
+      return {
+        success: false,
+        error: `Erreur Stripe: ${error.message || error}`
+      };
+    }
   }
 
   async verifyWebhookSignature(rawBody: string, headers: Record<string, string | string[] | undefined>): Promise<boolean> {
@@ -114,14 +131,17 @@ export class StripeProvider implements IPaymentProvider {
       const appId = metadata.appId || "verifsms";
       const orderId = metadata.orderId || session.id;
 
+      const originalAmount = metadata.originalAmount ? Number(metadata.originalAmount) : (session.amount_total ? session.amount_total / 100 : 0);
+      const originalCurrency = metadata.originalCurrency || (session.currency || "EUR").toUpperCase();
+
       return {
         event: "payment.succeeded",
         appId,
         paymentId: session.id,
         orderId,
         provider: this.name,
-        amount: session.amount_total ? session.amount_total / 100 : 0,
-        currency: (session.currency || "EUR").toUpperCase(),
+        amount: originalAmount,
+        currency: originalCurrency,
         customer: {
           email: session.customer_details?.email || session.customer_email || undefined,
           name: session.customer_details?.name || undefined,

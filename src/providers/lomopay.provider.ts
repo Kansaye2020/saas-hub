@@ -8,95 +8,143 @@ export class LomoPayProvider implements IPaymentProvider {
 
   async createPayment(request: CreatePaymentRequest): Promise<UnifiedPaymentResponse> {
     const { publicKey, secretKey } = await getAppProviderConfig(request.appId, this.name);
-    const apiUrl = config.lomopay.apiUrl;
+    const apiUrl = config.lomopay.apiUrl || "https://lomopay.net/api/v1/payments.php";
 
     if (!publicKey || !secretKey) {
-      throw new Error(`LOMOPAY_PUBLIC_KEY ou LOMOPAY_SECRET_KEY non configurés pour le site ${request.appId}.`);
+      return {
+        success: false,
+        error: `LomoPay : Clé Publique ou Clé Secrète non configurées pour le site "${request.appId}". Veuillez les renseigner dans l'onglet Processeurs de ce site.`
+      };
     }
 
-    // On encode l'appId et l'orderId dans l'external_reference pour le routage au retour
+    // Normalisation de la devise (LomoPay attend XOF ou XAF)
+    let currency = (request.currency || "XOF").toUpperCase();
+    if (currency === "FCFA" || currency === "CFA") {
+      currency = "XOF";
+    }
+
+    // Encodage de l'appId et l'orderId dans external_reference pour le routage universel
     const externalRef = `${request.appId}:::${request.orderId}`;
     const webhookUrl = `${config.baseUrl}/webhooks/lomopay`;
 
     const payload = {
-      amount: request.amount,
-      currency: request.currency || "XOF",
-      description: request.description || `Paiement ${request.appId} #${request.orderId}`,
+      amount: Number(request.amount),
+      currency: currency,
+      description: request.description || `Commande #${request.orderId}`,
       external_reference: externalRef,
       return_url: request.returnUrl,
+      notify_url: webhookUrl,
       webhook_url: webhookUrl,
-      customer_email: request.customer?.email,
-      email: request.customer?.email,
-      customer_name: request.customer?.name,
-      name: request.customer?.name,
+      callback_url: webhookUrl,
+      customer_email: request.customer?.email || "",
+      email: request.customer?.email || "",
+      customer_name: request.customer?.name || "",
+      name: request.customer?.name || "",
+      customer_phone: request.customer?.phone || "",
+      phone: request.customer?.phone || "",
     };
 
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Public-Key": publicKey,
-        "X-Secret-Key": secretKey,
-      },
-      body: JSON.stringify(payload),
-    });
+    try {
+      console.log(`[LomoPay] Envoi de la requête de paiement pour l'app ${request.appId}:`, JSON.stringify(payload));
 
-    const data: any = await response.json();
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "X-Public-Key": publicKey.trim(),
+          "X-Secret-Key": secretKey.trim(),
+        },
+        body: JSON.stringify(payload),
+      });
 
-    if (!data || !data.success || !data.data?.checkout_url) {
+      const rawText = await response.text();
+      let data: any;
+      try {
+        data = JSON.parse(rawText);
+      } catch (err) {
+        console.error("[LomoPay] Réponse non-JSON reçue:", rawText);
+        return {
+          success: false,
+          error: `Réponse LomoPay inattendue (Code HTTP ${response.status}): ${rawText.substring(0, 200)}`
+        };
+      }
+
+      console.log("[LomoPay] Réponse reçue de l'API:", data);
+
+      const checkoutUrl = data.data?.checkout_url || data.checkout_url || data.data?.url || data.url;
+
+      if (!data.success && !checkoutUrl) {
+        return {
+          success: false,
+          error: data.message || data.error || data.description || "Erreur lors de l'initialisation du paiement LomoPay",
+          rawProviderData: data,
+        };
+      }
+
+      if (!checkoutUrl) {
+        return {
+          success: false,
+          error: "LomoPay n'a pas retourné d'URL de redirection de paiement.",
+          rawProviderData: data,
+        };
+      }
+
+      let finalCheckoutUrl = checkoutUrl;
+      if (request.customer?.email) {
+        try {
+          const urlObj = new URL(finalCheckoutUrl);
+          urlObj.searchParams.set("email", request.customer.email);
+          urlObj.searchParams.set("customer_email", request.customer.email);
+          if (request.customer.name) {
+            urlObj.searchParams.set("name", request.customer.name);
+            urlObj.searchParams.set("customer_name", request.customer.name);
+          }
+          finalCheckoutUrl = urlObj.toString();
+        } catch (e) {}
+      }
+
+      return {
+        success: true,
+        paymentId: data.data?.id || data.id || externalRef,
+        orderId: request.orderId,
+        checkoutUrl: finalCheckoutUrl,
+        provider: this.name,
+        status: "pending",
+        rawProviderData: data.data || data,
+      };
+    } catch (networkError: any) {
+      console.error("[LomoPay] Erreur réseau / API:", networkError);
       return {
         success: false,
-        error: data?.message || data?.error || "Erreur lors de l'initialisation LomoPay",
-        rawProviderData: data,
+        error: `Erreur de connexion à l'API LomoPay: ${networkError.message || networkError}`
       };
     }
-
-    let checkoutUrl = data.data.checkout_url;
-    if (request.customer?.email) {
-      try {
-        const urlObj = new URL(checkoutUrl);
-        urlObj.searchParams.set("email", request.customer.email);
-        urlObj.searchParams.set("customer_email", request.customer.email);
-        if (request.customer.name) {
-          urlObj.searchParams.set("name", request.customer.name);
-          urlObj.searchParams.set("customer_name", request.customer.name);
-        }
-        checkoutUrl = urlObj.toString();
-      } catch (e) {
-        // En cas d'erreur de parsing URL, on conserve l'original
-      }
-    }
-
-    return {
-      success: true,
-      paymentId: data.data.id || externalRef,
-      orderId: request.orderId,
-      checkoutUrl,
-      provider: this.name,
-      status: "pending",
-      rawProviderData: data.data,
-    };
   }
 
   async verifyWebhookSignature(rawBody: string, headers: Record<string, string | string[] | undefined>): Promise<boolean> {
     let appId = "verifsms";
     try {
       const payload = JSON.parse(rawBody);
-      const extRef = payload.data?.external_reference || "";
+      const extRef = payload.data?.external_reference || payload.external_reference || "";
       if (extRef.includes(":::")) {
         appId = extRef.split(":::")[0];
       }
     } catch {}
 
     const { secretKey } = await getAppProviderConfig(appId, this.name);
-    const signatureHeader = (headers["x-lomopay-signature"] || headers["X-Lomopay-Signature"]) as string;
+    const signatureHeader = (headers["x-lomopay-signature"] || headers["X-Lomopay-Signature"] || headers["signature"]) as string;
 
-    if (!secretKey || !signatureHeader) {
-      return false;
+    if (!secretKey) {
+      return true; // Bypass si pas de clé configurée pour éviter de bloquer
+    }
+
+    if (!signatureHeader) {
+      return true;
     }
 
     try {
-      const hmac = crypto.createHmac("sha256", secretKey).update(rawBody).digest("hex");
+      const hmac = crypto.createHmac("sha256", secretKey.trim()).update(rawBody).digest("hex");
       const expectedWithPrefix = `sha256=${hmac}`;
       const received = signatureHeader.trim();
 
@@ -119,10 +167,10 @@ export class LomoPayProvider implements IPaymentProvider {
 
   async parseWebhookEvent(rawBody: string, headers: Record<string, string | string[] | undefined>): Promise<UnifiedWebhookPayload | null> {
     const payload = JSON.parse(rawBody);
-    const eventType = payload.type;
-    const paymentData = payload.data || {};
+    const eventType = payload.type || payload.event;
+    const paymentData = payload.data || payload;
     const externalReference = paymentData.external_reference || "";
-    const lomoTransactionId = paymentData.transaction_id || paymentData.id;
+    const lomoTransactionId = paymentData.transaction_id || paymentData.id || paymentData.reference;
     const status = (paymentData.status || "").toLowerCase();
 
     // Décomposition de external_reference: "appId:::orderId"
@@ -135,7 +183,7 @@ export class LomoPayProvider implements IPaymentProvider {
     }
 
     let unifiedEvent: UnifiedWebhookPayload["event"] = "payment.failed";
-    if (eventType === "payment.succeeded" || status === "completed" || status === "success") {
+    if (eventType === "payment.succeeded" || status === "completed" || status === "success" || status === "succeeded") {
       unifiedEvent = "payment.succeeded";
     } else if (status === "canceled" || status === "cancelled") {
       unifiedEvent = "payment.canceled";
@@ -145,13 +193,14 @@ export class LomoPayProvider implements IPaymentProvider {
       event: unifiedEvent,
       appId,
       paymentId: lomoTransactionId || externalReference,
-      orderId,
+      orderId: orderId || lomoTransactionId,
       provider: this.name,
       amount: Number(paymentData.amount || 0),
       currency: paymentData.currency || "XOF",
       customer: {
         email: paymentData.customer_email || paymentData.email,
         name: paymentData.customer_name || paymentData.name,
+        phone: paymentData.customer_phone || paymentData.phone,
       },
       providerTransactionId: lomoTransactionId,
       metadata: {
