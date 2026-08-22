@@ -2,137 +2,83 @@
 <html lang="fr" data-theme="light">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mes Applications & Sites | SaaS Payment Hub</title>
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.10.2/dist/full.min.css" rel="stylesheet" type="text/css" />
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        :root, [data-theme="light"] {
-            color-scheme: light;
-            --color-base-100: oklch(100% 0 0);
-            --color-base-200: oklch(98% 0 0);
-            --color-base-300: oklch(95% 0 0);
-            --color-base-content: oklch(21% 0.006 285.885);
-            --color-primary: oklch(45% 0.24 277.023);
-            --color-primary-content: oklch(93% 0.034 272.788);
-            --color-secondary: oklch(65% 0.241 354.308);
-            --color-secondary-content: oklch(94% 0.028 342.258);
-            --color-accent: oklch(77% 0.152 181.912);
-            --color-accent-content: oklch(38% 0.063 188.416);
-            --color-neutral: oklch(14% 0.005 285.823);
-            --color-neutral-content: oklch(92% 0.004 286.32);
-            --color-info: oklch(74% 0.16 232.661);
-            --color-info-content: oklch(29% 0.066 243.157);
-            --color-success: oklch(76% 0.177 163.223);
-            --color-success-content: oklch(37% 0.077 168.94);
-            --color-warning: oklch(82% 0.189 84.429);
-            --color-warning-content: oklch(41% 0.112 45.904);
-            --color-error: oklch(71% 0.194 13.428);
-            --color-error-content: oklch(27% 0.105 12.094);
-            --radius-selector: 0.5rem;
-            --radius-field: 0.25rem;
-            --radius-box: 0.5rem;
-            --size-selector: 0.25rem;
-            --size-field: 0.25rem;
-            --border: 1px;
-            --depth: 1;
-            --noise: 0;
-
-            /* DaisyUI 4 properties */
-            --p: 45% 0.24 277.023;
-            --pc: 93% 0.034 272.788;
-            --s: 65% 0.241 354.308;
-            --sc: 94% 0.028 342.258;
-            --a: 77% 0.152 181.912;
-            --ac: 38% 0.063 188.416;
-            --n: 14% 0.005 285.823;
-            --nc: 92% 0.004 286.32;
-            --b1: 100% 0 0;
-            --b2: 98% 0 0;
-            --b3: 95% 0 0;
-            --bc: 21% 0.006 285.885;
-            --in: 74% 0.16 232.661;
-            --inc: 29% 0.066 243.157;
-            --su: 76% 0.177 163.223;
-            --suc: 37% 0.077 168.94;
-            --wa: 82% 0.189 84.429;
-            --wac: 41% 0.112 45.904;
-            --er: 71% 0.194 13.428;
-            --erc: 27% 0.105 12.094;
-            --rounded-box: 0.5rem;
-            --rounded-btn: 0.25rem;
-            --rounded-badge: 0.5rem;
-            --tab-radius: 0.5rem;
-        }
         body { font-family: 'Inter', sans-serif; }
+        input, button, a { -webkit-tap-highlight-color: transparent; }
     </style>
 </head>
-<body class="bg-base-200 min-h-screen">
+<body class="bg-base-200 min-h-screen antialiased">
     
-    <!-- Navbar -->
-    <div class="navbar bg-base-100 shadow-sm border-b border-base-300 sticky top-0 z-30">
+    <!-- Navbar Responsive -->
+    <div class="navbar bg-base-100 shadow-sm border-b border-base-300 sticky top-0 z-30 px-3 sm:px-6">
         <div class="flex-1">
-            <a href="/admin/apps" class="btn btn-ghost text-xl font-black tracking-tight text-primary flex items-center gap-2">
-                <span>SaaS Payment Hub</span>
+            <a href="/admin/apps" class="btn btn-ghost px-2 text-base sm:text-lg font-black tracking-tight text-primary flex items-center gap-1.5 sm:gap-2">
+                <span>💳 SaaS Hub</span>
             </a>
         </div>
-        <div class="flex-none gap-2">
-            <ul class="menu menu-horizontal px-1 font-medium items-center gap-1">
-                <li><a class="active font-bold text-primary" href="/admin/apps">Mes Applications (Sites)</a></li>
-                <li><a href="/admin/logout" class="text-error font-semibold hover:bg-error/10">Déconnexion</a></li>
-            </ul>
+        <div class="flex-none flex items-center gap-1">
+            <a href="/admin/apps" class="btn btn-ghost btn-sm text-primary font-bold text-xs sm:text-sm">
+                Applications
+            </a>
+            <a href="/admin/logout" class="btn btn-ghost btn-sm text-error font-bold text-xs sm:text-sm hover:bg-error/10">
+                Déconnexion
+            </a>
         </div>
     </div>
 
-    <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+    <div class="max-w-7xl mx-auto p-3 sm:p-6 lg:p-8">
         
         <!-- Header -->
-        <div class="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
             <div>
-                <h1 class="text-3xl font-extrabold text-base-content">Mes Sites & SaaS Enregistrés</h1>
-                <p class="mt-1 text-sm text-base-content/70">Sélectionnez un site pour ouvrir son tableau de bord, gérer ses transactions et configurer ses passerelles de paiement.</p>
+                <h1 class="text-2xl sm:text-3xl font-black text-base-content tracking-tight">Mes Sites & SaaS Enregistrés</h1>
+                <p class="mt-1 text-xs sm:text-sm text-base-content/70">Sélectionnez un site pour ouvrir son tableau de bord et gérer ses paiements.</p>
             </div>
-            <button class="btn btn-primary shadow-sm gap-2" onclick="openAddAppModal()">
+            <button class="btn btn-primary shadow-sm gap-2 min-h-[44px] h-11 w-full sm:w-auto font-bold rounded-xl" onclick="openAddAppModal()">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                 Ajouter un site / SaaS
             </button>
         </div>
 
-        <!-- Global Summary Stats Bar -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-            <div class="stat bg-base-100 rounded-2xl shadow-sm border border-base-300 p-5">
+        <!-- Global Summary Stats Bar (Mobile Optimized) -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
+            <div class="stat bg-base-100 rounded-2xl shadow-sm border border-base-300 p-4 sm:p-5">
                 <div class="stat-figure text-primary">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 stroke-current" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 sm:h-8 sm:w-8 stroke-current" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
                 </div>
-                <div class="stat-title text-xs font-bold uppercase text-base-content/60">Sites Enregistrés</div>
-                <div class="stat-value text-2xl font-black mt-0.5"><%= locals.totalAppsCount || apps.length %></div>
+                <div class="stat-title text-[11px] font-bold uppercase text-base-content/60">Sites Enregistrés</div>
+                <div class="stat-value text-xl sm:text-2xl font-black mt-0.5"><%= locals.totalAppsCount || apps.length %></div>
                 <div class="stat-desc text-xs mt-0.5">Espaces SaaS actifs</div>
             </div>
 
-            <div class="stat bg-base-100 rounded-2xl shadow-sm border border-base-300 p-5">
+            <div class="stat bg-base-100 rounded-2xl shadow-sm border border-base-300 p-4 sm:p-5">
                 <div class="stat-figure text-success">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 stroke-current" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 sm:h-8 sm:w-8 stroke-current" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 </div>
-                <div class="stat-title text-xs font-bold uppercase text-base-content/60">Revenu Global (Tous Sites)</div>
-                <div class="stat-value text-2xl font-black text-success mt-0.5"><%= (locals.totalGlobalRevenue || 0).toLocaleString() %> FCFA</div>
+                <div class="stat-title text-[11px] font-bold uppercase text-base-content/60">Revenu Global</div>
+                <div class="stat-value text-xl sm:text-2xl font-black text-success mt-0.5"><%= (locals.totalGlobalRevenue || 0).toLocaleString() %> FCFA</div>
                 <div class="stat-desc text-xs mt-0.5">Total cumulé encaissé</div>
             </div>
 
-            <div class="stat bg-base-100 rounded-2xl shadow-sm border border-base-300 p-5">
+            <div class="stat bg-base-100 rounded-2xl shadow-sm border border-base-300 p-4 sm:p-5">
                 <div class="stat-figure text-secondary">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 stroke-current" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 sm:h-8 sm:w-8 stroke-current" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                 </div>
-                <div class="stat-title text-xs font-bold uppercase text-base-content/60">Transactions Réussies</div>
-                <div class="stat-value text-2xl font-black text-secondary mt-0.5"><%= locals.totalGlobalTransactions || 0 %></div>
+                <div class="stat-title text-[11px] font-bold uppercase text-base-content/60">Transactions Réussies</div>
+                <div class="stat-value text-xl sm:text-2xl font-black text-secondary mt-0.5"><%= locals.totalGlobalTransactions || 0 %></div>
                 <div class="stat-desc text-xs mt-0.5">Paiements validés</div>
             </div>
         </div>
 
         <% if (locals.successMessage) { %>
-            <div class="alert alert-success mb-6 shadow-sm flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <div class="alert alert-success mb-5 shadow-sm flex items-center justify-between p-3 sm:p-4 rounded-xl text-xs sm:text-sm">
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     <span class="font-medium"><%= successMessage %></span>
                 </div>
                 <a href="/admin/apps" class="btn btn-ghost btn-xs">✕</a>
@@ -140,9 +86,9 @@
         <% } %>
 
         <% if (locals.errorMessage) { %>
-            <div class="alert alert-error mb-6 shadow-sm flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <div class="alert alert-error mb-5 shadow-sm flex items-center justify-between p-3 sm:p-4 rounded-xl text-xs sm:text-sm">
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     <span class="font-medium"><%= errorMessage %></span>
                 </div>
                 <a href="/admin/apps" class="btn btn-ghost btn-xs">✕</a>
@@ -150,38 +96,39 @@
         <% } %>
 
         <% if (apps.length === 0) { %>
-            <div class="text-center py-16 bg-base-100 rounded-3xl shadow-sm border border-base-300 max-w-2xl mx-auto p-8">
-                <div class="w-20 h-20 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+            <div class="text-center py-12 sm:py-16 bg-base-100 rounded-3xl shadow-sm border border-base-300 max-w-2xl mx-auto p-6 sm:p-8">
+                <div class="w-16 h-16 sm:w-20 sm:h-20 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 sm:h-10 sm:w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
                 </div>
-                <h3 class="text-2xl font-bold text-base-content">Aucun site configuré</h3>
-                <p class="text-base-content/60 mt-2 mb-6">Ajoutez votre premier site pour lui attribuer ses processeurs de paiement et générer sa clé API.</p>
-                <button class="btn btn-primary btn-wide shadow-md" onclick="openAddAppModal()">Ajouter mon premier site</button>
+                <h3 class="text-xl sm:text-2xl font-bold text-base-content">Aucun site configuré</h3>
+                <p class="text-xs sm:text-sm text-base-content/60 mt-2 mb-6">Ajoutez votre premier site pour lui attribuer ses processeurs de paiement.</p>
+                <button class="btn btn-primary btn-block sm:btn-wide shadow-md" onclick="openAddAppModal()">Ajouter mon premier site</button>
             </div>
         <% } %>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- App Cards Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             <% apps.forEach(function(app) { %>
-                <div class="card bg-base-100 shadow-sm hover:shadow-xl transition-all border border-base-300 flex flex-col justify-between">
-                    <div class="card-body p-6">
+                <div class="card bg-base-100 shadow-sm hover:shadow-xl transition-all border border-base-300 flex flex-col justify-between rounded-2xl">
+                    <div class="card-body p-4 sm:p-6">
                         
-                        <div class="flex justify-between items-start mb-4">
-                            <div>
-                                <h2 class="card-title text-2xl font-black text-base-content">
+                        <div class="flex justify-between items-start mb-3 sm:mb-4">
+                            <div class="flex-1 pr-2">
+                                <h2 class="card-title text-xl sm:text-2xl font-black text-base-content truncate">
                                     <%= app.name %>
                                 </h2>
-                                <div class="badge badge-primary badge-outline text-xs mt-1 font-mono">ID: <%= app.id %></div>
+                                <div class="badge badge-primary badge-outline text-[11px] mt-1 font-mono">ID: <%= app.id %></div>
                             </div>
                             <div class="dropdown dropdown-end">
-                                <div tabindex="0" role="button" class="btn btn-ghost btn-xs btn-circle">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" /></svg>
+                                <div tabindex="0" role="button" class="btn btn-ghost btn-sm btn-circle">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" /></svg>
                                 </div>
-                                <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-40 text-xs border border-base-200">
-                                    <li><a href="/admin/app/<%= app.id %>?tab=settings">Modifier</a></li>
+                                <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-2xl bg-base-100 rounded-box w-44 text-xs border border-base-300">
+                                    <li><a href="/admin/app/<%= app.id %>?tab=settings" class="py-2">Modifier</a></li>
                                     <li>
                                         <form method="POST" action="/admin/apps/delete" onsubmit="return confirm('Supprimer ce site ?')" class="m-0 p-0">
                                             <input type="hidden" name="appId" value="<%= app.id %>">
-                                            <button type="submit" class="text-error font-bold w-full text-left px-3 py-1.5">Supprimer</button>
+                                            <button type="submit" class="text-error font-bold w-full text-left px-3 py-2">Supprimer</button>
                                         </form>
                                     </li>
                                 </ul>
@@ -189,37 +136,37 @@
                         </div>
 
                         <!-- Métriques du site -->
-                        <div class="grid grid-cols-2 gap-3 mb-4">
-                            <div class="bg-base-200 p-3 rounded-xl border border-base-300">
-                                <div class="text-[10px] uppercase font-bold text-base-content/60">Revenu de ce site</div>
-                                <div class="text-base font-black text-primary mt-0.5"><%= (app.totalRevenue || 0).toLocaleString() %> FCFA</div>
+                        <div class="grid grid-cols-2 gap-2.5 sm:gap-3 mb-3 sm:mb-4">
+                            <div class="bg-base-200 p-2.5 sm:p-3 rounded-xl border border-base-300">
+                                <div class="text-[10px] uppercase font-bold text-base-content/60">Revenu site</div>
+                                <div class="text-sm sm:text-base font-black text-primary mt-0.5 truncate"><%= (app.totalRevenue || 0).toLocaleString() %> FCFA</div>
                             </div>
-                            <div class="bg-base-200 p-3 rounded-xl border border-base-300">
+                            <div class="bg-base-200 p-2.5 sm:p-3 rounded-xl border border-base-300">
                                 <div class="text-[10px] uppercase font-bold text-base-content/60">Transactions</div>
-                                <div class="text-base font-black text-secondary mt-0.5"><%= app.transactionCount || 0 %></div>
+                                <div class="text-sm sm:text-base font-black text-secondary mt-0.5"><%= app.transactionCount || 0 %></div>
                             </div>
                         </div>
 
                         <!-- Processeurs Actifs pour ce site -->
-                        <div class="mb-4">
-                            <div class="text-[11px] font-bold text-base-content/60 uppercase mb-1.5 flex items-center justify-between">
+                        <div class="mb-3 sm:mb-4">
+                            <div class="text-[10px] sm:text-[11px] font-bold text-base-content/60 uppercase mb-1.5 flex items-center justify-between">
                                 <span>Passerelles actives</span>
                                 <span class="badge badge-xs <%= app.activeProvidersCount > 0 ? 'badge-success text-white' : 'badge-ghost' %> font-mono font-bold"><%= app.activeProvidersCount %> actif(s)</span>
                             </div>
                             <div class="flex flex-wrap gap-1">
                                 <% if (app.activeProviders && app.activeProviders.length > 0) { %>
                                     <% app.activeProviders.forEach(function(prov) { %>
-                                        <span class="badge badge-sm badge-neutral capitalize font-semibold"><%= prov %></span>
+                                        <span class="badge badge-xs sm:badge-sm badge-neutral capitalize font-semibold"><%= prov %></span>
                                     <% }); %>
                                 <% } else { %>
-                                    <span class="text-xs text-base-content/50 italic">Aucune passerelle configurée</span>
+                                    <span class="text-xs text-base-content/50 italic">Aucune passerelle</span>
                                 <% } %>
                             </div>
                         </div>
 
                         <!-- Bouton d'accès au dashboard dédié -->
-                        <div class="card-actions mt-4 pt-4 border-t border-base-200">
-                            <a href="/admin/app/<%= app.id %>" class="btn btn-primary btn-block font-bold shadow-sm gap-2">
+                        <div class="card-actions mt-3 pt-3 sm:mt-4 sm:pt-4 border-t border-base-200">
+                            <a href="/admin/app/<%= app.id %>" class="btn btn-primary btn-block font-bold shadow-sm gap-2 min-h-[44px] h-11 text-xs sm:text-sm rounded-xl">
                                 <span>📊 Ouvrir le Dashboard de ce site</span>
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
                             </a>
@@ -231,50 +178,60 @@
 
     </div>
 
-    <!-- Modal Ajouter un Site -->
-    <dialog id="add_app_modal" class="modal">
-        <div class="modal-box max-w-xl">
-            <h3 class="font-extrabold text-xl mb-4 text-base-content">Ajouter un nouveau site / SaaS</h3>
+    <!-- Modal Ajouter un Site (Mobile Responsive) -->
+    <dialog id="add_app_modal" class="modal modal-bottom sm:modal-middle">
+        <div class="modal-box w-full sm:max-w-xl p-4 sm:p-6 rounded-t-3xl sm:rounded-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-extrabold text-lg sm:text-xl text-base-content">Ajouter un nouveau site / SaaS</h3>
+                <button type="button" class="btn btn-sm btn-circle btn-ghost" onclick="document.getElementById('add_app_modal').close()">✕</button>
+            </div>
+            
             <form method="POST" action="/admin/apps">
-                <div class="form-control w-full mb-4">
-                    <label class="label"><span class="label-text font-bold">Identifiant technique du site (ex: "verifsms", "monshop")</span></label>
-                    <input type="text" name="id" class="input input-bordered w-full font-mono text-sm" placeholder="ex: mon-saas-1" required />
-                    <label class="label py-0.5"><span class="label-text-alt text-base-content/60">Sera utilisé comme appId dans vos requêtes API et webhooks.</span></label>
+                <div class="form-control w-full mb-3.5">
+                    <label class="label py-1"><span class="label-text font-bold text-xs">Identifiant technique (ex: "verifsms", "monshop")</span></label>
+                    <input type="text" name="id" class="input input-bordered input-sm sm:input-md w-full font-mono text-xs sm:text-sm rounded-xl" placeholder="ex: mon-saas-1" required />
                 </div>
-                <div class="form-control w-full mb-4">
-                    <label class="label"><span class="label-text font-bold">Nom Public du Site (affiché au client au checkout)</span></label>
-                    <input type="text" name="name" class="input input-bordered w-full font-semibold" placeholder="ex: Ma Boutique Officielle" required />
-                </div>
-
-                <div class="form-control w-full mb-4 bg-primary/5 p-3 rounded-xl border border-primary/20">
-                    <label class="label pt-0"><span class="label-text font-bold text-primary">🔗 URL de Redirection de Succès (Return URL)</span></label>
-                    <input type="url" name="returnUrl" placeholder="https://monsite.com/merci" class="input input-bordered w-full font-mono text-sm" />
-                    <label class="label pb-0"><span class="label-text-alt text-base-content/70">Où rediriger le client après que son paiement a été validé.</span></label>
+                
+                <div class="form-control w-full mb-3.5">
+                    <label class="label py-1"><span class="label-text font-bold text-xs">Nom Public du Site (affiché au client au checkout)</span></label>
+                    <input type="text" name="name" class="input input-bordered input-sm sm:input-md w-full font-semibold text-xs sm:text-sm rounded-xl" placeholder="ex: Ma Boutique Officielle" required />
                 </div>
 
-                <div class="form-control w-full mb-4">
-                    <label class="label"><span class="label-text font-semibold">URL d'annulation (Cancel URL - Optionnel)</span></label>
-                    <input type="url" name="cancelUrl" placeholder="https://monsite.com/panier" class="input input-bordered w-full font-mono text-sm" />
+                <div class="form-control w-full mb-3.5 bg-primary/5 p-3 rounded-xl border border-primary/20">
+                    <label class="label pt-0 py-1"><span class="label-text font-bold text-primary text-xs">🔗 URL de Redirection de Succès (Return URL)</span></label>
+                    <input type="url" name="returnUrl" placeholder="https://monsite.com/merci" class="input input-bordered input-sm sm:input-md w-full font-mono text-xs rounded-xl" />
+                    <label class="label pb-0 py-0.5"><span class="label-text-alt text-base-content/70 text-[11px]">Où rediriger le client après paiement validé.</span></label>
                 </div>
 
-                <div class="form-control w-full mb-4">
-                    <label class="label"><span class="label-text font-semibold">Clé API (Laisser vide pour auto-générer)</span></label>
-                    <input type="text" name="apiKey" class="input input-bordered w-full font-mono text-sm" placeholder="sk_hub_..." />
+                <div class="form-control w-full mb-3.5">
+                    <label class="label py-1"><span class="label-text font-semibold text-xs">URL d'annulation (Cancel URL - Optionnel)</span></label>
+                    <input type="url" name="cancelUrl" placeholder="https://monsite.com/panier" class="input input-bordered input-sm sm:input-md w-full font-mono text-xs rounded-xl" />
                 </div>
-                <div class="form-control w-full mb-4">
-                    <label class="label"><span class="label-text font-semibold">URL du Webhook de votre site (Optionnel)</span></label>
-                    <input type="text" name="webhookUrl" placeholder="https://monsite.com/api/webhook" class="input input-bordered w-full font-mono text-sm" />
+
+                <div class="form-control w-full mb-3.5">
+                    <label class="label py-1"><span class="label-text font-semibold text-xs">Clé API (Laisser vide pour auto-générer)</span></label>
+                    <input type="text" name="apiKey" class="input input-bordered input-sm sm:input-md w-full font-mono text-xs rounded-xl" placeholder="sk_hub_..." />
                 </div>
-                <div class="form-control w-full mb-6">
-                    <label class="label"><span class="label-text font-semibold">Secret Webhook (Laisser vide pour auto-générer)</span></label>
-                    <input type="text" name="webhookSecret" class="input input-bordered w-full font-mono text-sm" placeholder="whsec_..." />
+                
+                <div class="form-control w-full mb-3.5">
+                    <label class="label py-1"><span class="label-text font-semibold text-xs">URL du Webhook de votre site (Optionnel)</span></label>
+                    <input type="text" name="webhookUrl" placeholder="https://monsite.com/api/webhook" class="input input-bordered input-sm sm:input-md w-full font-mono text-xs rounded-xl" />
                 </div>
-                <div class="modal-action">
-                    <button type="button" class="btn" onclick="document.getElementById('add_app_modal').close()">Annuler</button>
-                    <button type="submit" class="btn btn-primary font-bold px-6">Créer ce site</button>
+                
+                <div class="form-control w-full mb-5">
+                    <label class="label py-1"><span class="label-text font-semibold text-xs">Secret Webhook (Laisser vide pour auto-générer)</span></label>
+                    <input type="text" name="webhookSecret" class="input input-bordered input-sm sm:input-md w-full font-mono text-xs rounded-xl" placeholder="whsec_..." />
+                </div>
+                
+                <div class="modal-action flex gap-2">
+                    <button type="button" class="btn btn-ghost flex-1 rounded-xl" onclick="document.getElementById('add_app_modal').close()">Annuler</button>
+                    <button type="submit" class="btn btn-primary flex-1 font-bold rounded-xl shadow-sm">Créer ce site</button>
                 </div>
             </form>
         </div>
+        <form method="dialog" class="modal-backdrop">
+            <button>close</button>
+        </form>
     </dialog>
 
     <script>

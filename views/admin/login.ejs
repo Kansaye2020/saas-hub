@@ -2,115 +2,59 @@
 <html lang="fr" data-theme="light">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Connexion | SaaS Payment Hub</title>
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.10.2/dist/full.min.css" rel="stylesheet" type="text/css" />
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        :root, [data-theme="light"] {
-            color-scheme: light;
-            --color-base-100: oklch(100% 0 0);
-            --color-base-200: oklch(98% 0 0);
-            --color-base-300: oklch(95% 0 0);
-            --color-base-content: oklch(21% 0.006 285.885);
-            --color-primary: oklch(45% 0.24 277.023);
-            --color-primary-content: oklch(93% 0.034 272.788);
-            --color-secondary: oklch(65% 0.241 354.308);
-            --color-secondary-content: oklch(94% 0.028 342.258);
-            --color-accent: oklch(77% 0.152 181.912);
-            --color-accent-content: oklch(38% 0.063 188.416);
-            --color-neutral: oklch(14% 0.005 285.823);
-            --color-neutral-content: oklch(92% 0.004 286.32);
-            --color-info: oklch(74% 0.16 232.661);
-            --color-info-content: oklch(29% 0.066 243.157);
-            --color-success: oklch(76% 0.177 163.223);
-            --color-success-content: oklch(37% 0.077 168.94);
-            --color-warning: oklch(82% 0.189 84.429);
-            --color-warning-content: oklch(41% 0.112 45.904);
-            --color-error: oklch(71% 0.194 13.428);
-            --color-error-content: oklch(27% 0.105 12.094);
-            --radius-selector: 0.5rem;
-            --radius-field: 0.25rem;
-            --radius-box: 0.5rem;
-            --size-selector: 0.25rem;
-            --size-field: 0.25rem;
-            --border: 1px;
-            --depth: 1;
-            --noise: 0;
-
-            /* DaisyUI 4 properties */
-            --p: 45% 0.24 277.023;
-            --pc: 93% 0.034 272.788;
-            --s: 65% 0.241 354.308;
-            --sc: 94% 0.028 342.258;
-            --a: 77% 0.152 181.912;
-            --ac: 38% 0.063 188.416;
-            --n: 14% 0.005 285.823;
-            --nc: 92% 0.004 286.32;
-            --b1: 100% 0 0;
-            --b2: 98% 0 0;
-            --b3: 95% 0 0;
-            --bc: 21% 0.006 285.885;
-            --in: 74% 0.16 232.661;
-            --inc: 29% 0.066 243.157;
-            --su: 76% 0.177 163.223;
-            --suc: 37% 0.077 168.94;
-            --wa: 82% 0.189 84.429;
-            --wac: 41% 0.112 45.904;
-            --er: 71% 0.194 13.428;
-            --erc: 27% 0.105 12.094;
-            --rounded-box: 0.5rem;
-            --rounded-btn: 0.25rem;
-            --rounded-badge: 0.5rem;
-            --tab-radius: 0.5rem;
-        }
         body { font-family: 'Inter', sans-serif; }
+        input, button { -webkit-tap-highlight-color: transparent; }
     </style>
 </head>
-<body class="bg-base-200 min-h-screen flex items-center justify-center p-4">
+<body class="bg-base-200 min-h-screen flex items-center justify-center p-3 sm:p-6 antialiased">
     
-    <div class="card w-full max-w-md bg-base-100 shadow-2xl border border-base-300">
-        <div class="card-body p-8">
+    <div class="card w-full max-w-md bg-base-100 shadow-xl border border-base-300 rounded-2xl my-auto">
+        <div class="card-body p-5 sm:p-8">
             
-            <div class="text-center mb-6">
-                <div class="w-16 h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-inner">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div class="text-center mb-5 sm:mb-6">
+                <div class="w-14 h-14 sm:w-16 sm:h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-inner">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 sm:h-8 sm:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
                 </div>
-                <h1 class="text-2xl font-black text-base-content tracking-tight">SaaS Payment Hub</h1>
-                <p class="text-xs text-base-content/60 mt-1">Portail d'administration et de gestion des passerelles</p>
+                <h1 class="text-xl sm:text-2xl font-black text-base-content tracking-tight">SaaS Payment Hub</h1>
+                <p class="text-xs text-base-content/60 mt-1">Portail d'administration sécurisé</p>
             </div>
 
             <% if (locals.errorMessage) { %>
-                <div role="alert" class="alert alert-error shadow-sm mb-6 text-sm py-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <div role="alert" class="alert alert-error shadow-sm mb-5 text-xs sm:text-sm py-2.5 px-3.5 rounded-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     <span><%= errorMessage %></span>
                 </div>
             <% } %>
 
-            <!-- Onglets de sélection de méthode de connexion -->
-            <div class="tabs tabs-boxed bg-base-200 p-1 mb-6 rounded-xl grid grid-cols-2">
-                <button type="button" id="tab-btn-admin" class="tab tab-active font-bold text-xs" onclick="switchLoginTab('admin')">
+            <!-- Onglets de sélection -->
+            <div class="tabs tabs-boxed bg-base-200 p-1 mb-5 rounded-xl grid grid-cols-2">
+                <button type="button" id="tab-btn-admin" class="tab tab-active font-bold text-xs py-2" onclick="switchLoginTab('admin')">
                     👑 Compte Admin
                 </button>
-                <button type="button" id="tab-btn-apikey" class="tab font-bold text-xs" onclick="switchLoginTab('apikey')">
+                <button type="button" id="tab-btn-apikey" class="tab font-bold text-xs py-2" onclick="switchLoginTab('apikey')">
                     🔑 Clé API Site
                 </button>
             </div>
 
             <!-- Formulaire 1 : Compte Admin -->
             <form id="form-admin" method="POST" action="/admin/login">
-                <div class="form-control w-full mb-4">
+                <div class="form-control w-full mb-3.5">
                     <label class="label py-1"><span class="label-text font-bold text-xs">Identifiant Admin</span></label>
-                    <input type="text" name="username" value="<%= locals.defaultUsername || 'admin' %>" class="input input-bordered w-full font-medium" placeholder="admin" required autofocus />
+                    <input type="text" name="username" value="<%= locals.defaultUsername || 'admin' %>" class="input input-bordered input-md w-full font-medium rounded-xl text-sm" placeholder="admin" required autofocus />
                 </div>
 
-                <div class="form-control w-full mb-6">
+                <div class="form-control w-full mb-5">
                     <label class="label py-1"><span class="label-text font-bold text-xs">Mot de passe</span></label>
                     <div class="relative">
-                        <input type="password" id="admin-pass" name="password" class="input input-bordered w-full font-medium pr-10" placeholder="••••••••" required />
+                        <input type="password" id="admin-pass" name="password" class="input input-bordered input-md w-full font-medium pr-10 rounded-xl text-sm" placeholder="••••••••" required />
                         <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center text-base-content/40 hover:text-base-content" onclick="togglePasswordVisibility('admin-pass')">
                             👁️
                         </button>
@@ -118,40 +62,40 @@
                 </div>
 
                 <!-- Info Box pour le mode dev -->
-                <div class="bg-base-200 rounded-xl p-3.5 mb-6 border border-base-300 text-xs text-base-content/80">
+                <div class="bg-base-200 rounded-xl p-3 mb-5 border border-base-300 text-xs text-base-content/80">
                     <div class="font-bold flex items-center gap-1 text-primary text-[11px] mb-1">
                         <span>💡</span> Identifiants par défaut (Mode dev) :
                     </div>
-                    <div class="grid grid-cols-2 gap-2 mt-1.5 font-mono text-[11px]">
-                        <div class="bg-base-100 p-1.5 rounded border border-base-300">
+                    <div class="grid grid-cols-2 gap-2 mt-1 font-mono text-[11px]">
+                        <div class="bg-base-100 p-1.5 rounded-lg border border-base-300">
                             <span class="text-base-content/50 block text-[9px] uppercase font-bold">Identifiant</span>
                             <span class="font-bold">admin</span>
                         </div>
-                        <div class="bg-base-100 p-1.5 rounded border border-base-300">
+                        <div class="bg-base-100 p-1.5 rounded-lg border border-base-300">
                             <span class="text-base-content/50 block text-[9px] uppercase font-bold">Mot de passe</span>
                             <span class="font-bold">admin</span>
                         </div>
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary btn-block font-bold text-base shadow-sm">
-                    Accéder au Dashboard
+                <button type="submit" class="btn btn-primary btn-block font-bold text-base shadow-sm min-h-[48px] h-12 rounded-xl">
+                    Se connecter
                 </button>
             </form>
 
             <!-- Formulaire 2 : Clé API Site -->
             <form id="form-apikey" method="POST" action="/admin/login" class="hidden">
-                <div class="form-control w-full mb-6">
+                <div class="form-control w-full mb-5">
                     <label class="label py-1">
                         <span class="label-text font-bold text-xs">Clé API de votre site (X-Hub-Api-Key)</span>
                     </label>
-                    <input type="text" name="apiKey" class="input input-bordered w-full font-mono text-xs" placeholder="sk_hub_..." required />
+                    <input type="text" name="apiKey" class="input input-bordered input-md w-full font-mono text-xs rounded-xl" placeholder="sk_hub_..." required />
                     <label class="label py-1">
-                        <span class="label-text-alt text-base-content/60 text-[11px]">Permet d'accéder directement au dashboard spécifique de votre site/SaaS.</span>
+                        <span class="label-text-alt text-base-content/60 text-[11px]">Accédez directement au dashboard dédié de votre site.</span>
                     </label>
                 </div>
 
-                <button type="submit" class="btn btn-primary btn-block font-bold text-base shadow-sm">
+                <button type="submit" class="btn btn-primary btn-block font-bold text-base shadow-sm min-h-[48px] h-12 rounded-xl">
                     Ouvrir l'espace de ce site
                 </button>
             </form>

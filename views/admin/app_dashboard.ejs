@@ -2,14 +2,15 @@
 <html lang="fr" data-theme="light">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= currentApp.name %> | Dashboard SaaS Payment Hub</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title><%= currentApp.name %> | Dashboard SaaS Hub</title>
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.10.2/dist/full.min.css" rel="stylesheet" type="text/css" />
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        .dot-pulse {
-            position: relative;
-        }
+        body { font-family: 'Inter', sans-serif; }
+        input, button, a, select { -webkit-tap-highlight-color: transparent; }
+        .dot-pulse { position: relative; }
         .dot-pulse::after {
             content: '';
             position: absolute;
@@ -20,96 +21,31 @@
             animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
         }
         @keyframes ping {
-            75%, 100% {
-                transform: scale(2);
-                opacity: 0;
-            }
+            75%, 100% { transform: scale(2); opacity: 0; }
         }
-    </style>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root, [data-theme="light"] {
-            color-scheme: light;
-            --color-base-100: oklch(100% 0 0);
-            --color-base-200: oklch(98% 0 0);
-            --color-base-300: oklch(95% 0 0);
-            --color-base-content: oklch(21% 0.006 285.885);
-            --color-primary: oklch(45% 0.24 277.023);
-            --color-primary-content: oklch(93% 0.034 272.788);
-            --color-secondary: oklch(65% 0.241 354.308);
-            --color-secondary-content: oklch(94% 0.028 342.258);
-            --color-accent: oklch(77% 0.152 181.912);
-            --color-accent-content: oklch(38% 0.063 188.416);
-            --color-neutral: oklch(14% 0.005 285.823);
-            --color-neutral-content: oklch(92% 0.004 286.32);
-            --color-info: oklch(74% 0.16 232.661);
-            --color-info-content: oklch(29% 0.066 243.157);
-            --color-success: oklch(76% 0.177 163.223);
-            --color-success-content: oklch(37% 0.077 168.94);
-            --color-warning: oklch(82% 0.189 84.429);
-            --color-warning-content: oklch(41% 0.112 45.904);
-            --color-error: oklch(71% 0.194 13.428);
-            --color-error-content: oklch(27% 0.105 12.094);
-            --radius-selector: 0.5rem;
-            --radius-field: 0.25rem;
-            --radius-box: 0.5rem;
-            --size-selector: 0.25rem;
-            --size-field: 0.25rem;
-            --border: 1px;
-            --depth: 1;
-            --noise: 0;
-
-            /* DaisyUI 4 properties */
-            --p: 45% 0.24 277.023;
-            --pc: 93% 0.034 272.788;
-            --s: 65% 0.241 354.308;
-            --sc: 94% 0.028 342.258;
-            --a: 77% 0.152 181.912;
-            --ac: 38% 0.063 188.416;
-            --n: 14% 0.005 285.823;
-            --nc: 92% 0.004 286.32;
-            --b1: 100% 0 0;
-            --b2: 98% 0 0;
-            --b3: 95% 0 0;
-            --bc: 21% 0.006 285.885;
-            --in: 74% 0.16 232.661;
-            --inc: 29% 0.066 243.157;
-            --su: 76% 0.177 163.223;
-            --suc: 37% 0.077 168.94;
-            --wa: 82% 0.189 84.429;
-            --wac: 41% 0.112 45.904;
-            --er: 71% 0.194 13.428;
-            --erc: 27% 0.105 12.094;
-            --rounded-box: 0.5rem;
-            --rounded-btn: 0.25rem;
-            --rounded-badge: 0.5rem;
-            --tab-radius: 0.5rem;
-        }
-        body { font-family: 'Inter', sans-serif; }
     </style>
 </head>
-<body class="bg-base-200 min-h-screen">
+<body class="bg-base-200 min-h-screen antialiased">
     
-    <!-- Navbar -->
-    <div class="navbar bg-base-100 shadow-sm border-b border-base-300 sticky top-0 z-30">
-        <div class="flex-1 gap-3 items-center">
-            <a href="/admin/apps" class="btn btn-ghost text-lg font-bold tracking-tight text-primary flex items-center gap-2">
-                <span>SaaS Hub</span>
+    <!-- Navbar Responsive -->
+    <div class="navbar bg-base-100 shadow-sm border-b border-base-300 sticky top-0 z-30 px-3 sm:px-6">
+        <div class="flex-1 flex items-center gap-2">
+            <a href="/admin/apps" class="btn btn-ghost px-2 text-base sm:text-lg font-black tracking-tight text-primary flex items-center gap-1.5">
+                <span>💳 SaaS Hub</span>
             </a>
             
             <!-- Sélecteur de Site (Switcher rapide) -->
             <div class="dropdown">
-                <div tabindex="0" role="button" class="btn btn-sm btn-outline border-base-300 font-bold gap-2 bg-base-200">
-                    <span class="w-2.5 h-2.5 rounded-full bg-success"></span>
-                    <span class="text-base-content"><%= currentApp.name %></span>
-                    <span class="badge badge-xs badge-neutral text-[10px] font-mono"><%= currentApp.id %></span>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                <div tabindex="0" role="button" class="btn btn-xs sm:btn-sm btn-outline border-base-300 font-bold gap-1.5 sm:gap-2 bg-base-200 rounded-lg sm:rounded-xl">
+                    <span class="w-2 h-2 rounded-full bg-success"></span>
+                    <span class="text-base-content max-w-[90px] sm:max-w-[150px] truncate text-xs sm:text-sm"><%= currentApp.name %></span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                 </div>
-                <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-2xl bg-base-100 rounded-box w-72 border border-base-300 mt-2">
+                <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-2xl bg-base-100 rounded-2xl w-64 sm:w-72 border border-base-300 mt-2">
                     <li class="menu-title text-xs uppercase font-bold text-base-content/60 px-3 py-1">Changer de site</li>
                     <% allApps.forEach(function(app) { %>
                         <li>
-                            <a href="/admin/app/<%= app.id %>" class="<%= app.id === currentApp.id ? 'active font-bold' : '' %> flex items-center justify-between py-2">
+                            <a href="/admin/app/<%= app.id %>" class="<%= app.id === currentApp.id ? 'active font-bold' : '' %> flex items-center justify-between py-2 rounded-xl">
                                 <span class="truncate"><%= app.name %></span>
                                 <span class="badge badge-xs font-mono"><%= app.id %></span>
                             </a>
@@ -117,7 +53,7 @@
                     <% }); %>
                     <div class="divider my-1"></div>
                     <li>
-                        <a href="/admin/apps" class="text-primary font-bold">
+                        <a href="/admin/apps" class="text-primary font-bold py-2 rounded-xl">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                             Gérer tous les sites
                         </a>
@@ -126,77 +62,79 @@
             </div>
         </div>
 
-        <div class="flex-none gap-2">
-            <ul class="menu menu-horizontal px-1 font-medium items-center gap-1">
-                <li><a href="/admin/apps" class="text-sm font-semibold">Toutes mes applications</a></li>
-                <li><a href="/admin/logout" class="text-error font-semibold hover:bg-error/10 text-sm">Déconnexion</a></li>
-            </ul>
+        <div class="flex-none flex items-center gap-1">
+            <a href="/admin/apps" class="btn btn-ghost btn-sm text-xs sm:text-sm font-semibold hidden sm:inline-flex">
+                Tous les sites
+            </a>
+            <a href="/admin/logout" class="btn btn-ghost btn-sm text-error font-bold text-xs sm:text-sm hover:bg-error/10">
+                Déconnexion
+            </a>
         </div>
     </div>
 
-    <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+    <div class="max-w-7xl mx-auto p-3 sm:p-6 lg:p-8">
         
         <!-- Alerts -->
-        <% if (successMessage) { %>
-            <div role="alert" class="alert alert-success shadow-md mb-6 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        <% if (locals.successMessage) { %>
+            <div role="alert" class="alert alert-success shadow-sm mb-4 sm:mb-6 flex items-center justify-between p-3 sm:p-4 rounded-xl text-xs sm:text-sm">
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     <span class="font-medium"><%= successMessage %></span>
                 </div>
                 <a href="/admin/app/<%= currentApp.id %>?tab=<%= activeTab %>" class="btn btn-ghost btn-xs">✕</a>
             </div>
         <% } %>
 
-        <% if (errorMessage) { %>
-            <div role="alert" class="alert alert-error shadow-md mb-6 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        <% if (locals.errorMessage) { %>
+            <div role="alert" class="alert alert-error shadow-sm mb-4 sm:mb-6 flex items-center justify-between p-3 sm:p-4 rounded-xl text-xs sm:text-sm">
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     <span class="font-medium"><%= errorMessage %></span>
                 </div>
                 <a href="/admin/app/<%= currentApp.id %>?tab=<%= activeTab %>" class="btn btn-ghost btn-xs">✕</a>
             </div>
         <% } %>
 
-        <!-- Header du Site -->
-        <div class="bg-base-100 rounded-2xl p-6 shadow-sm border border-base-300 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <!-- Header du Site Responsive -->
+        <div class="bg-base-100 rounded-2xl p-4 sm:p-6 shadow-sm border border-base-300 mb-5 sm:mb-6 flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
             <div>
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 sm:gap-3">
                     <a href="/admin/apps" class="btn btn-sm btn-ghost btn-circle" title="Retour à la liste des sites">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
                     </a>
-                    <h1 class="text-3xl font-extrabold text-base-content"><%= currentApp.name %></h1>
-                    <span class="badge badge-primary font-mono text-xs">ID: <%= currentApp.id %></span>
+                    <h1 class="text-xl sm:text-3xl font-black text-base-content tracking-tight truncate"><%= currentApp.name %></h1>
+                    <span class="badge badge-primary font-mono text-[10px] sm:text-xs">ID: <%= currentApp.id %></span>
                 </div>
-                <p class="text-sm text-base-content/70 mt-1 pl-11">Espace de gestion dédié pour ce site/SaaS et ses processeurs de paiement indépendants.</p>
+                <p class="text-xs sm:text-sm text-base-content/70 mt-1 pl-9 sm:pl-11">Tableau de bord dédié et processeurs de paiement indépendants.</p>
             </div>
             
-            <div class="flex items-center gap-2">
-                <a href="/admin/apps" class="btn btn-sm btn-outline gap-1.5 font-bold">
+            <div class="flex items-center gap-2 pl-9 sm:pl-0">
+                <a href="/admin/apps" class="btn btn-sm btn-outline gap-1 font-bold rounded-xl text-xs sm:text-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
-                    Tous mes sites
+                    Sites
                 </a>
-                <button class="btn btn-sm btn-primary font-bold" onclick="openEditAppModal()">
+                <button class="btn btn-sm btn-primary font-bold rounded-xl text-xs sm:text-sm shadow-sm" onclick="openEditAppModal()">
                     Modifier le site
                 </button>
             </div>
         </div>
 
-        <!-- Onglets de Navigation -->
-        <div class="bg-base-100 p-1.5 rounded-xl border border-base-300 shadow-sm mb-8 grid grid-cols-1 sm:grid-cols-3 gap-1.5 max-w-2xl">
+        <!-- Onglets de Navigation Responsive -->
+        <div class="bg-base-100 p-1 rounded-xl border border-base-300 shadow-sm mb-6 flex overflow-x-auto whitespace-nowrap gap-1 max-w-full">
             <a href="/admin/app/<%= currentApp.id %>?tab=dashboard" 
-               class="flex items-center justify-center text-center py-2.5 px-4 rounded-lg text-sm font-bold transition-all <%= activeTab === 'dashboard' ? 'bg-primary text-primary-content shadow-sm' : 'text-base-content/70 hover:text-base-content hover:bg-base-200' %>">
-                Tableau de bord
+               class="flex-1 text-center py-2 px-3 sm:px-4 rounded-lg text-xs sm:text-sm font-bold transition-all shrink-0 <%= activeTab === 'dashboard' ? 'bg-primary text-primary-content shadow-sm' : 'text-base-content/70 hover:text-base-content hover:bg-base-200' %>">
+                📊 Tableau de bord
             </a>
             <a href="/admin/app/<%= currentApp.id %>?tab=processors" 
-               class="flex items-center justify-center gap-2 text-center py-2.5 px-4 rounded-lg text-sm font-bold transition-all <%= activeTab === 'processors' ? 'bg-primary text-primary-content shadow-sm' : 'text-base-content/70 hover:text-base-content hover:bg-base-200' %>">
-                <span>Processeurs de paiement</span>
-                <span class="badge badge-sm font-mono font-bold <%= activeTab === 'processors' ? 'bg-primary-content/20 text-primary-content border-none' : 'badge-neutral' %>">
+               class="flex-1 flex items-center justify-center gap-1.5 text-center py-2 px-3 sm:px-4 rounded-lg text-xs sm:text-sm font-bold transition-all shrink-0 <%= activeTab === 'processors' ? 'bg-primary text-primary-content shadow-sm' : 'text-base-content/70 hover:text-base-content hover:bg-base-200' %>">
+                <span>💳 Processeurs</span>
+                <span class="badge badge-xs sm:badge-sm font-mono font-bold <%= activeTab === 'processors' ? 'bg-primary-content/20 text-primary-content border-none' : 'badge-neutral' %>">
                     <%= configuredProviders.length %>
                 </span>
             </a>
             <a href="/admin/app/<%= currentApp.id %>?tab=settings" 
-               class="flex items-center justify-center text-center py-2.5 px-4 rounded-lg text-sm font-bold transition-all <%= activeTab === 'settings' ? 'bg-primary text-primary-content shadow-sm' : 'text-base-content/70 hover:text-base-content hover:bg-base-200' %>">
-                Clés API & Webhook
+               class="flex-1 text-center py-2 px-3 sm:px-4 rounded-lg text-xs sm:text-sm font-bold transition-all shrink-0 <%= activeTab === 'settings' ? 'bg-primary text-primary-content shadow-sm' : 'text-base-content/70 hover:text-base-content hover:bg-base-200' %>">
+                ⚙️ Clés API & Webhook
             </a>
         </div>
 
@@ -204,274 +142,194 @@
         <% if (activeTab === 'dashboard') { %>
             
             <!-- Cartes de Statistiques du Site -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="stat bg-base-100 rounded-2xl shadow-sm border border-base-300 p-6">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6 mb-6 sm:mb-8">
+                <div class="stat bg-base-100 rounded-2xl shadow-sm border border-base-300 p-4 sm:p-6">
                     <div class="stat-figure text-primary">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-9 h-9 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-7 h-7 sm:w-9 sm:h-9 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
                     </div>
-                    <div class="stat-title font-semibold text-base-content/60">Revenu de ce site</div>
-                    <div class="stat-value text-primary mt-1"><%= totalRevenue.toLocaleString() %> FCFA</div>
-                    <div class="stat-desc mt-1">Généré uniquement par <%= currentApp.name %></div>
+                    <div class="stat-title text-[11px] font-bold uppercase text-base-content/60">Revenu de ce site</div>
+                    <div class="stat-value text-xl sm:text-2xl font-black text-primary mt-1"><%= totalRevenue.toLocaleString() %> FCFA</div>
+                    <div class="stat-desc text-xs mt-1">Généré par <%= currentApp.name %></div>
                 </div>
                 
-                <div class="stat bg-base-100 rounded-2xl shadow-sm border border-base-300 p-6">
+                <div class="stat bg-base-100 rounded-2xl shadow-sm border border-base-300 p-4 sm:p-6">
                     <div class="stat-figure text-secondary">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-9 h-9 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-7 h-7 sm:w-9 sm:h-9 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                     </div>
-                    <div class="stat-title font-semibold text-base-content/60">Transactions Réussies</div>
-                    <div class="stat-value text-secondary mt-1"><%= totalTransactions %></div>
-                    <div class="stat-desc mt-1">Paiements validés pour ce site</div>
+                    <div class="stat-title text-[11px] font-bold uppercase text-base-content/60">Transactions Réussies</div>
+                    <div class="stat-value text-xl sm:text-2xl font-black text-secondary mt-1"><%= successfulTransactions %></div>
+                    <div class="stat-desc text-xs mt-1">Paiements validés</div>
                 </div>
 
-                <div class="stat bg-base-100 rounded-2xl shadow-sm border border-base-300 p-6">
-                    <div class="stat-figure <%= activeProviders.length > 0 ? 'text-success' : 'text-base-content/40' %>">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-9 h-9 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                <div class="stat bg-base-100 rounded-2xl shadow-sm border border-base-300 p-4 sm:p-6">
+                    <div class="stat-figure text-accent">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-7 h-7 sm:w-9 sm:h-9 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
                     </div>
-                    <div class="stat-title font-semibold text-base-content/60">Passerelles Actives</div>
-                    <div class="stat-value text-lg font-bold mt-1 truncate">
-                        <%= activeProcessorName %>
-                    </div>
-                    <div class="stat-desc mt-1 font-medium text-success"><%= activeProviders.length %> processeur(s) disponible(s) au checkout</div>
+                    <div class="stat-title text-[11px] font-bold uppercase text-base-content/60">Passerelles Actives</div>
+                    <div class="stat-value text-xl sm:text-2xl font-black text-accent mt-1"><%= configuredProviders.filter(p => p.isActive).length %></div>
+                    <div class="stat-desc text-xs mt-1">Sur <%= configuredProviders.length %> configuré(s)</div>
                 </div>
             </div>
 
-            <!-- Tableau des Transactions de ce Site -->
-            <div class="card bg-base-100 shadow-sm border border-base-300">
-                <div class="card-body p-0">
-                    <div class="p-6 pb-4 flex justify-between items-center border-b border-base-200">
+            <!-- Historique des Transactions Récentes -->
+            <div class="card bg-base-100 shadow-sm border border-base-300 rounded-2xl overflow-hidden mb-8">
+                <div class="card-body p-4 sm:p-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                         <div>
-                            <h2 class="card-title text-xl font-bold">Transactions Récentes de <%= currentApp.name %></h2>
-                            <p class="text-xs text-base-content/60 mt-0.5">Historique des 25 derniers paiements de cette application.</p>
+                            <h2 class="card-title text-lg sm:text-xl font-bold text-base-content">Dernières transactions de ce site</h2>
+                            <p class="text-xs text-base-content/60">Historique des 25 derniers paiements sur <%= currentApp.name %></p>
                         </div>
                     </div>
 
-                    <div class="overflow-x-auto">
-                        <table class="table table-zebra w-full">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Order ID</th>
-                                    <th>Processeur</th>
-                                    <th>Montant</th>
-                                    <th>Statut</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <% if (recentTransactions.length === 0) { %>
-                                    <tr>
-                                        <td colspan="5" class="text-center text-base-content/50 py-12">
-                                            Aucune transaction pour le moment sur ce site.
-                                        </td>
-                                    </tr>
-                                <% } %>
-                                <% recentTransactions.forEach(function(tx) { %>
-                                    <tr>
-                                        <td class="whitespace-nowrap font-mono text-xs text-base-content/70"><%= new Date(tx.createdAt).toLocaleString() %></td>
-                                        <td class="font-mono text-xs font-bold"><%= tx.orderId %></td>
-                                        <td class="capitalize font-medium"><%= tx.provider || '-' %></td>
-                                        <td class="font-black text-sm"><%= tx.amount.toLocaleString() %> <%= tx.currency %></td>
-                                        <td>
-                                            <% if (tx.status === 'succeeded') { %>
-                                                <div class="badge badge-success gap-1.5 text-xs text-white font-bold">Succès</div>
-                                            <% } else if (tx.status === 'pending') { %>
-                                                <div class="badge badge-warning gap-1.5 text-xs font-bold">En cours</div>
-                                            <% } else { %>
-                                                <div class="badge badge-error gap-1.5 text-xs font-bold"><%= tx.status %></div>
-                                            <% } %>
-                                        </td>
-                                    </tr>
-                                <% }); %>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-        <% } %>
-
-        <!-- CONTENU ONGLET 2 : PROCESSEURS DE CE SITE -->
-        <% if (activeTab === 'processors') { %>
-            
-            <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h2 class="text-2xl font-extrabold text-base-content">Processeurs intégrés pour <%= currentApp.name %></h2>
-                    <p class="text-sm text-base-content/70 mt-1">Chaque site a ses propres clés API de paiement (LomoPay, Whop, Stripe, etc.).</p>
-                </div>
-                <div>
-                    <% if (canAddProcessor) { %>
-                        <button class="btn btn-primary shadow-sm gap-2" onclick="openAddProcessorModal()">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-                            Ajouter un processeur pour ce site
-                        </button>
+                    <% if (recentTransactions.length === 0) { %>
+                        <div class="text-center py-10 bg-base-200 rounded-xl">
+                            <p class="text-base-content/50 font-medium text-sm">Aucune transaction enregistrée pour ce site.</p>
+                        </div>
                     <% } else { %>
-                        <button class="btn btn-disabled opacity-50 cursor-not-allowed gap-2" disabled>
-                            Tous les processeurs sont configurés
-                        </button>
+                        <div class="overflow-x-auto -mx-4 sm:mx-0">
+                            <table class="table table-sm sm:table-md w-full">
+                                <thead>
+                                    <tr class="text-xs uppercase text-base-content/60 border-b border-base-200">
+                                        <th>Date</th>
+                                        <th>Référence</th>
+                                        <th>Montant</th>
+                                        <th>Passerelle</th>
+                                        <th>Client</th>
+                                        <th>Statut</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% recentTransactions.forEach(function(tx) { %>
+                                        <tr class="hover:bg-base-200/50">
+                                            <td class="text-xs text-base-content/70 whitespace-nowrap"><%= new Date(tx.createdAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) %></td>
+                                            <td class="font-mono text-xs font-bold"><%= tx.orderId || tx.id.substring(0, 10) %></td>
+                                            <td class="font-bold text-sm text-base-content"><%= tx.amount.toLocaleString() %> <%= tx.currency %></td>
+                                            <td>
+                                                <span class="badge badge-sm badge-neutral capitalize font-semibold"><%= tx.provider %></span>
+                                            </td>
+                                            <td class="text-xs text-base-content/70"><%= tx.customerEmail || '-' %></td>
+                                            <td>
+                                                <% if (tx.status === 'succeeded') { %>
+                                                    <span class="badge badge-sm badge-success text-white font-bold">Réussi</span>
+                                                <% } else if (tx.status === 'pending') { %>
+                                                    <span class="badge badge-sm badge-warning font-bold">En attente</span>
+                                                <% } else { %>
+                                                    <span class="badge badge-sm badge-error text-white font-bold"><%= tx.status %></span>
+                                                <% } %>
+                                            </td>
+                                        </tr>
+                                    <% }); %>
+                                </tbody>
+                            </table>
+                        </div>
                     <% } %>
                 </div>
             </div>
 
-            <% if (configuredProviders.length === 0) { %>
-                <div class="card bg-base-100 shadow-sm border border-base-300 p-8 sm:p-12 text-center">
-                    <div class="w-16 h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
-                    </div>
-                    <h3 class="text-xl font-bold mb-1">Aucun processeur configuré pour <%= currentApp.name %></h3>
-                    <p class="text-sm text-base-content/60 max-w-md mx-auto mb-6">
-                        Ajoutez vos clés de paiement spécifiques à ce site (LomoPay, Whop, Stripe, Chariow ou iKeepay) pour activer les paiements.
-                    </p>
-                    <button class="btn btn-primary shadow-sm" onclick="openAddProcessorModal()">
-                        Ajouter un processeur maintenant
-                    </button>
+        <!-- CONTENU ONGLET 2 : PROCESSEURS DE PAIEMENT DU SITE -->
+        <% } else if (activeTab === 'processors') { %>
+
+            <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                    <h2 class="text-xl sm:text-2xl font-black text-base-content">Processeurs de <%= currentApp.name %></h2>
+                    <p class="text-xs sm:text-sm text-base-content/70 mt-0.5">Configurez et activez les passerelles de paiement propres à ce site.</p>
                 </div>
-            <% } %>
+                <button class="btn btn-primary shadow-sm gap-2 min-h-[44px] h-11 w-full sm:w-auto font-bold rounded-xl" onclick="openAddProcessorModal()">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                    Ajouter un processeur
+                </button>
+            </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <% configuredProviders.forEach(function(provider) { %>
-                    <div class="card bg-base-100 shadow-sm border-2 <%= provider.isActive ? 'border-success/40' : 'border-base-300' %> flex flex-col justify-between">
-                        <div class="card-body p-6">
-                            
-                            <!-- Header de la carte -->
-                            <div class="flex items-center justify-between gap-4 pb-4 border-b border-base-200">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-12 h-12 rounded-xl <%= provider.isActive ? 'bg-success/15 text-success' : 'bg-base-200 text-base-content/60' %> flex items-center justify-center font-black text-xl shadow-inner">
-                                        <%= provider.meta.name.charAt(0) %>
-                                    </div>
-                                    <div>
-                                        <div class="flex items-center gap-2">
-                                            <h3 class="text-lg font-extrabold text-base-content"><%= provider.meta.name %></h3>
-                                            <span class="badge badge-xs badge-outline font-medium"><%= provider.meta.category %></span>
-                                        </div>
-                                        <p class="text-xs text-base-content/60 mt-0.5"><%= provider.meta.tagline %></p>
-                                    </div>
-                                </div>
-
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-8">
+                <% configuredProviders.forEach(function(prov) { %>
+                    <div class="card bg-base-100 shadow-sm border border-base-300 rounded-2xl">
+                        <div class="card-body p-4 sm:p-6">
+                            <div class="flex justify-between items-start mb-3">
                                 <div>
-                                    <% if (provider.isActive) { %>
-                                        <div class="badge badge-success gap-1.5 py-2.5 px-3 text-xs font-extrabold text-white shadow-sm">
-                                            <span class="w-2 h-2 rounded-full bg-white relative dot-pulse"></span>
-                                            Actif
-                                        </div>
-                                    <% } else { %>
-                                        <div class="badge badge-ghost border border-base-300 gap-1.5 py-2.5 px-3 text-xs font-bold text-base-content/60 bg-base-200">
-                                            <span class="w-2 h-2 rounded-full bg-base-content/40"></span>
-                                            Inactif
-                                        </div>
-                                    <% } %>
+                                    <h3 class="card-title text-lg sm:text-xl font-bold"><%= prov.name %></h3>
+                                    <p class="text-xs text-base-content/60"><%= prov.tagline %></p>
                                 </div>
-                            </div>
-
-                            <!-- Bloc de contrôle de statut -->
-                            <div class="my-4 p-3 rounded-xl <%= provider.isActive ? 'bg-success/10 border border-success/30' : 'bg-base-200/80 border border-base-300' %> flex items-center justify-between gap-3">
-                                <div>
-                                    <div class="text-[10px] font-semibold uppercase tracking-wider text-base-content/60">Statut sur ce site</div>
-                                    <div class="text-xs font-black <%= provider.isActive ? 'text-success' : 'text-base-content/70' %>">
-                                        <%= provider.isActive ? 'Actif au Checkout' : 'Inactif' %>
-                                    </div>
-                                </div>
-
-                                <form method="POST" action="/admin/app/<%= currentApp.id %>/provider/toggle" class="m-0">
-                                    <input type="hidden" name="providerId" value="<%= provider.providerId %>">
-                                    <% if (provider.isActive) { %>
-                                        <button type="submit" class="btn btn-warning btn-xs font-bold">
-                                            Désactiver
-                                        </button>
-                                    <% } else { %>
-                                        <button type="submit" class="btn btn-success btn-xs text-white font-bold">
-                                            Activer
-                                        </button>
-                                    <% } %>
-                                </form>
-                            </div>
-
-                            <!-- Détails des clés -->
-                            <div class="space-y-2 text-xs">
-                                <div class="bg-base-200 p-2.5 rounded-lg border border-base-300">
-                                    <span class="font-bold text-base-content/60 block uppercase text-[9px]"><%= provider.meta.publicKeyLabel || 'Clé Publique / ID' %></span>
-                                    <span class="font-mono font-semibold break-all text-xs"><%= provider.publicKey ? provider.publicKey : '<em class="text-base-content/40 font-normal">Non renseigné</em>' %></span>
-                                </div>
-
-                                <div class="bg-base-200 p-2.5 rounded-lg border border-base-300 flex items-center justify-between">
-                                    <div>
-                                        <span class="font-bold text-base-content/60 block uppercase text-[9px]"><%= provider.meta.secretKeyLabel || 'Clé Secrète / API Key' %></span>
-                                        <span class="font-mono font-semibold text-xs">
-                                            <% if (provider.secretKey) { %>
-                                                <%= provider.secretKey.length > 8 ? provider.secretKey.substring(0, 4) + '••••••••' + provider.secretKey.substring(provider.secretKey.length - 4) : '••••••••' %>
-                                            <% } else { %>
-                                                <em class="text-base-content/40 font-normal">Non renseigné</em>
-                                            <% } %>
-                                        </span>
-                                    </div>
-                                    <span class="badge badge-xs badge-neutral text-[10px]">Sécurisé</span>
-                                </div>
-                            </div>
-
-                            <!-- Actions -->
-                            <div class="card-actions justify-end mt-4 pt-3 border-t border-base-200 gap-2">
-                                <button type="button" class="btn btn-outline btn-xs font-semibold" onclick="openEditProcessorModal('<%= provider.providerId %>', '<%= provider.publicKey %>', '<%= provider.secretKey %>', '<%= provider.extraConfig %>', <%= provider.isActive %>)">
-                                    Modifier les clés
-                                </button>
                                 
-                                <form method="POST" action="/admin/app/<%= currentApp.id %>/provider/delete" onsubmit="return confirm('Supprimer ce processeur pour ce site ?')" class="m-0">
-                                    <input type="hidden" name="providerId" value="<%= provider.providerId %>">
-                                    <button type="submit" class="btn btn-outline btn-error btn-xs font-semibold">
-                                        Supprimer
+                                <form method="POST" action="/admin/app/<%= currentApp.id %>/provider/toggle">
+                                    <input type="hidden" name="providerId" value="<%= prov.id %>">
+                                    <input type="hidden" name="isActive" value="<%= prov.isActive ? '0' : '1' %>">
+                                    <button type="submit" class="badge <%= prov.isActive ? 'badge-success text-white' : 'badge-ghost text-base-content/50' %> font-bold gap-1 py-3 px-3 cursor-pointer">
+                                        <span class="w-1.5 h-1.5 rounded-full <%= prov.isActive ? 'bg-white' : 'bg-base-content/30' %>"></span>
+                                        <%= prov.isActive ? 'Actif sur le site' : 'Désactivé' %>
                                     </button>
                                 </form>
                             </div>
 
+                            <div class="bg-base-200 p-3 rounded-xl border border-base-300 text-xs font-mono mb-4 space-y-1.5">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-base-content/60"><%= prov.publicKeyLabel || 'Clé Publique' %>:</span>
+                                    <span class="font-bold truncate max-w-[150px]"><%= prov.publicKey ? (prov.publicKey.substring(0, 8) + '••••••••') : 'Non requise' %></span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-base-content/60"><%= prov.secretKeyLabel || 'Clé Secrète' %>:</span>
+                                    <span class="font-bold truncate max-w-[150px]"><%= prov.secretKey ? (prov.secretKey.substring(0, 6) + '••••••••') : 'Non configurée' %></span>
+                                </div>
+                            </div>
+
+                            <div class="card-actions justify-end gap-2 pt-2 border-t border-base-200">
+                                <form method="POST" action="/admin/app/<%= currentApp.id %>/provider/delete" onsubmit="return confirm('Retirer ce processeur ?')" class="m-0">
+                                    <input type="hidden" name="providerId" value="<%= prov.id %>">
+                                    <button type="submit" class="btn btn-ghost btn-sm text-error font-bold rounded-lg">Supprimer</button>
+                                </form>
+                                <button type="button" class="btn btn-outline btn-primary btn-sm font-bold rounded-lg" onclick="openEditProcessorModal('<%= prov.id %>', '<%= prov.publicKey || '' %>', '<%= prov.secretKey || '' %>', '<%= prov.extraConfig || '' %>', <%= prov.isActive ? 'true' : 'false' %>)">
+                                    Modifier les clés
+                                </button>
+                            </div>
                         </div>
                     </div>
                 <% }); %>
             </div>
 
-        <% } %>
+        <!-- CONTENU ONGLET 3 : PARAMÈTRES & CLÉS API DU SITE -->
+        <% } else if (activeTab === 'settings') { %>
 
-        <!-- CONTENU ONGLET 3 : PARAMÈTRES DU SITE & API -->
-        <% if (activeTab === 'settings') { %>
-            
-            <div class="card bg-base-100 shadow-sm border border-base-300 p-6 max-w-3xl">
-                <h2 class="text-2xl font-extrabold text-base-content mb-1">Clés API et Intégration pour <%= currentApp.name %></h2>
-                <p class="text-sm text-base-content/70 mb-6">Utilisez ces informations pour connecter le backend de votre SaaS <%= currentApp.name %> au Hub de paiement.</p>
+            <div class="bg-base-100 rounded-2xl p-4 sm:p-8 shadow-sm border border-base-300 max-w-3xl mb-8">
+                <h2 class="text-xl sm:text-2xl font-black text-base-content mb-1">Paramètres & Clés API de <%= currentApp.name %></h2>
+                <p class="text-xs sm:text-sm text-base-content/70 mb-6">Utilisez ces identifiants dans le code de votre SaaS pour initier des sessions de paiement.</p>
 
                 <div class="space-y-4">
                     <div class="form-control w-full">
-                        <label class="label py-1"><span class="label-text font-bold text-xs">Clé API secrète de votre SaaS (X-Hub-Api-Key)</span></label>
-                        <input type="text" value="<%= currentApp.apiKey %>" class="input input-bordered input-sm w-full bg-base-200 font-mono text-xs" readonly />
+                        <label class="label py-1"><span class="label-text font-bold text-xs">Clé API du Site (X-Hub-Api-Key)</span></label>
+                        <input type="text" value="<%= currentApp.apiKey %>" class="input input-bordered input-sm sm:input-md w-full bg-base-200 font-mono text-xs rounded-xl" readonly />
                     </div>
 
-                    <div class="form-control w-full">
-                        <label class="label py-1"><span class="label-text font-bold text-xs text-primary">🔗 URL de Redirection de Succès (Return URL)</span></label>
-                        <input type="text" value="<%= currentApp.returnUrl || 'Non définie' %>" class="input input-bordered input-sm w-full bg-base-200 font-mono text-xs" readonly />
-                        <label class="label py-0.5"><span class="label-text-alt text-base-content/60 text-[11px]">Le client y est automatiquement redirigé une fois le paiement validé.</span></label>
+                    <div class="form-control w-full bg-primary/5 p-3 rounded-xl border border-primary/20">
+                        <label class="label pt-0 py-1"><span class="label-text font-bold text-primary text-xs">🔗 URL de Redirection après paiement (Succès)</span></label>
+                        <input type="text" value="<%= currentApp.returnUrl || 'Non définie' %>" class="input input-bordered input-sm sm:input-md w-full bg-base-200 font-mono text-xs rounded-xl" readonly />
+                        <label class="label pb-0 py-0.5"><span class="label-text-alt text-base-content/60 text-[11px]">Le client y est redirigé une fois son paiement validé.</span></label>
                     </div>
 
                     <div class="form-control w-full">
                         <label class="label py-1"><span class="label-text font-bold text-xs">URL d'annulation (Cancel URL)</span></label>
-                        <input type="text" value="<%= currentApp.cancelUrl || 'Non définie' %>" class="input input-bordered input-sm w-full bg-base-200 font-mono text-xs" readonly />
+                        <input type="text" value="<%= currentApp.cancelUrl || 'Non définie' %>" class="input input-bordered input-sm sm:input-md w-full bg-base-200 font-mono text-xs rounded-xl" readonly />
                     </div>
 
                     <div class="form-control w-full">
                         <label class="label py-1"><span class="label-text font-bold text-xs">URL du Webhook de votre site</span></label>
-                        <input type="text" value="<%= currentApp.webhookUrl || 'Non définie' %>" class="input input-bordered input-sm w-full bg-base-200 font-mono text-xs" readonly />
+                        <input type="text" value="<%= currentApp.webhookUrl || 'Non définie' %>" class="input input-bordered input-sm sm:input-md w-full bg-base-200 font-mono text-xs rounded-xl" readonly />
                     </div>
 
                     <div class="form-control w-full">
                         <label class="label py-1"><span class="label-text font-bold text-xs">Secret Webhook (Signature HMAC-SHA256)</span></label>
-                        <input type="text" value="<%= currentApp.webhookSecret %>" class="input input-bordered input-sm w-full bg-base-200 font-mono text-xs" readonly />
+                        <input type="text" value="<%= currentApp.webhookSecret %>" class="input input-bordered input-sm sm:input-md w-full bg-base-200 font-mono text-xs rounded-xl" readonly />
                     </div>
                 </div>
 
                 <div class="divider my-6"></div>
 
-                <div class="flex justify-between items-center">
-                    <button class="btn btn-primary font-bold" onclick="openEditAppModal()">
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-3">
+                    <button class="btn btn-primary font-bold w-full sm:w-auto rounded-xl shadow-sm" onclick="openEditAppModal()">
                         Modifier les paramètres de ce site
                     </button>
 
-                    <form method="POST" action="/admin/apps/delete" onsubmit="return confirm('Êtes-vous absolument sûr de vouloir supprimer définitivement ce site et ses données ?')">
+                    <form method="POST" action="/admin/apps/delete" onsubmit="return confirm('Supprimer définitivement ce site et ses données ?')" class="w-full sm:w-auto">
                         <input type="hidden" name="appId" value="<%= currentApp.id %>">
-                        <button type="submit" class="btn btn-ghost text-error font-bold hover:bg-error/10">
+                        <button type="submit" class="btn btn-ghost text-error font-bold hover:bg-error/10 w-full sm:w-auto rounded-xl">
                             Supprimer ce site
                         </button>
                     </form>
@@ -482,20 +340,20 @@
 
     </div>
 
-    <!-- Modal Ajouter / Modifier Processeur pour ce site -->
-    <dialog id="processor_modal" class="modal">
-        <div class="modal-box max-w-xl">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="font-extrabold text-xl text-base-content" id="proc-modal-title">Ajouter un processeur</h3>
+    <!-- Modal Ajouter / Modifier Processeur (Mobile Responsive) -->
+    <dialog id="processor_modal" class="modal modal-bottom sm:modal-middle">
+        <div class="modal-box w-full sm:max-w-xl p-4 sm:p-6 rounded-t-3xl sm:rounded-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-extrabold text-lg sm:text-xl text-base-content" id="proc-modal-title">Ajouter un processeur</h3>
                 <button type="button" class="btn btn-sm btn-circle btn-ghost" onclick="document.getElementById('processor_modal').close()">✕</button>
             </div>
 
             <form method="POST" action="/admin/app/<%= currentApp.id %>/provider" id="processor-form">
                 <input type="hidden" name="isEdit" id="proc-form-isEdit" value="0">
                 
-                <div class="form-control w-full mb-4">
-                    <label class="label"><span class="label-text font-bold">Choisir la passerelle</span></label>
-                    <select name="providerId" id="proc-form-providerId" class="select select-bordered w-full font-medium" onchange="onProviderSelectChange(this.value)" required>
+                <div class="form-control w-full mb-3.5">
+                    <label class="label py-1"><span class="label-text font-bold text-xs">Choisir la passerelle</span></label>
+                    <select name="providerId" id="proc-form-providerId" class="select select-bordered select-sm sm:select-md w-full font-medium rounded-xl text-xs sm:text-sm" onchange="onProviderSelectChange(this.value)" required>
                         <option value="" disabled selected>-- Sélectionnez un processeur --</option>
                         <% allAvailableProviders.forEach(function(prov) { %>
                             <option value="<%= prov.id %>" data-pub-label="<%= prov.publicKeyLabel %>" data-pub-ph="<%= prov.publicKeyPlaceholder %>" data-sec-label="<%= prov.secretKeyLabel %>" data-sec-ph="<%= prov.secretKeyPlaceholder %>" data-extra="<%= prov.hasExtraConfig %>" data-extra-label="<%= prov.extraConfigLabel %>" data-extra-ph="<%= prov.extraConfigPlaceholder %>">
@@ -505,80 +363,90 @@
                     </select>
                 </div>
 
-                <div class="form-control w-full mb-4">
-                    <label class="label"><span class="label-text font-bold" id="proc-label-publicKey">Clé Publique / ID</span></label>
-                    <input type="text" name="publicKey" id="proc-form-publicKey" class="input input-bordered w-full font-mono text-sm" placeholder="pk_..." />
+                <div class="form-control w-full mb-3.5">
+                    <label class="label py-1"><span class="label-text font-bold text-xs" id="proc-label-publicKey">Clé Publique / ID</span></label>
+                    <input type="text" name="publicKey" id="proc-form-publicKey" class="input input-bordered input-sm sm:input-md w-full font-mono text-xs rounded-xl" placeholder="pk_..." />
                 </div>
 
-                <div class="form-control w-full mb-4">
-                    <label class="label"><span class="label-text font-bold" id="proc-label-secretKey">Clé Secrète / API Key</span></label>
-                    <input type="password" name="secretKey" id="proc-form-secretKey" class="input input-bordered w-full font-mono text-sm" placeholder="sk_..." />
+                <div class="form-control w-full mb-3.5">
+                    <label class="label py-1"><span class="label-text font-bold text-xs" id="proc-label-secretKey">Clé Secrète / API Key</span></label>
+                    <input type="password" name="secretKey" id="proc-form-secretKey" class="input input-bordered input-sm sm:input-md w-full font-mono text-xs rounded-xl" placeholder="sk_..." />
                 </div>
 
-                <div class="form-control w-full mb-6" id="proc-wrapper-extraConfig">
-                    <label class="label"><span class="label-text font-bold" id="proc-label-extraConfig">Configuration supplémentaire (Optionnel)</span></label>
-                    <input type="text" name="extraConfig" id="proc-form-extraConfig" class="input input-bordered w-full font-mono text-sm" placeholder='{"webhookSecret": "..."}' />
+                <div class="form-control w-full mb-4" id="proc-wrapper-extraConfig">
+                    <label class="label py-1"><span class="label-text font-bold text-xs" id="proc-label-extraConfig">Configuration supplémentaire</span></label>
+                    <input type="text" name="extraConfig" id="proc-form-extraConfig" class="input input-bordered input-sm sm:input-md w-full font-mono text-xs rounded-xl" placeholder='{"webhookSecret": "..."}' />
                 </div>
 
-                <div class="bg-base-200 p-4 rounded-xl mb-6 border border-base-300 flex items-center justify-between">
+                <div class="bg-base-200 p-3.5 rounded-xl mb-5 border border-base-300 flex items-center justify-between">
                     <div>
-                        <span class="text-sm font-bold block text-base-content">Statut pour ce site</span>
-                        <span class="text-xs text-base-content/60">Activer directement sur le checkout de <%= currentApp.name %> :</span>
+                        <span class="text-xs sm:text-sm font-bold block text-base-content">Activer sur le site</span>
+                        <span class="text-[11px] text-base-content/60">Visible au checkout de <%= currentApp.name %></span>
                     </div>
                     <input type="checkbox" name="isActive" id="proc-form-isActive" value="1" checked class="toggle toggle-success" />
                 </div>
 
-                <div class="modal-action">
-                    <button type="button" class="btn" onclick="document.getElementById('processor_modal').close()">Annuler</button>
-                    <button type="submit" class="btn btn-primary font-bold px-6">Enregistrer pour ce site</button>
+                <div class="modal-action flex gap-2">
+                    <button type="button" class="btn btn-ghost flex-1 rounded-xl" onclick="document.getElementById('processor_modal').close()">Annuler</button>
+                    <button type="submit" class="btn btn-primary flex-1 font-bold rounded-xl shadow-sm">Enregistrer</button>
                 </div>
             </form>
         </div>
+        <form method="dialog" class="modal-backdrop">
+            <button>close</button>
+        </form>
     </dialog>
 
-    <!-- Modal Modifier Site -->
-    <dialog id="app_modal" class="modal">
-        <div class="modal-box max-w-xl">
-            <h3 class="font-bold text-xl mb-4">Modifier le site <%= currentApp.name %></h3>
+    <!-- Modal Modifier Site (Mobile Responsive) -->
+    <dialog id="app_modal" class="modal modal-bottom sm:modal-middle">
+        <div class="modal-box w-full sm:max-w-xl p-4 sm:p-6 rounded-t-3xl sm:rounded-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-extrabold text-lg sm:text-xl text-base-content">Modifier <%= currentApp.name %></h3>
+                <button type="button" class="btn btn-sm btn-circle btn-ghost" onclick="document.getElementById('app_modal').close()">✕</button>
+            </div>
+            
             <form method="POST" action="/admin/apps">
                 <input type="hidden" name="id" value="<%= currentApp.id %>">
 
-                <div class="form-control w-full mb-4">
-                    <label class="label"><span class="label-text font-bold">Nom Public du Site / SaaS</span></label>
-                    <input type="text" name="name" value="<%= currentApp.name %>" class="input input-bordered w-full font-semibold" required />
+                <div class="form-control w-full mb-3.5">
+                    <label class="label py-1"><span class="label-text font-bold text-xs">Nom Public du Site / SaaS</span></label>
+                    <input type="text" name="name" value="<%= currentApp.name %>" class="input input-bordered input-sm sm:input-md w-full font-semibold text-xs sm:text-sm rounded-xl" required />
                 </div>
 
-                <div class="form-control w-full mb-4 bg-primary/5 p-3 rounded-xl border border-primary/20">
-                    <label class="label pt-0"><span class="label-text font-bold text-primary">🔗 URL de Redirection de Succès (Return URL)</span></label>
-                    <input type="url" name="returnUrl" value="<%= currentApp.returnUrl || '' %>" placeholder="https://monsite.com/commande-reussie" class="input input-bordered w-full font-mono text-sm" />
+                <div class="form-control w-full mb-3.5 bg-primary/5 p-3 rounded-xl border border-primary/20">
+                    <label class="label pt-0 py-1"><span class="label-text font-bold text-primary text-xs">🔗 URL de Redirection de Succès (Return URL)</span></label>
+                    <input type="url" name="returnUrl" value="<%= currentApp.returnUrl || '' %>" placeholder="https://monsite.com/commande-reussie" class="input input-bordered input-sm sm:input-md w-full font-mono text-xs rounded-xl" />
                 </div>
 
-                <div class="form-control w-full mb-4">
-                    <label class="label"><span class="label-text font-semibold">URL d'annulation (Cancel URL)</span></label>
-                    <input type="url" name="cancelUrl" value="<%= currentApp.cancelUrl || '' %>" placeholder="https://monsite.com/panier" class="input input-bordered w-full font-mono text-sm" />
+                <div class="form-control w-full mb-3.5">
+                    <label class="label py-1"><span class="label-text font-semibold text-xs">URL d'annulation (Cancel URL)</span></label>
+                    <input type="url" name="cancelUrl" value="<%= currentApp.cancelUrl || '' %>" placeholder="https://monsite.com/panier" class="input input-bordered input-sm sm:input-md w-full font-mono text-xs rounded-xl" />
                 </div>
 
-                <div class="form-control w-full mb-4">
-                    <label class="label"><span class="label-text font-semibold">Clé API (X-Hub-Api-Key)</span></label>
-                    <input type="text" name="apiKey" value="<%= currentApp.apiKey %>" class="input input-bordered w-full font-mono text-sm" />
+                <div class="form-control w-full mb-3.5">
+                    <label class="label py-1"><span class="label-text font-semibold text-xs">Clé API (X-Hub-Api-Key)</span></label>
+                    <input type="text" name="apiKey" value="<%= currentApp.apiKey %>" class="input input-bordered input-sm sm:input-md w-full font-mono text-xs rounded-xl" />
                 </div>
 
-                <div class="form-control w-full mb-4">
-                    <label class="label"><span class="label-text font-semibold">URL du Webhook de votre site</span></label>
-                    <input type="text" name="webhookUrl" value="<%= currentApp.webhookUrl || '' %>" placeholder="https://monsite.com/api/webhook" class="input input-bordered w-full font-mono text-sm" />
+                <div class="form-control w-full mb-3.5">
+                    <label class="label py-1"><span class="label-text font-semibold text-xs">URL du Webhook de votre site</span></label>
+                    <input type="text" name="webhookUrl" value="<%= currentApp.webhookUrl || '' %>" placeholder="https://monsite.com/api/webhook" class="input input-bordered input-sm sm:input-md w-full font-mono text-xs rounded-xl" />
                 </div>
 
-                <div class="form-control w-full mb-6">
-                    <label class="label"><span class="label-text font-semibold">Secret Webhook HMAC</span></label>
-                    <input type="text" name="webhookSecret" value="<%= currentApp.webhookSecret %>" class="input input-bordered w-full font-mono text-sm" />
+                <div class="form-control w-full mb-5">
+                    <label class="label py-1"><span class="label-text font-semibold text-xs">Secret Webhook HMAC</span></label>
+                    <input type="text" name="webhookSecret" value="<%= currentApp.webhookSecret %>" class="input input-bordered input-sm sm:input-md w-full font-mono text-xs rounded-xl" />
                 </div>
 
-                <div class="modal-action">
-                    <button type="button" class="btn" onclick="document.getElementById('app_modal').close()">Annuler</button>
-                    <button type="submit" class="btn btn-primary font-bold">Sauvegarder</button>
+                <div class="modal-action flex gap-2">
+                    <button type="button" class="btn btn-ghost flex-1 rounded-xl" onclick="document.getElementById('app_modal').close()">Annuler</button>
+                    <button type="submit" class="btn btn-primary flex-1 font-bold rounded-xl shadow-sm">Sauvegarder</button>
                 </div>
             </form>
         </div>
+        <form method="dialog" class="modal-backdrop">
+            <button>close</button>
+        </form>
     </dialog>
 
     <script>
@@ -617,7 +485,7 @@
         }
 
         function openAddProcessorModal() {
-            document.getElementById('proc-modal-title').innerText = "Ajouter un processeur pour <%= currentApp.name %>";
+            document.getElementById('proc-modal-title').innerText = "Ajouter un processeur";
             document.getElementById('proc-form-isEdit').value = "0";
             document.getElementById('proc-form-providerId').disabled = false;
             document.getElementById('proc-form-providerId').value = "";
@@ -639,7 +507,7 @@
         }
 
         function openEditProcessorModal(providerId, publicKey, secretKey, extraConfig, isActive) {
-            document.getElementById('proc-modal-title').innerText = "Modifier les clés du processeur";
+            document.getElementById('proc-modal-title').innerText = "Modifier les clés";
             document.getElementById('proc-form-isEdit').value = "1";
             
             const selectEl = document.getElementById('proc-form-providerId');
