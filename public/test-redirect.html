@@ -64,7 +64,8 @@
             btn.disabled = true;
 
             try {
-                const res = await fetch('http://localhost:4000/checkout/session', {
+                const apiOrigin = window.location.origin;
+                const res = await fetch(`${apiOrigin}/checkout/session`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

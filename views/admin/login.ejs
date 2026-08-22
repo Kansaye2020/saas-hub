@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion | SaaS Payment Hub</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.10.2/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-base-200 min-h-screen flex items-center justify-center p-4">
+    
+    <div class="card w-full max-w-md bg-base-100 shadow-2xl border border-base-300">
+        <div class="card-body p-8">
+            
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-inner">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                </div>
+                <h1 class="text-2xl font-black text-base-content tracking-tight">SaaS Payment Hub</h1>
+                <p class="text-xs text-base-content/60 mt-1">Portail d'administration et de gestion des passerelles</p>
+            </div>
+
+            <% if (locals.errorMessage) { %>
+                <div role="alert" class="alert alert-error shadow-sm mb-6 text-sm py-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <span><%= errorMessage %></span>
+                </div>
+            <% } %>
+
+            <!-- Onglets de sélection de méthode de connexion -->
+            <div class="tabs tabs-boxed bg-base-200 p-1 mb-6 rounded-xl grid grid-cols-2">
+                <button type="button" id="tab-btn-admin" class="tab tab-active font-bold text-xs" onclick="switchLoginTab('admin')">
+                    👑 Compte Admin
+                </button>
+                <button type="button" id="tab-btn-apikey" class="tab font-bold text-xs" onclick="switchLoginTab('apikey')">
+                    🔑 Clé API Site
+                </button>
+            </div>
+
+            <!-- Formulaire 1 : Compte Admin -->
+            <form id="form-admin" method="POST" action="/admin/login">
+                <div class="form-control w-full mb-4">
+                    <label class="label py-1"><span class="label-text font-bold text-xs">Identifiant Admin</span></label>
+                    <input type="text" name="username" value="<%= locals.defaultUsername || 'admin' %>" class="input input-bordered w-full font-medium" placeholder="admin" required autofocus />
+                </div>
+
+                <div class="form-control w-full mb-6">
+                    <label class="label py-1"><span class="label-text font-bold text-xs">Mot de passe</span></label>
+                    <div class="relative">
+                        <input type="password" id="admin-pass" name="password" class="input input-bordered w-full font-medium pr-10" placeholder="••••••••" required />
+                        <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center text-base-content/40 hover:text-base-content" onclick="togglePasswordVisibility('admin-pass')">
+                            👁️
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Info Box pour le mode dev -->
+                <div class="bg-base-200 rounded-xl p-3.5 mb-6 border border-base-300 text-xs text-base-content/80">
+                    <div class="font-bold flex items-center gap-1 text-primary text-[11px] mb-1">
+                        <span>💡</span> Identifiants par défaut (Mode dev) :
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 mt-1.5 font-mono text-[11px]">
+                        <div class="bg-base-100 p-1.5 rounded border border-base-300">
+                            <span class="text-base-content/50 block text-[9px] uppercase font-bold">Identifiant</span>
+                            <span class="font-bold">admin</span>
+                        </div>
+                        <div class="bg-base-100 p-1.5 rounded border border-base-300">
+                            <span class="text-base-content/50 block text-[9px] uppercase font-bold">Mot de passe</span>
+                            <span class="font-bold">admin</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block font-bold text-base shadow-sm">
+                    Accéder au Dashboard
+                </button>
+            </form>
+
+            <!-- Formulaire 2 : Clé API Site -->
+            <form id="form-apikey" method="POST" action="/admin/login" class="hidden">
+                <div class="form-control w-full mb-6">
+                    <label class="label py-1">
+                        <span class="label-text font-bold text-xs">Clé API de votre site (X-Hub-Api-Key)</span>
+                    </label>
+                    <input type="text" name="apiKey" class="input input-bordered w-full font-mono text-xs" placeholder="sk_hub_..." required />
+                    <label class="label py-1">
+                        <span class="label-text-alt text-base-content/60 text-[11px]">Permet d'accéder directement au dashboard spécifique de votre site/SaaS.</span>
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block font-bold text-base shadow-sm">
+                    Ouvrir l'espace de ce site
+                </button>
+            </form>
+
+        </div>
+    </div>
+
+    <script>
+        function switchLoginTab(type) {
+            const adminTab = document.getElementById('tab-btn-admin');
+            const apikeyTab = document.getElementById('tab-btn-apikey');
+            const adminForm = document.getElementById('form-admin');
+            const apikeyForm = document.getElementById('form-apikey');
+
+            if (type === 'admin') {
+                adminTab.classList.add('tab-active');
+                apikeyTab.classList.remove('tab-active');
+                adminForm.classList.remove('hidden');
+                apikeyForm.classList.add('hidden');
+            } else {
+                apikeyTab.classList.add('tab-active');
+                adminTab.classList.remove('tab-active');
+                apikeyForm.classList.remove('hidden');
+                adminForm.classList.add('hidden');
+            }
+        }
+
+        function togglePasswordVisibility(id) {
+            const input = document.getElementById(id);
+            if (input.type === 'password') {
+                input.type = 'text';
+            } else {
+                input.type = 'password';
+            }
+        }
+
+        <% if (locals.activeTab === 'apiKey') { %>
+            switchLoginTab('apikey');
+        <% } %>
+    </script>
+
+</body>
+</html>

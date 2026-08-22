@@ -1,10 +1,11 @@
 import { z } from "zod";
 import { CreatePaymentRequest, PaymentProviderType, UnifiedPaymentResponse } from "../types";
 import { providerRegistry } from "../providers";
+import { getAppActiveProvider } from "../config";
 
 const CreatePaymentSchema = z.object({
   appId: z.string().min(1, "appId requis"),
-  provider: z.enum(["lomopay", "whop", "stripe", "chariow", "auto"]),
+  provider: z.enum(["lomopay", "whop", "stripe", "chariow", "ikeepay", "auto"]),
   amount: z.number().positive("Le montant doit être supérieur à 0"),
   currency: z.string().optional(),
   description: z.string().optional(),
@@ -40,11 +41,16 @@ export class PaymentService {
     // Détermination automatique du provider si 'auto'
     let targetProvider: PaymentProviderType;
     if (data.provider === "auto") {
-      const cur = (data.currency || "XOF").toUpperCase();
-      if (cur === "XOF" || cur === "XAF") {
-        targetProvider = "lomopay";
+      const active = await getAppActiveProvider(data.appId);
+      if (active && active.providerId) {
+        targetProvider = active.providerId as PaymentProviderType;
       } else {
-        targetProvider = "whop";
+        const cur = (data.currency || "XOF").toUpperCase();
+        if (cur === "XOF" || cur === "XAF") {
+          targetProvider = "lomopay";
+        } else {
+          targetProvider = "whop";
+        }
       }
     } else {
       targetProvider = data.provider;

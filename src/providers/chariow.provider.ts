@@ -1,15 +1,15 @@
 import { IPaymentProvider } from "./base";
 import { CreatePaymentRequest, UnifiedPaymentResponse, UnifiedWebhookPayload } from "../types";
-import { config } from "../config";
+import { config, getAppProviderConfig } from "../config";
 
 export class ChariowProvider implements IPaymentProvider {
   readonly name = "chariow" as const;
 
   async createPayment(request: CreatePaymentRequest): Promise<UnifiedPaymentResponse> {
-    const { secretKey, publicKey } = config.chariow;
+    const { secretKey, publicKey } = await getAppProviderConfig(request.appId, this.name);
 
     if (!secretKey) {
-      throw new Error("CHARIOW_SECRET_KEY non configuré.");
+      throw new Error(`CHARIOW_SECRET_KEY non configuré pour le site ${request.appId}.`);
     }
 
     // Structure Chariow standard

@@ -1,18 +1,18 @@
 import { IPaymentProvider } from "./base";
 import { CreatePaymentRequest, UnifiedPaymentResponse, UnifiedWebhookPayload } from "../types";
-import { config, getProviderConfig } from "../config";
+import { config, getAppProviderConfig } from "../config";
 
 export class WhopProvider implements IPaymentProvider {
   readonly name = "whop" as const;
 
   async createPayment(request: CreatePaymentRequest): Promise<UnifiedPaymentResponse> {
-    const providerConfig = await getProviderConfig(this.name);
+    const providerConfig = await getAppProviderConfig(request.appId, this.name);
     const companyId = providerConfig.publicKey;
     const apiKey = providerConfig.secretKey;
     const isSandbox = config.whop.isSandbox;
 
     if (!apiKey || !companyId) {
-      throw new Error("WHOP_API_KEY ou WHOP_COMPANY_ID non configurés (DB ou ENV).");
+      throw new Error(`WHOP_API_KEY ou WHOP_COMPANY_ID non configurés pour le site ${request.appId}.`);
     }
 
     // Calcul du montant USD si la devise fournie est XOF (1 USD ~ 600 XOF par défaut si non spécifié)

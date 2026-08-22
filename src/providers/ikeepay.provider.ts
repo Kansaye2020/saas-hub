@@ -1,15 +1,15 @@
 import { IPaymentProvider } from "./base";
 import { CreatePaymentRequest, UnifiedPaymentResponse, UnifiedWebhookPayload } from "../types";
-import { getProviderConfig } from "../config";
+import { getAppProviderConfig } from "../config";
 
 export class iKeepayProvider implements IPaymentProvider {
   readonly name = "ikeepay" as const;
 
   async createPayment(request: CreatePaymentRequest): Promise<UnifiedPaymentResponse> {
-    const config = await getProviderConfig(this.name);
+    const config = await getAppProviderConfig(request.appId, this.name);
     
     if (!config.publicKey || !config.secretKey) {
-      throw new Error("iKeepay clés non configurées. Veuillez les ajouter dans le Dashboard.");
+      throw new Error(`iKeepay clés non configurées pour le site ${request.appId}.`);
     }
 
     // TODO: Implémenter l'appel réel à l'API iKeepay

@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= currentApp.name %> | Dashboard SaaS Payment Hub</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.10.2/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .dot-pulse {
+            position: relative;
+        }
+        .dot-pulse::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border-radius: 9999px;
+            background: currentColor;
+            opacity: 0.75;
+            animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+        @keyframes ping {
+            75%, 100% {
+                transform: scale(2);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body class="bg-base-200 min-h-screen">
+    
+    <!-- Navbar -->
+    <div class="navbar bg-base-100 shadow-sm border-b border-base-300 sticky top-0 z-30">
+        <div class="flex-1 gap-3 items-center">
+            <a href="/admin/apps" class="btn btn-ghost text-lg font-bold tracking-tight text-primary flex items-center gap-2">
+                <span>💳 SaaS Hub</span>
+            </a>
+            
+            <!-- Sélecteur de Site (Switcher rapide) -->
+            <div class="dropdown">
+                <div tabindex="0" role="button" class="btn btn-sm btn-outline border-base-300 font-bold gap-2 bg-base-200">
+                    <span class="w-2.5 h-2.5 rounded-full bg-success"></span>
+                    <span class="text-base-content"><%= currentApp.name %></span>
+                    <span class="badge badge-xs badge-neutral text-[10px] font-mono"><%= currentApp.id %></span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                </div>
+                <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-2xl bg-base-100 rounded-box w-72 border border-base-300 mt-2">
+                    <li class="menu-title text-xs uppercase font-bold text-base-content/60 px-3 py-1">Changer de site</li>
+                    <% allApps.forEach(function(app) { %>
+                        <li>
+                            <a href="/admin/app/<%= app.id %>" class="<%= app.id === currentApp.id ? 'active font-bold' : '' %> flex items-center justify-between py-2">
+                                <span class="truncate"><%= app.name %></span>
+                                <span class="badge badge-xs font-mono"><%= app.id %></span>
+                            </a>
+                        </li>
+                    <% }); %>
+                    <div class="divider my-1"></div>
+                    <li>
+                        <a href="/admin/apps" class="text-primary font-bold">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                            Gérer tous les sites
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="flex-none gap-2">
+            <ul class="menu menu-horizontal px-1 font-medium items-center gap-1">
+                <li><a href="/admin/apps" class="text-sm font-semibold">Toutes mes applications</a></li>
+                <li><a href="/admin/logout" class="text-error font-semibold hover:bg-error/10 text-sm">Déconnexion</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        
+        <!-- Alerts -->
+        <% if (successMessage) { %>
+            <div role="alert" class="alert alert-success shadow-md mb-6 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <span class="font-medium"><%= successMessage %></span>
+                </div>
+                <a href="/admin/app/<%= currentApp.id %>?tab=<%= activeTab %>" class="btn btn-ghost btn-xs">✕</a>
+            </div>
+        <% } %>
+
+        <% if (errorMessage) { %>
+            <div role="alert" class="alert alert-error shadow-md mb-6 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <span class="font-medium"><%= errorMessage %></span>
+                </div>
+                <a href="/admin/app/<%= currentApp.id %>?tab=<%= activeTab %>" class="btn btn-ghost btn-xs">✕</a>
+            </div>
+        <% } %>
+
+        <!-- Header du Site -->
+        <div class="bg-base-100 rounded-2xl p-6 shadow-sm border border-base-300 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <div class="flex items-center gap-3">
+                    <a href="/admin/apps" class="btn btn-sm btn-ghost btn-circle" title="Retour à la liste des sites">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                    </a>
+                    <h1 class="text-3xl font-extrabold text-base-content"><%= currentApp.name %></h1>
+                    <span class="badge badge-primary font-mono text-xs">ID: <%= currentApp.id %></span>
+                </div>
+                <p class="text-sm text-base-content/70 mt-1 pl-11">Espace de gestion dédié pour ce site/SaaS et ses processeurs de paiement indépendants.</p>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <a href="/admin/apps" class="btn btn-sm btn-outline gap-1.5 font-bold">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
+                    Tous mes sites
+                </a>
+                <button class="btn btn-sm btn-primary font-bold" onclick="openEditAppModal()">
+                    Modifier le site
+                </button>
+            </div>
+        </div>
+
+        <!-- Onglets de Navigation -->
+        <div role="tablist" class="tabs tabs-boxed bg-base-100 p-1.5 shadow-sm border border-base-300 rounded-xl mb-6 max-w-xl">
+            <a role="tab" href="/admin/app/<%= currentApp.id %>?tab=dashboard" class="tab font-bold text-sm <%= activeTab === 'dashboard' ? 'tab-active text-white' : '' %>">
+                📊 Tableau de bord & Transactions
+            </a>
+            <a role="tab" href="/admin/app/<%= currentApp.id %>?tab=processors" class="tab font-bold text-sm <%= activeTab === 'processors' ? 'tab-active text-white' : '' %>">
+                💳 Processeurs de paiement (<%= configuredProviders.length %>)
+            </a>
+            <a role="tab" href="/admin/app/<%= currentApp.id %>?tab=settings" class="tab font-bold text-sm <%= activeTab === 'settings' ? 'tab-active text-white' : '' %>">
+                ⚙️ Clés API & Webhook
+            </a>
+        </div>
+
+        <!-- CONTENU ONGLET 1 : DASHBOARD -->
+        <% if (activeTab === 'dashboard') { %>
+            
+            <!-- Cartes de Statistiques du Site -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="stat bg-base-100 rounded-2xl shadow-sm border border-base-300 p-6">
+                    <div class="stat-figure text-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-9 h-9 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                    </div>
+                    <div class="stat-title font-semibold text-base-content/60">Revenu de ce site</div>
+                    <div class="stat-value text-primary mt-1"><%= totalRevenue.toLocaleString() %> FCFA</div>
+                    <div class="stat-desc mt-1">Généré uniquement par <%= currentApp.name %></div>
+                </div>
+                
+                <div class="stat bg-base-100 rounded-2xl shadow-sm border border-base-300 p-6">
+                    <div class="stat-figure text-secondary">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-9 h-9 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    </div>
+                    <div class="stat-title font-semibold text-base-content/60">Transactions Réussies</div>
+                    <div class="stat-value text-secondary mt-1"><%= totalTransactions %></div>
+                    <div class="stat-desc mt-1">Paiements validés pour ce site</div>
+                </div>
+
+                <div class="stat bg-base-100 rounded-2xl shadow-sm border border-base-300 p-6">
+                    <div class="stat-figure <%= activeProviders.length > 0 ? 'text-success' : 'text-base-content/40' %>">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-9 h-9 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                    </div>
+                    <div class="stat-title font-semibold text-base-content/60">Passerelles Actives</div>
+                    <div class="stat-value text-lg font-bold mt-1 truncate">
+                        <%= activeProcessorName %>
+                    </div>
+                    <div class="stat-desc mt-1 font-medium text-success"><%= activeProviders.length %> processeur(s) disponible(s) au checkout</div>
+                </div>
+            </div>
+
+            <!-- Tableau des Transactions de ce Site -->
+            <div class="card bg-base-100 shadow-sm border border-base-300">
+                <div class="card-body p-0">
+                    <div class="p-6 pb-4 flex justify-between items-center border-b border-base-200">
+                        <div>
+                            <h2 class="card-title text-xl font-bold">Transactions Récentes de <%= currentApp.name %></h2>
+                            <p class="text-xs text-base-content/60 mt-0.5">Historique des 25 derniers paiements de cette application.</p>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="table table-zebra w-full">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Order ID</th>
+                                    <th>Processeur</th>
+                                    <th>Montant</th>
+                                    <th>Statut</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% if (recentTransactions.length === 0) { %>
+                                    <tr>
+                                        <td colspan="5" class="text-center text-base-content/50 py-12">
+                                            Aucune transaction pour le moment sur ce site.
+                                        </td>
+                                    </tr>
+                                <% } %>
+                                <% recentTransactions.forEach(function(tx) { %>
+                                    <tr>
+                                        <td class="whitespace-nowrap font-mono text-xs text-base-content/70"><%= new Date(tx.createdAt).toLocaleString() %></td>
+                                        <td class="font-mono text-xs font-bold"><%= tx.orderId %></td>
+                                        <td class="capitalize font-medium"><%= tx.provider || '-' %></td>
+                                        <td class="font-black text-sm"><%= tx.amount.toLocaleString() %> <%= tx.currency %></td>
+                                        <td>
+                                            <% if (tx.status === 'succeeded') { %>
+                                                <div class="badge badge-success gap-1.5 text-xs text-white font-bold">Succès</div>
+                                            <% } else if (tx.status === 'pending') { %>
+                                                <div class="badge badge-warning gap-1.5 text-xs font-bold">En cours</div>
+                                            <% } else { %>
+                                                <div class="badge badge-error gap-1.5 text-xs font-bold"><%= tx.status %></div>
+                                            <% } %>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        <% } %>
+
+        <!-- CONTENU ONGLET 2 : PROCESSEURS DE CE SITE -->
+        <% if (activeTab === 'processors') { %>
+            
+            <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-extrabold text-base-content">Processeurs intégrés pour <%= currentApp.name %></h2>
+                    <p class="text-sm text-base-content/70 mt-1">Chaque site a ses propres clés API de paiement (LomoPay, Whop, Stripe, etc.).</p>
+                </div>
+                <div>
+                    <% if (canAddProcessor) { %>
+                        <button class="btn btn-primary shadow-sm gap-2" onclick="openAddProcessorModal()">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                            Ajouter un processeur pour ce site
+                        </button>
+                    <% } else { %>
+                        <button class="btn btn-disabled opacity-50 cursor-not-allowed gap-2" disabled>
+                            Tous les processeurs sont configurés
+                        </button>
+                    <% } %>
+                </div>
+            </div>
+
+            <% if (configuredProviders.length === 0) { %>
+                <div class="card bg-base-100 shadow-sm border border-base-300 p-8 sm:p-12 text-center">
+                    <div class="w-16 h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-1">Aucun processeur configuré pour <%= currentApp.name %></h3>
+                    <p class="text-sm text-base-content/60 max-w-md mx-auto mb-6">
+                        Ajoutez vos clés de paiement spécifiques à ce site (LomoPay, Whop, Stripe, Chariow ou iKeepay) pour activer les paiements.
+                    </p>
+                    <button class="btn btn-primary shadow-sm" onclick="openAddProcessorModal()">
+                        Ajouter un processeur maintenant
+                    </button>
+                </div>
+            <% } %>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <% configuredProviders.forEach(function(provider) { %>
+                    <div class="card bg-base-100 shadow-sm border-2 <%= provider.isActive ? 'border-success/40' : 'border-base-300' %> flex flex-col justify-between">
+                        <div class="card-body p-6">
+                            
+                            <!-- Header de la carte -->
+                            <div class="flex items-center justify-between gap-4 pb-4 border-b border-base-200">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 rounded-xl <%= provider.isActive ? 'bg-success/15 text-success' : 'bg-base-200 text-base-content/60' %> flex items-center justify-center font-black text-xl shadow-inner">
+                                        <%= provider.meta.name.charAt(0) %>
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <h3 class="text-lg font-extrabold text-base-content"><%= provider.meta.name %></h3>
+                                            <span class="badge badge-xs badge-outline font-medium"><%= provider.meta.category %></span>
+                                        </div>
+                                        <p class="text-xs text-base-content/60 mt-0.5"><%= provider.meta.tagline %></p>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <% if (provider.isActive) { %>
+                                        <div class="badge badge-success gap-1.5 py-2.5 px-3 text-xs font-extrabold text-white shadow-sm">
+                                            <span class="w-2 h-2 rounded-full bg-white relative dot-pulse"></span>
+                                            Actif
+                                        </div>
+                                    <% } else { %>
+                                        <div class="badge badge-ghost border border-base-300 gap-1.5 py-2.5 px-3 text-xs font-bold text-base-content/60 bg-base-200">
+                                            <span class="w-2 h-2 rounded-full bg-base-content/40"></span>
+                                            Inactif
+                                        </div>
+                                    <% } %>
+                                </div>
+                            </div>
+
+                            <!-- Bloc de contrôle de statut -->
+                            <div class="my-4 p-3 rounded-xl <%= provider.isActive ? 'bg-success/10 border border-success/30' : 'bg-base-200/80 border border-base-300' %> flex items-center justify-between gap-3">
+                                <div>
+                                    <div class="text-[10px] font-semibold uppercase tracking-wider text-base-content/60">Statut sur ce site</div>
+                                    <div class="text-xs font-black <%= provider.isActive ? 'text-success' : 'text-base-content/70' %>">
+                                        <%= provider.isActive ? 'Actif au Checkout' : 'Inactif' %>
+                                    </div>
+                                </div>
+
+                                <form method="POST" action="/admin/app/<%= currentApp.id %>/provider/toggle" class="m-0">
+                                    <input type="hidden" name="providerId" value="<%= provider.providerId %>">
+                                    <% if (provider.isActive) { %>
+                                        <button type="submit" class="btn btn-warning btn-xs font-bold">
+                                            Désactiver
+                                        </button>
+                                    <% } else { %>
+                                        <button type="submit" class="btn btn-success btn-xs text-white font-bold">
+                                            Activer
+                                        </button>
+                                    <% } %>
+                                </form>
+                            </div>
+
+                            <!-- Détails des clés -->
+                            <div class="space-y-2 text-xs">
+                                <div class="bg-base-200 p-2.5 rounded-lg border border-base-300">
+                                    <span class="font-bold text-base-content/60 block uppercase text-[9px]"><%= provider.meta.publicKeyLabel || 'Clé Publique / ID' %></span>
+                                    <span class="font-mono font-semibold break-all text-xs"><%= provider.publicKey ? provider.publicKey : '<em class="text-base-content/40 font-normal">Non renseigné</em>' %></span>
+                                </div>
+
+                                <div class="bg-base-200 p-2.5 rounded-lg border border-base-300 flex items-center justify-between">
+                                    <div>
+                                        <span class="font-bold text-base-content/60 block uppercase text-[9px]"><%= provider.meta.secretKeyLabel || 'Clé Secrète / API Key' %></span>
+                                        <span class="font-mono font-semibold text-xs">
+                                            <% if (provider.secretKey) { %>
+                                                <%= provider.secretKey.length > 8 ? provider.secretKey.substring(0, 4) + '••••••••' + provider.secretKey.substring(provider.secretKey.length - 4) : '••••••••' %>
+                                            <% } else { %>
+                                                <em class="text-base-content/40 font-normal">Non renseigné</em>
+                                            <% } %>
+                                        </span>
+                                    </div>
+                                    <span class="badge badge-xs badge-neutral text-[10px]">Sécurisé</span>
+                                </div>
+                            </div>
+
+                            <!-- Actions -->
+                            <div class="card-actions justify-end mt-4 pt-3 border-t border-base-200 gap-2">
+                                <button type="button" class="btn btn-outline btn-xs font-semibold" onclick="openEditProcessorModal('<%= provider.providerId %>', '<%= provider.publicKey %>', '<%= provider.secretKey %>', '<%= provider.extraConfig %>', <%= provider.isActive %>)">
+                                    Modifier les clés
+                                </button>
+                                
+                                <form method="POST" action="/admin/app/<%= currentApp.id %>/provider/delete" onsubmit="return confirm('Supprimer ce processeur pour ce site ?')" class="m-0">
+                                    <input type="hidden" name="providerId" value="<%= provider.providerId %>">
+                                    <button type="submit" class="btn btn-outline btn-error btn-xs font-semibold">
+                                        Supprimer
+                                    </button>
+                                </form>
+                            </div>
+
+                        </div>
+                    </div>
+                <% }); %>
+            </div>
+
+        <% } %>
+
+        <!-- CONTENU ONGLET 3 : PARAMÈTRES DU SITE & API -->
+        <% if (activeTab === 'settings') { %>
+            
+            <div class="card bg-base-100 shadow-sm border border-base-300 p-6 max-w-3xl">
+                <h2 class="text-2xl font-extrabold text-base-content mb-1">Clés API et Intégration pour <%= currentApp.name %></h2>
+                <p class="text-sm text-base-content/70 mb-6">Utilisez ces informations pour connecter le backend de votre SaaS <%= currentApp.name %> au Hub de paiement.</p>
+
+                <div class="space-y-4">
+                    <div class="form-control w-full">
+                        <label class="label py-1"><span class="label-text font-bold text-xs">Clé API secrète de votre SaaS (X-Hub-Api-Key)</span></label>
+                        <input type="text" value="<%= currentApp.apiKey %>" class="input input-bordered input-sm w-full bg-base-200 font-mono text-xs" readonly />
+                    </div>
+
+                    <div class="form-control w-full">
+                        <label class="label py-1"><span class="label-text font-bold text-xs text-primary">🔗 URL de Redirection de Succès (Return URL)</span></label>
+                        <input type="text" value="<%= currentApp.returnUrl || 'Non définie' %>" class="input input-bordered input-sm w-full bg-base-200 font-mono text-xs" readonly />
+                        <label class="label py-0.5"><span class="label-text-alt text-base-content/60 text-[11px]">Le client y est automatiquement redirigé une fois le paiement validé.</span></label>
+                    </div>
+
+                    <div class="form-control w-full">
+                        <label class="label py-1"><span class="label-text font-bold text-xs">URL d'annulation (Cancel URL)</span></label>
+                        <input type="text" value="<%= currentApp.cancelUrl || 'Non définie' %>" class="input input-bordered input-sm w-full bg-base-200 font-mono text-xs" readonly />
+                    </div>
+
+                    <div class="form-control w-full">
+                        <label class="label py-1"><span class="label-text font-bold text-xs">URL du Webhook de votre site</span></label>
+                        <input type="text" value="<%= currentApp.webhookUrl || 'Non définie' %>" class="input input-bordered input-sm w-full bg-base-200 font-mono text-xs" readonly />
+                    </div>
+
+                    <div class="form-control w-full">
+                        <label class="label py-1"><span class="label-text font-bold text-xs">Secret Webhook (Signature HMAC-SHA256)</span></label>
+                        <input type="text" value="<%= currentApp.webhookSecret %>" class="input input-bordered input-sm w-full bg-base-200 font-mono text-xs" readonly />
+                    </div>
+                </div>
+
+                <div class="divider my-6"></div>
+
+                <div class="flex justify-between items-center">
+                    <button class="btn btn-primary font-bold" onclick="openEditAppModal()">
+                        Modifier les paramètres de ce site
+                    </button>
+
+                    <form method="POST" action="/admin/apps/delete" onsubmit="return confirm('Êtes-vous absolument sûr de vouloir supprimer définitivement ce site et ses données ?')">
+                        <input type="hidden" name="appId" value="<%= currentApp.id %>">
+                        <button type="submit" class="btn btn-ghost text-error font-bold hover:bg-error/10">
+                            Supprimer ce site
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+        <% } %>
+
+    </div>
+
+    <!-- Modal Ajouter / Modifier Processeur pour ce site -->
+    <dialog id="processor_modal" class="modal">
+        <div class="modal-box max-w-xl">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-extrabold text-xl text-base-content" id="proc-modal-title">Ajouter un processeur</h3>
+                <button type="button" class="btn btn-sm btn-circle btn-ghost" onclick="document.getElementById('processor_modal').close()">✕</button>
+            </div>
+
+            <form method="POST" action="/admin/app/<%= currentApp.id %>/provider" id="processor-form">
+                <input type="hidden" name="isEdit" id="proc-form-isEdit" value="0">
+                
+                <div class="form-control w-full mb-4">
+                    <label class="label"><span class="label-text font-bold">Choisir la passerelle</span></label>
+                    <select name="providerId" id="proc-form-providerId" class="select select-bordered w-full font-medium" onchange="onProviderSelectChange(this.value)" required>
+                        <option value="" disabled selected>-- Sélectionnez un processeur --</option>
+                        <% allAvailableProviders.forEach(function(prov) { %>
+                            <option value="<%= prov.id %>" data-pub-label="<%= prov.publicKeyLabel %>" data-pub-ph="<%= prov.publicKeyPlaceholder %>" data-sec-label="<%= prov.secretKeyLabel %>" data-sec-ph="<%= prov.secretKeyPlaceholder %>" data-extra="<%= prov.hasExtraConfig %>" data-extra-label="<%= prov.extraConfigLabel %>" data-extra-ph="<%= prov.extraConfigPlaceholder %>">
+                                <%= prov.name %> — <%= prov.tagline %>
+                            </option>
+                        <% }); %>
+                    </select>
+                </div>
+
+                <div class="form-control w-full mb-4">
+                    <label class="label"><span class="label-text font-bold" id="proc-label-publicKey">Clé Publique / ID</span></label>
+                    <input type="text" name="publicKey" id="proc-form-publicKey" class="input input-bordered w-full font-mono text-sm" placeholder="pk_..." />
+                </div>
+
+                <div class="form-control w-full mb-4">
+                    <label class="label"><span class="label-text font-bold" id="proc-label-secretKey">Clé Secrète / API Key</span></label>
+                    <input type="password" name="secretKey" id="proc-form-secretKey" class="input input-bordered w-full font-mono text-sm" placeholder="sk_..." />
+                </div>
+
+                <div class="form-control w-full mb-6" id="proc-wrapper-extraConfig">
+                    <label class="label"><span class="label-text font-bold" id="proc-label-extraConfig">Configuration supplémentaire (Optionnel)</span></label>
+                    <input type="text" name="extraConfig" id="proc-form-extraConfig" class="input input-bordered w-full font-mono text-sm" placeholder='{"webhookSecret": "..."}' />
+                </div>
+
+                <div class="bg-base-200 p-4 rounded-xl mb-6 border border-base-300 flex items-center justify-between">
+                    <div>
+                        <span class="text-sm font-bold block text-base-content">Statut pour ce site</span>
+                        <span class="text-xs text-base-content/60">Activer directement sur le checkout de <%= currentApp.name %> :</span>
+                    </div>
+                    <input type="checkbox" name="isActive" id="proc-form-isActive" value="1" checked class="toggle toggle-success" />
+                </div>
+
+                <div class="modal-action">
+                    <button type="button" class="btn" onclick="document.getElementById('processor_modal').close()">Annuler</button>
+                    <button type="submit" class="btn btn-primary font-bold px-6">Enregistrer pour ce site</button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+
+    <!-- Modal Modifier Site -->
+    <dialog id="app_modal" class="modal">
+        <div class="modal-box max-w-xl">
+            <h3 class="font-bold text-xl mb-4">Modifier le site <%= currentApp.name %></h3>
+            <form method="POST" action="/admin/apps">
+                <input type="hidden" name="id" value="<%= currentApp.id %>">
+
+                <div class="form-control w-full mb-4">
+                    <label class="label"><span class="label-text font-bold">Nom Public du Site / SaaS</span></label>
+                    <input type="text" name="name" value="<%= currentApp.name %>" class="input input-bordered w-full font-semibold" required />
+                </div>
+
+                <div class="form-control w-full mb-4 bg-primary/5 p-3 rounded-xl border border-primary/20">
+                    <label class="label pt-0"><span class="label-text font-bold text-primary">🔗 URL de Redirection de Succès (Return URL)</span></label>
+                    <input type="url" name="returnUrl" value="<%= currentApp.returnUrl || '' %>" placeholder="https://monsite.com/commande-reussie" class="input input-bordered w-full font-mono text-sm" />
+                </div>
+
+                <div class="form-control w-full mb-4">
+                    <label class="label"><span class="label-text font-semibold">URL d'annulation (Cancel URL)</span></label>
+                    <input type="url" name="cancelUrl" value="<%= currentApp.cancelUrl || '' %>" placeholder="https://monsite.com/panier" class="input input-bordered w-full font-mono text-sm" />
+                </div>
+
+                <div class="form-control w-full mb-4">
+                    <label class="label"><span class="label-text font-semibold">Clé API (X-Hub-Api-Key)</span></label>
+                    <input type="text" name="apiKey" value="<%= currentApp.apiKey %>" class="input input-bordered w-full font-mono text-sm" />
+                </div>
+
+                <div class="form-control w-full mb-4">
+                    <label class="label"><span class="label-text font-semibold">URL du Webhook de votre site</span></label>
+                    <input type="text" name="webhookUrl" value="<%= currentApp.webhookUrl || '' %>" placeholder="https://monsite.com/api/webhook" class="input input-bordered w-full font-mono text-sm" />
+                </div>
+
+                <div class="form-control w-full mb-6">
+                    <label class="label"><span class="label-text font-semibold">Secret Webhook HMAC</span></label>
+                    <input type="text" name="webhookSecret" value="<%= currentApp.webhookSecret %>" class="input input-bordered w-full font-mono text-sm" />
+                </div>
+
+                <div class="modal-action">
+                    <button type="button" class="btn" onclick="document.getElementById('app_modal').close()">Annuler</button>
+                    <button type="submit" class="btn btn-primary font-bold">Sauvegarder</button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+
+    <script>
+        const providersMeta = {
+            <% allAvailableProviders.forEach(function(prov) { %>
+                '<%= prov.id %>': {
+                    pubLabel: '<%= prov.publicKeyLabel %>',
+                    pubPlaceholder: '<%= prov.publicKeyPlaceholder %>',
+                    secLabel: '<%= prov.secretKeyLabel %>',
+                    secPlaceholder: '<%= prov.secretKeyPlaceholder %>',
+                    hasExtra: <%= prov.hasExtraConfig %>,
+                    extraLabel: '<%= prov.extraConfigLabel %>',
+                    extraPlaceholder: '<%= prov.extraConfigPlaceholder %>'
+                },
+            <% }); %>
+        };
+
+        function onProviderSelectChange(providerId) {
+            const meta = providersMeta[providerId];
+            if (!meta) return;
+
+            document.getElementById('proc-label-publicKey').innerText = meta.pubLabel || 'Clé Publique / ID';
+            document.getElementById('proc-form-publicKey').placeholder = meta.pubPlaceholder || '';
+
+            document.getElementById('proc-label-secretKey').innerText = meta.secLabel || 'Clé Secrète / API Key';
+            document.getElementById('proc-form-secretKey').placeholder = meta.secPlaceholder || '';
+
+            const extraWrapper = document.getElementById('proc-wrapper-extraConfig');
+            if (meta.hasExtra) {
+                extraWrapper.style.display = 'block';
+                document.getElementById('proc-label-extraConfig').innerText = meta.extraLabel || 'Configuration additionnelle';
+                document.getElementById('proc-form-extraConfig').placeholder = meta.extraPlaceholder || '';
+            } else {
+                extraWrapper.style.display = 'none';
+            }
+        }
+
+        function openAddProcessorModal() {
+            document.getElementById('proc-modal-title').innerText = "Ajouter un processeur pour <%= currentApp.name %>";
+            document.getElementById('proc-form-isEdit').value = "0";
+            document.getElementById('proc-form-providerId').disabled = false;
+            document.getElementById('proc-form-providerId').value = "";
+            document.getElementById('proc-form-publicKey').value = "";
+            document.getElementById('proc-form-secretKey').value = "";
+            document.getElementById('proc-form-extraConfig').value = "";
+            document.getElementById('proc-form-isActive').checked = true;
+
+            const hiddenProvider = document.getElementById('hidden-edit-providerId');
+            if (hiddenProvider) hiddenProvider.remove();
+            
+            const firstOption = document.querySelector('#proc-form-providerId option:not([disabled])');
+            if (firstOption) {
+                document.getElementById('proc-form-providerId').value = firstOption.value;
+                onProviderSelectChange(firstOption.value);
+            }
+            
+            document.getElementById('processor_modal').showModal();
+        }
+
+        function openEditProcessorModal(providerId, publicKey, secretKey, extraConfig, isActive) {
+            document.getElementById('proc-modal-title').innerText = "Modifier les clés du processeur";
+            document.getElementById('proc-form-isEdit').value = "1";
+            
+            const selectEl = document.getElementById('proc-form-providerId');
+            selectEl.value = providerId;
+            selectEl.disabled = true;
+
+            let hiddenProviderInput = document.getElementById('hidden-edit-providerId');
+            if (!hiddenProviderInput) {
+                hiddenProviderInput = document.createElement('input');
+                hiddenProviderInput.type = 'hidden';
+                hiddenProviderInput.name = 'providerId';
+                hiddenProviderInput.id = 'hidden-edit-providerId';
+                document.getElementById('processor-form').appendChild(hiddenProviderInput);
+            }
+            hiddenProviderInput.value = providerId;
+
+            onProviderSelectChange(providerId);
+
+            document.getElementById('proc-form-publicKey').value = publicKey || '';
+            document.getElementById('proc-form-secretKey').value = secretKey || '';
+            document.getElementById('proc-form-extraConfig').value = extraConfig || '';
+            document.getElementById('proc-form-isActive').checked = !!isActive;
+
+            document.getElementById('processor_modal').showModal();
+        }
+
+        function openEditAppModal() {
+            document.getElementById('app_modal').showModal();
+        }
+    </script>
+</body>
+</html>

@@ -40,6 +40,34 @@ app.set("views", path.join(__dirname, "../views"));
 // Setup static files
 app.use("/public", express.static(path.join(__dirname, "../public")));
 
+// Subdomain checkout router middleware (ex: checkout.localhost:4000 ou checkout.mondomaine.com)
+app.use((req: Request, _res: Response, next) => {
+  const host = req.get("host") || "";
+  const hostname = req.hostname || "";
+
+  if (hostname.startsWith("checkout.") || host.startsWith("checkout.")) {
+    if (req.path.startsWith("/checkout") || req.path.startsWith("/public") || req.path === "/health") {
+      return next();
+    }
+    if (req.path === "/session" || req.path === "/pay") {
+      req.url = `/checkout${req.url}`;
+      return next();
+    }
+    // Token accédé directement à la racine du sous-domaine (ex: checkout.localhost:4000/token123)
+    req.url = `/checkout${req.url}`;
+    return next();
+  }
+  next();
+});
+
+// Redirections rapides vers l'espace d'administration
+app.get("/", (_req: Request, res: Response) => {
+  res.redirect("/admin");
+});
+app.get("/login", (_req: Request, res: Response) => {
+  res.redirect("/admin/login");
+});
+
 // Routes API
 app.use("/api/v1/payments", paymentRouter);
 app.use("/webhooks", webhookRouter);

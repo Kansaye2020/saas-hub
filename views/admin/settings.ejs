@@ -1,173 +1,419 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="fr" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Processeurs | SaaS Payment Hub</title>
+    <title>Processeurs de Paiement | SaaS Hub Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.10.2/dist/full.min.css" rel="stylesheet" type="text/css" />
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .dot-pulse {
+            position: relative;
+        }
+        .dot-pulse::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border-radius: 9999px;
+            background: currentColor;
+            opacity: 0.75;
+            animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+        @keyframes ping {
+            75%, 100% {
+                transform: scale(2);
+                opacity: 0;
+            }
+        }
+    </style>
 </head>
 <body class="bg-base-200 min-h-screen">
     
+    <!-- Navbar -->
     <div class="navbar bg-base-100 shadow-sm border-b border-base-300">
         <div class="flex-1">
-            <a class="btn btn-ghost text-xl">SaaS Hub Admin</a>
+            <a class="btn btn-ghost text-xl font-bold tracking-tight">SaaS Hub Admin</a>
         </div>
         <div class="flex-none gap-2">
-            <ul class="menu menu-horizontal px-1 font-medium">
+            <ul class="menu menu-horizontal px-1 font-medium items-center gap-1">
                 <li><a href="/admin">Dashboard</a></li>
                 <li><a href="/admin/apps">Mes Applications (Sites)</a></li>
-                <li><a class="active" href="/admin/settings">Processeurs</a></li>
+                <li><a class="active font-bold text-primary" href="/admin/settings">Processeurs</a></li>
+                <li><a href="/admin/logout" class="text-error font-semibold hover:bg-error/10">Déconnexion</a></li>
             </ul>
         </div>
     </div>
 
-    <div class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+    <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         
-        <div class="mb-8 flex justify-between items-center">
+        <!-- Header -->
+        <div class="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-                <h1 class="text-3xl font-bold">Processeurs de Paiement</h1>
-                <p class="mt-2 text-base-content/70">Configurez les clés API de vos différents processeurs. Ces clés écraseront celles définies dans le fichier .env.</p>
+                <h1 class="text-3xl font-extrabold text-base-content">Processeurs de Paiement</h1>
+                <p class="mt-1 text-base-content/70">Configurez vos passerelles de paiement (LomoPay, Whop, Stripe, Chariow, iKeepay). Activez celles que vous souhaitez proposer au checkout.</p>
+            </div>
+            <div>
+                <% if (canAddProcessor) { %>
+                    <button class="btn btn-primary shadow-sm gap-2" onclick="openAddModal()">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Ajouter un processeur
+                    </button>
+                <% } else { %>
+                    <div class="tooltip tooltip-bottom" data-tip="Toutes les passerelles disponibles sont déjà configurées.">
+                        <button class="btn btn-disabled opacity-50 cursor-not-allowed gap-2" disabled>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            Tous les processeurs configurés
+                        </button>
+                    </div>
+                <% } %>
             </div>
         </div>
 
-        <% if (locals.successMessage) { %>
-            <div role="alert" class="alert alert-success shadow-lg mb-8">
-                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                <span><%= successMessage %></span>
+        <!-- Success Message -->
+        <% if (successMessage) { %>
+            <div role="alert" class="alert alert-success shadow-md mb-6 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span class="font-medium"><%= successMessage %></span>
+                </div>
+                <a href="/admin/settings" class="btn btn-ghost btn-xs">✕</a>
             </div>
         <% } %>
-        
-        <div class="space-y-6">
-            <!-- Whop -->
-            <div class="card bg-base-100 shadow-xl border border-base-200">
-                <div class="card-body">
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <h2 class="card-title">Whop</h2>
-                            <p class="text-sm text-base-content/60 mt-1">Paiements par carte bancaire internationaux.</p>
-                        </div>
-                        <div class="badge <%= configs['whop']?.isActive ? 'badge-success' : 'badge-ghost' %> gap-2">
-                            <%= configs['whop']?.isActive ? 'Actif' : 'Inactif' %>
-                        </div>
-                    </div>
 
-                    <form action="/admin/settings/provider" method="POST">
-                        <input type="hidden" name="providerId" value="whop">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <label class="form-control w-full">
-                                <div class="label"><span class="label-text font-semibold">Company ID</span></div>
-                                <input type="text" name="publicKey" value="<%= configs['whop']?.publicKey || '' %>" class="input input-bordered w-full" />
-                            </label>
-                            
-                            <label class="form-control w-full">
-                                <div class="label"><span class="label-text font-semibold">API Key</span></div>
-                                <input type="password" name="secretKey" value="<%= configs['whop']?.secretKey || '' %>" class="input input-bordered w-full" />
-                            </label>
+        <!-- Error Message -->
+        <% if (errorMessage) { %>
+            <div role="alert" class="alert alert-error shadow-md mb-6 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span class="font-medium"><%= errorMessage %></span>
+                </div>
+                <a href="/admin/settings" class="btn btn-ghost btn-xs">✕</a>
+            </div>
+        <% } %>
 
-                            <div class="form-control md:col-span-2">
-                                <label class="label cursor-pointer justify-start gap-4">
-                                    <input type="checkbox" name="isActive" value="1" <%= configs['whop']?.isActive ? 'checked' : '' %> class="toggle toggle-primary" />
-                                    <span class="label-text">Activer ce processeur</span>
-                                </label>
-                            </div>
-                        </div>
-                        <div class="card-actions justify-end mt-4">
-                            <button type="submit" class="btn btn-primary">Sauvegarder Whop</button>
-                        </div>
-                    </form>
+        <!-- Information Bar -->
+        <div class="bg-base-100 rounded-xl p-4 mb-8 border border-base-300 flex items-center justify-between gap-4 text-sm text-base-content/80 shadow-sm flex-wrap">
+            <div class="flex items-center gap-3">
+                <div class="text-primary text-xl">💳</div>
+                <div>
+                    <span class="font-bold">Processeurs configurés :</span> 
+                    <%= configuredProviders.length %> / <%= allAvailableProviders.length %> 
+                    &nbsp;|&nbsp; 
+                    <span class="font-bold text-success"><%= configuredProviders.filter(p => p.isActive).length %> Actif(s)</span>
                 </div>
             </div>
-
-            <!-- Lomopay -->
-            <div class="card bg-base-100 shadow-xl border border-base-200">
-                <div class="card-body">
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <h2 class="card-title">Lomopay</h2>
-                            <p class="text-sm text-base-content/60 mt-1">Mobile Money (Wave, Orange, MTN).</p>
-                        </div>
-                        <div class="badge <%= configs['lomopay']?.isActive ? 'badge-success' : 'badge-ghost' %> gap-2">
-                            <%= configs['lomopay']?.isActive ? 'Actif' : 'Inactif' %>
-                        </div>
-                    </div>
-
-                    <form action="/admin/settings/provider" method="POST">
-                        <input type="hidden" name="providerId" value="lomopay">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <label class="form-control w-full">
-                                <div class="label"><span class="label-text font-semibold">Clé Publique</span></div>
-                                <input type="text" name="publicKey" value="<%= configs['lomopay']?.publicKey || '' %>" class="input input-bordered w-full" />
-                            </label>
-                            
-                            <label class="form-control w-full">
-                                <div class="label"><span class="label-text font-semibold">Clé Secrète</span></div>
-                                <input type="password" name="secretKey" value="<%= configs['lomopay']?.secretKey || '' %>" class="input input-bordered w-full" />
-                            </label>
-
-                            <div class="form-control md:col-span-2">
-                                <label class="label cursor-pointer justify-start gap-4">
-                                    <input type="checkbox" name="isActive" value="1" <%= configs['lomopay']?.isActive ? 'checked' : '' %> class="toggle toggle-primary" />
-                                    <span class="label-text">Activer ce processeur</span>
-                                </label>
-                            </div>
-                        </div>
-                        <div class="card-actions justify-end mt-4">
-                            <button type="submit" class="btn btn-primary">Sauvegarder Lomopay</button>
-                        </div>
-                    </form>
-                </div>
+            <div class="text-xs text-base-content/60">
+                Vous pouvez basculer l'écriture du statut de <strong>Inactif</strong> à <strong>Actif</strong> pour chaque passerelle.
             </div>
-
-            <!-- iKeepay -->
-            <div class="card bg-base-100 shadow-xl border-2 border-primary/20">
-                <div class="card-body">
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <h2 class="card-title">
-                                iKeepay
-                                <div class="badge badge-secondary">Nouveau</div>
-                            </h2>
-                            <p class="text-sm text-base-content/60 mt-1">Paiements Mobile Money et cartes en Afrique.</p>
-                        </div>
-                        <div class="badge <%= configs['ikeepay']?.isActive ? 'badge-success' : 'badge-ghost' %> gap-2">
-                            <%= configs['ikeepay']?.isActive ? 'Actif' : 'Inactif' %>
-                        </div>
-                    </div>
-
-                    <form action="/admin/settings/provider" method="POST">
-                        <input type="hidden" name="providerId" value="ikeepay">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <label class="form-control w-full">
-                                <div class="label"><span class="label-text font-semibold">Public Key (ou API Key)</span></div>
-                                <input type="text" name="publicKey" value="<%= configs['ikeepay']?.publicKey || '' %>" class="input input-bordered w-full" />
-                            </label>
-                            
-                            <label class="form-control w-full">
-                                <div class="label"><span class="label-text font-semibold">Secret Key (ou Merchant ID)</span></div>
-                                <input type="password" name="secretKey" value="<%= configs['ikeepay']?.secretKey || '' %>" class="input input-bordered w-full" />
-                            </label>
-                            
-                            <label class="form-control w-full md:col-span-2">
-                                <div class="label"><span class="label-text font-semibold">Configuration supplémentaire (Optionnel, JSON)</span></div>
-                                <input type="text" name="extraConfig" value="<%= configs['ikeepay']?.extraConfig || '' %>" placeholder='{"webhookSecret": "..."}' class="input input-bordered w-full font-mono text-sm" />
-                            </label>
-
-                            <div class="form-control md:col-span-2">
-                                <label class="label cursor-pointer justify-start gap-4">
-                                    <input type="checkbox" name="isActive" value="1" <%= configs['ikeepay']?.isActive ? 'checked' : '' %> class="toggle toggle-primary" />
-                                    <span class="label-text">Activer ce processeur</span>
-                                </label>
-                            </div>
-                        </div>
-                        <div class="card-actions justify-end mt-4">
-                            <button type="submit" class="btn btn-primary">Sauvegarder iKeepay</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
         </div>
+
+        <!-- Section 1 : Aucun processeur configuré (Empty State) -->
+        <% if (configuredProviders.length === 0) { %>
+            <div class="card bg-base-100 shadow-xl border border-base-300 p-8 sm:p-12 text-center">
+                <div class="w-20 h-20 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-5">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-bold mb-2">Aucun processeur configuré</h2>
+                <p class="text-base-content/60 max-w-md mx-auto mb-6">
+                    Ajoutez vos passerelles de paiement (LomoPay, Whop, Stripe, Chariow ou iKeepay) pour commencer à recevoir les paiements de vos clients.
+                </p>
+                <div>
+                    <button class="btn btn-primary btn-wide shadow-md" onclick="openAddModal()">
+                        Ajouter un processeur
+                    </button>
+                </div>
+            </div>
+        <% } %>
+
+        <!-- Section 2 : Liste des processeurs configurés -->
+        <% if (configuredProviders.length > 0) { %>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <% configuredProviders.forEach(function(provider) { %>
+                    <div class="card bg-base-100 shadow-xl border-2 <%= provider.isActive ? 'border-success/40' : 'border-base-300' %> flex flex-col justify-between">
+                        <div class="card-body p-6">
+                            
+                            <!-- Header de la carte -->
+                            <div class="flex items-center justify-between gap-4 pb-4 border-b border-base-200">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 rounded-xl <%= provider.isActive ? 'bg-success/15 text-success' : 'bg-base-200 text-base-content/60' %> flex items-center justify-center font-black text-xl shadow-inner">
+                                        <%= provider.meta.name.charAt(0) %>
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <h2 class="text-xl font-extrabold text-base-content"><%= provider.meta.name %></h2>
+                                            <span class="badge badge-xs badge-outline font-medium"><%= provider.meta.category %></span>
+                                        </div>
+                                        <p class="text-xs text-base-content/60 mt-0.5"><%= provider.meta.tagline %></p>
+                                    </div>
+                                </div>
+
+                                <!-- Écriture dynamique du statut (Inactif / Actif) -->
+                                <div>
+                                    <% if (provider.isActive) { %>
+                                        <div class="badge badge-success gap-1.5 py-2.5 px-3 text-xs font-extrabold text-white shadow-sm">
+                                            <span class="w-2 h-2 rounded-full bg-white relative dot-pulse"></span>
+                                            Actif
+                                        </div>
+                                    <% } else { %>
+                                        <div class="badge badge-ghost border border-base-300 gap-1.5 py-2.5 px-3 text-xs font-bold text-base-content/60 bg-base-200">
+                                            <span class="w-2 h-2 rounded-full bg-base-content/40"></span>
+                                            Inactif
+                                        </div>
+                                    <% } %>
+                                </div>
+                            </div>
+
+                            <!-- Bloc de contrôle du statut (Passer de Inactif à Actif) -->
+                            <div class="my-4 p-3 rounded-xl <%= provider.isActive ? 'bg-success/10 border border-success/30' : 'bg-base-200/80 border border-base-300' %> flex items-center justify-between gap-3">
+                                <div>
+                                    <div class="text-[11px] font-semibold uppercase tracking-wider text-base-content/60">Statut</div>
+                                    <div class="text-sm font-black <%= provider.isActive ? 'text-success' : 'text-base-content/70' %>">
+                                        <%= provider.isActive ? 'Actif (Disponible au Checkout)' : 'Inactif (Non proposé aux clients)' %>
+                                    </div>
+                                </div>
+
+                                <!-- Bouton bascule de statut -->
+                                <form method="POST" action="/admin/settings/provider/toggle" class="m-0">
+                                    <input type="hidden" name="providerId" value="<%= provider.providerId %>">
+                                    <% if (provider.isActive) { %>
+                                        <button type="submit" class="btn btn-warning btn-xs gap-1 font-bold">
+                                            Désactiver (Passer en Inactif)
+                                        </button>
+                                    <% } else { %>
+                                        <button type="submit" class="btn btn-success btn-xs gap-1 text-white font-bold">
+                                            Activer (Passer en Actif)
+                                        </button>
+                                    <% } %>
+                                </form>
+                            </div>
+
+                            <!-- Détails de la configuration -->
+                            <div class="space-y-2 text-xs">
+                                <div class="bg-base-200 p-3 rounded-lg border border-base-300">
+                                    <span class="font-bold text-base-content/60 block uppercase text-[10px]"><%= provider.meta.publicKeyLabel || 'Clé Publique / ID' %></span>
+                                    <span class="font-mono font-semibold break-all"><%= provider.publicKey ? provider.publicKey : '<em class="text-base-content/40 font-normal">Non renseigné</em>' %></span>
+                                </div>
+
+                                <div class="bg-base-200 p-3 rounded-lg border border-base-300 flex items-center justify-between">
+                                    <div>
+                                        <span class="font-bold text-base-content/60 block uppercase text-[10px]"><%= provider.meta.secretKeyLabel || 'Clé Secrète / API Key' %></span>
+                                        <span class="font-mono font-semibold">
+                                            <% if (provider.secretKey) { %>
+                                                <%= provider.secretKey.length > 8 ? provider.secretKey.substring(0, 4) + '••••••••' + provider.secretKey.substring(provider.secretKey.length - 4) : '••••••••' %>
+                                            <% } else { %>
+                                                <em class="text-base-content/40 font-normal">Non renseigné</em>
+                                            <% } %>
+                                        </span>
+                                    </div>
+                                    <span class="badge badge-xs badge-neutral">Sécurisé</span>
+                                </div>
+                            </div>
+
+                            <!-- Actions du processeur -->
+                            <div class="card-actions justify-end mt-4 pt-4 border-t border-base-200 gap-2">
+                                <button type="button" class="btn btn-outline btn-xs font-semibold" onclick="openEditModal('<%= provider.providerId %>', '<%= provider.publicKey %>', '<%= provider.secretKey %>', '<%= provider.extraConfig %>', <%= provider.isActive %>)">
+                                    Modifier
+                                </button>
+                                
+                                <form method="POST" action="/admin/settings/provider/delete" onsubmit="return confirm('Supprimer ce processeur ?')" class="m-0">
+                                    <input type="hidden" name="providerId" value="<%= provider.providerId %>">
+                                    <button type="submit" class="btn btn-outline btn-error btn-xs font-semibold">
+                                        Supprimer
+                                    </button>
+                                </form>
+                            </div>
+
+                        </div>
+                    </div>
+                <% }); %>
+            </div>
+        <% } %>
+
     </div>
+
+    <!-- Modal Ajouter / Modifier un processeur -->
+    <dialog id="processor_modal" class="modal">
+        <div class="modal-box max-w-2xl">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-extrabold text-xl text-base-content" id="modal-title">Ajouter un processeur de paiement</h3>
+                <button type="button" class="btn btn-sm btn-circle btn-ghost" onclick="document.getElementById('processor_modal').close()">✕</button>
+            </div>
+
+            <form method="POST" action="/admin/settings/provider" id="processor-form">
+                <input type="hidden" name="isEdit" id="form-isEdit" value="0">
+                
+                <!-- Sélection du processeur -->
+                <div class="form-control w-full mb-4">
+                    <label class="label"><span class="label-text font-bold">Choisir la passerelle</span></label>
+                    <select name="providerId" id="form-providerId" class="select select-bordered w-full font-medium" onchange="onProviderSelectChange(this.value)" required>
+                        <option value="" disabled selected>-- Sélectionnez un processeur --</option>
+                        <% allAvailableProviders.forEach(function(prov) { %>
+                            <option value="<%= prov.id %>" data-pub-label="<%= prov.publicKeyLabel %>" data-pub-ph="<%= prov.publicKeyPlaceholder %>" data-sec-label="<%= prov.secretKeyLabel %>" data-sec-ph="<%= prov.secretKeyPlaceholder %>" data-extra="<%= prov.hasExtraConfig %>" data-extra-label="<%= prov.extraConfigLabel %>" data-extra-ph="<%= prov.extraConfigPlaceholder %>">
+                                <%= prov.name %> — <%= prov.tagline %>
+                            </option>
+                        <% }); %>
+                    </select>
+                </div>
+
+                <!-- Clé Publique / ID -->
+                <div class="form-control w-full mb-4">
+                    <label class="label">
+                        <span class="label-text font-bold" id="label-publicKey">Clé Publique / Identifiant</span>
+                    </label>
+                    <input type="text" name="publicKey" id="form-publicKey" class="input input-bordered w-full font-mono text-sm" placeholder="pk_..." />
+                </div>
+
+                <!-- Clé Secrète / API Key -->
+                <div class="form-control w-full mb-4">
+                    <label class="label">
+                        <span class="label-text font-bold" id="label-secretKey">Clé Secrète / API Key</span>
+                    </label>
+                    <input type="password" name="secretKey" id="form-secretKey" class="input input-bordered w-full font-mono text-sm" placeholder="sk_..." />
+                </div>
+
+                <!-- Config supplémentaire (Optionnel) -->
+                <div class="form-control w-full mb-6" id="wrapper-extraConfig">
+                    <label class="label">
+                        <span class="label-text font-bold" id="label-extraConfig">Configuration supplémentaire (Optionnel)</span>
+                    </label>
+                    <input type="text" name="extraConfig" id="form-extraConfig" class="input input-bordered w-full font-mono text-sm" placeholder='{"webhookSecret": "..."}' />
+                </div>
+
+                <!-- Statut (Inactif / Actif) avec écriture en temps réel -->
+                <div class="bg-base-200 p-4 rounded-xl mb-6 border border-base-300">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="text-sm font-bold block text-base-content">Statut à l'enregistrement</span>
+                            <span class="text-xs text-base-content/60">L'écriture indique l'état d'activation du processeur :</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" name="isActive" id="form-isActive" value="1" checked class="toggle toggle-success toggle-lg" onchange="updateModalStatusWriting(this.checked)" />
+                            <span id="modal-status-writing" class="badge badge-success py-2.5 px-3 text-white font-extrabold text-sm">
+                                Actif
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions du Modal -->
+                <div class="modal-action">
+                    <button type="button" class="btn" onclick="document.getElementById('processor_modal').close()">Annuler</button>
+                    <button type="submit" class="btn btn-primary font-bold px-6">Enregistrer le processeur</button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+
+    <script>
+        const providersMeta = {
+            <% allAvailableProviders.forEach(function(prov) { %>
+                '<%= prov.id %>': {
+                    pubLabel: '<%= prov.publicKeyLabel %>',
+                    pubPlaceholder: '<%= prov.publicKeyPlaceholder %>',
+                    secLabel: '<%= prov.secretKeyLabel %>',
+                    secPlaceholder: '<%= prov.secretKeyPlaceholder %>',
+                    hasExtra: <%= prov.hasExtraConfig %>,
+                    extraLabel: '<%= prov.extraConfigLabel %>',
+                    extraPlaceholder: '<%= prov.extraConfigPlaceholder %>'
+                },
+            <% }); %>
+        };
+
+        function onProviderSelectChange(providerId) {
+            const meta = providersMeta[providerId];
+            if (!meta) return;
+
+            document.getElementById('label-publicKey').innerText = meta.pubLabel || 'Clé Publique / ID';
+            document.getElementById('form-publicKey').placeholder = meta.pubPlaceholder || '';
+
+            document.getElementById('label-secretKey').innerText = meta.secLabel || 'Clé Secrète / API Key';
+            document.getElementById('form-secretKey').placeholder = meta.secPlaceholder || '';
+
+            const extraWrapper = document.getElementById('wrapper-extraConfig');
+            if (meta.hasExtra) {
+                extraWrapper.style.display = 'block';
+                document.getElementById('label-extraConfig').innerText = meta.extraLabel || 'Configuration additionnelle';
+                document.getElementById('form-extraConfig').placeholder = meta.extraPlaceholder || '';
+            } else {
+                extraWrapper.style.display = 'none';
+            }
+        }
+
+        function updateModalStatusWriting(isActive) {
+            const badge = document.getElementById('modal-status-writing');
+            if (isActive) {
+                badge.className = 'badge badge-success py-2.5 px-3 text-white font-extrabold text-sm';
+                badge.innerText = 'Actif';
+            } else {
+                badge.className = 'badge badge-ghost border border-base-300 py-2.5 px-3 text-base-content/60 font-bold text-sm bg-base-200';
+                badge.innerText = 'Inactif';
+            }
+        }
+
+        function openAddModal() {
+            document.getElementById('modal-title').innerText = "Ajouter un processeur de paiement";
+            document.getElementById('form-isEdit').value = "0";
+            document.getElementById('form-providerId').disabled = false;
+            document.getElementById('form-providerId').value = "";
+            document.getElementById('form-publicKey').value = "";
+            document.getElementById('form-secretKey').value = "";
+            document.getElementById('form-extraConfig').value = "";
+            document.getElementById('form-isActive').checked = true;
+            updateModalStatusWriting(true);
+
+            // Supprimer le champ caché de l'édition si présent
+            const hiddenProvider = document.getElementById('hidden-edit-providerId');
+            if (hiddenProvider) hiddenProvider.remove();
+            
+            // Sélection par défaut
+            const firstOption = document.querySelector('#form-providerId option:not([disabled])');
+            if (firstOption) {
+                document.getElementById('form-providerId').value = firstOption.value;
+                onProviderSelectChange(firstOption.value);
+            }
+            
+            document.getElementById('processor_modal').showModal();
+        }
+
+        function openEditModal(providerId, publicKey, secretKey, extraConfig, isActive) {
+            document.getElementById('modal-title').innerText = "Modifier le processeur";
+            document.getElementById('form-isEdit').value = "1";
+            
+            const selectEl = document.getElementById('form-providerId');
+            selectEl.value = providerId;
+            selectEl.disabled = true; // Empêche de modifier le type en mode édition
+
+            // Assurer qu'un champ caché transporte le providerId si le select est disabled
+            let hiddenProviderInput = document.getElementById('hidden-edit-providerId');
+            if (!hiddenProviderInput) {
+                hiddenProviderInput = document.createElement('input');
+                hiddenProviderInput.type = 'hidden';
+                hiddenProviderInput.name = 'providerId';
+                hiddenProviderInput.id = 'hidden-edit-providerId';
+                document.getElementById('processor-form').appendChild(hiddenProviderInput);
+            }
+            hiddenProviderInput.value = providerId;
+
+            onProviderSelectChange(providerId);
+
+            document.getElementById('form-publicKey').value = publicKey || '';
+            document.getElementById('form-secretKey').value = secretKey || '';
+            document.getElementById('form-extraConfig').value = extraConfig || '';
+            document.getElementById('form-isActive').checked = !!isActive;
+            updateModalStatusWriting(!!isActive);
+
+            document.getElementById('processor_modal').showModal();
+        }
+    </script>
 </body>
 </html>

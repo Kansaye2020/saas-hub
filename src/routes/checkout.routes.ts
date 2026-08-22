@@ -4,6 +4,7 @@ import { dbRun, dbGet } from "../database/db";
 import { requireAppAuth, AuthenticatedRequest } from "../middleware/auth";
 import { PaymentService } from "../services/payment.service";
 import { providerRegistry } from "../providers";
+import { getCheckoutUrl, getAppActiveProviders, getClientAppById } from "../config";
 
 export const checkoutRouter = Router();
 
@@ -11,21 +12,25 @@ export const checkoutRouter = Router();
 checkoutRouter.post("/session", requireAppAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const clientApp = req.clientApp!;
-    const { amount, currency, returnUrl, cancelUrl, orderId, description, customerEmail, customerName } = req.body;
+    let { amount, currency, returnUrl, cancelUrl, orderId, description, customerEmail, customerName } = req.body;
 
     if (!amount || !currency || !orderId) {
       return res.status(400).json({ error: "amount, currency, and orderId are required" });
     }
+
+    // Utiliser la returnUrl de l'application cliente par défaut si non spécifiée
+    returnUrl = returnUrl || clientApp.returnUrl || `${req.protocol}://${req.get("host")}/public/test-redirect.html?status=success`;
+    cancelUrl = cancelUrl || clientApp.cancelUrl || returnUrl;
 
     const token = crypto.randomBytes(32).toString("hex");
 
     await dbRun(
       `INSERT INTO checkout_sessions (token, appId, amount, currency, returnUrl, cancelUrl, status, orderId, description, customerEmail, customerName)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [token, clientApp.id, amount, currency, returnUrl, cancelUrl, "pending", orderId, description, customerEmail, customerName]
+      [token, clientApp.id, Number(amount), currency, returnUrl, cancelUrl, "pending", orderId, description, customerEmail, customerName]
     );
 
-    const checkoutUrl = `${req.protocol}://${req.get("host")}/checkout/${token}`;
+    const checkoutUrl = getCheckoutUrl(token, req);
 
     res.json({
       success: true,
@@ -58,29 +63,25 @@ checkoutRouter.get("/:token", async (req: Request, res: Response) => {
       return res.status(400).send("Session is already completed or cancelled");
     }
 
-    const allProviderIds = providerRegistry.getAvailableProviders();
-    const providers = [];
-
-    const { getProviderConfig, getClientAppById } = require("../config");
-    
     // Fetch the client app config to get the store name
     const clientApp = await getClientAppById(session.appId);
     const storeName = clientApp ? clientApp.name : session.appId;
 
-    for (const pId of allProviderIds) {
-      const pConf = await getProviderConfig(pId);
-      if (pConf.isActive) {
-        providers.push({
-          id: pId,
-          name: pId.charAt(0).toUpperCase() + pId.slice(1)
-        });
-      }
+    // Fetch active providers configured specifically for THIS site
+    const appActiveProviders = await getAppActiveProviders(session.appId);
+    const providers: Array<{ id: string; name: string }> = [];
+
+    for (const p of appActiveProviders) {
+      providers.push({
+        id: p.providerId,
+        name: p.providerId.charAt(0).toUpperCase() + p.providerId.slice(1)
+      });
     }
 
-    // Fallback if no providers are active so the test UI isn't empty
+    // Fallback if no providers are active yet so the test UI isn't empty
     if (providers.length === 0) {
-      providers.push({ id: 'lomopay', name: 'Lomopay (Test)' });
-      providers.push({ id: 'whop', name: 'Whop (Test)' });
+      providers.push({ id: 'lomopay', name: 'LomoPay (Non configuré)' });
+      providers.push({ id: 'whop', name: 'Whop (Non configuré)' });
     }
 
     res.render("checkout/index", {
@@ -110,7 +111,7 @@ checkoutRouter.post("/pay", async (req: Request, res: Response) => {
     const result = await PaymentService.createPayment({
       appId: session.appId,
       provider: provider,
-      amount: session.amount,
+      amount: Number(session.amount),
       currency: session.currency,
       description: session.description,
       orderId: session.orderId,
@@ -127,10 +128,10 @@ checkoutRouter.post("/pay", async (req: Request, res: Response) => {
       await dbRun("UPDATE checkout_sessions SET provider = ?, status = 'processing' WHERE token = ?", [provider, token]);
       return res.json({ checkoutUrl: result.checkoutUrl });
     } else {
-      return res.status(400).json({ error: result.error });
+      return res.status(400).json({ error: result.error || "Échec de l'initialisation du paiement" });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("Checkout pay error:", error);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: error.message || "Internal server error" });
   }
 });

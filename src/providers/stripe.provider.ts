@@ -1,30 +1,43 @@
 import Stripe from "stripe";
 import { IPaymentProvider } from "./base";
 import { CreatePaymentRequest, UnifiedPaymentResponse, UnifiedWebhookPayload } from "../types";
-import { config } from "../config";
+import { config, getAppProviderConfig } from "../config";
 
 export class StripeProvider implements IPaymentProvider {
   readonly name = "stripe" as const;
-  private stripeClient: Stripe | null = null;
 
-  constructor() {
-    if (config.stripe.secretKey) {
-      this.stripeClient = new Stripe(config.stripe.secretKey, {
-        apiVersion: "2024-06-20",
-      });
+  private async getStripeClient(appId: string): Promise<{ client: Stripe; webhookSecret?: string }> {
+    const providerConfig = await getAppProviderConfig(appId, this.name);
+    const secretKey = providerConfig.secretKey || config.stripe.secretKey;
+    let webhookSecret = config.stripe.webhookSecret;
+
+    if (providerConfig.extraConfig) {
+      if (typeof providerConfig.extraConfig === "string") {
+        webhookSecret = providerConfig.extraConfig;
+      } else if (providerConfig.extraConfig.webhookSecret) {
+        webhookSecret = providerConfig.extraConfig.webhookSecret;
+      }
     }
+
+    if (!secretKey) {
+      throw new Error(`STRIPE_SECRET_KEY non configuré pour le site ${appId}.`);
+    }
+
+    const client = new Stripe(secretKey, {
+      apiVersion: "2024-06-20",
+    });
+
+    return { client, webhookSecret };
   }
 
   async createPayment(request: CreatePaymentRequest): Promise<UnifiedPaymentResponse> {
-    if (!this.stripeClient) {
-      throw new Error("STRIPE_SECRET_KEY non configuré.");
-    }
+    const { client } = await this.getStripeClient(request.appId);
 
     const currency = (request.currency || "EUR").toLowerCase();
     // Stripe requiert les montants en centimes pour EUR / USD
     const unitAmount = Math.round(request.amount * 100);
 
-    const session = await this.stripeClient.checkout.sessions.create({
+    const session = await client.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
         {
@@ -60,19 +73,24 @@ export class StripeProvider implements IPaymentProvider {
     };
   }
 
-  verifyWebhookSignature(rawBody: string, headers: Record<string, string | string[] | undefined>): boolean {
-    if (!this.stripeClient || !config.stripe.webhookSecret) {
-      return false;
-    }
-
+  async verifyWebhookSignature(rawBody: string, headers: Record<string, string | string[] | undefined>): Promise<boolean> {
     const signature = (headers["stripe-signature"] || headers["Stripe-Signature"]) as string;
     if (!signature) return false;
 
+    let appId = "verifsms";
     try {
-      this.stripeClient.webhooks.constructEvent(
+      const parsed = JSON.parse(rawBody);
+      appId = parsed.data?.object?.metadata?.appId || "verifsms";
+    } catch {}
+
+    try {
+      const { client, webhookSecret } = await this.getStripeClient(appId);
+      if (!webhookSecret) return true; // Si pas de webhook secret configuré, bypasser
+
+      client.webhooks.constructEvent(
         rawBody,
         signature,
-        config.stripe.webhookSecret
+        webhookSecret
       );
       return true;
     } catch (err) {
@@ -81,20 +99,17 @@ export class StripeProvider implements IPaymentProvider {
     }
   }
 
-  async parseWebhookEvent(rawBody: string, headers: Record<string, string | string[] | undefined>): Promise<UnifiedWebhookPayload | null> {
-    if (!this.stripeClient || !config.stripe.webhookSecret) {
+  async parseWebhookEvent(rawBody: string, _headers: Record<string, string | string[] | undefined>): Promise<UnifiedWebhookPayload | null> {
+    let parsed: any;
+    try {
+      parsed = JSON.parse(rawBody);
+    } catch {
       return null;
     }
 
-    const signature = (headers["stripe-signature"] || headers["Stripe-Signature"]) as string;
-    const event = this.stripeClient.webhooks.constructEvent(
-      rawBody,
-      signature,
-      config.stripe.webhookSecret
-    );
-
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object as Stripe.Checkout.Session;
+    const eventType = parsed.type;
+    if (eventType === "checkout.session.completed") {
+      const session = parsed.data?.object as Stripe.Checkout.Session;
       const metadata = session.metadata || {};
       const appId = metadata.appId || "verifsms";
       const orderId = metadata.orderId || session.id;

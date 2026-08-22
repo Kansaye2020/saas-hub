@@ -1,17 +1,17 @@
 import crypto from "crypto";
 import { IPaymentProvider } from "./base";
 import { CreatePaymentRequest, UnifiedPaymentResponse, UnifiedWebhookPayload } from "../types";
-import { config, getProviderConfig } from "../config";
+import { config, getAppProviderConfig } from "../config";
 
 export class LomoPayProvider implements IPaymentProvider {
   readonly name = "lomopay" as const;
 
   async createPayment(request: CreatePaymentRequest): Promise<UnifiedPaymentResponse> {
-    const { publicKey, secretKey } = await getProviderConfig(this.name);
+    const { publicKey, secretKey } = await getAppProviderConfig(request.appId, this.name);
     const apiUrl = config.lomopay.apiUrl;
 
     if (!publicKey || !secretKey) {
-      throw new Error("LOMOPAY_PUBLIC_KEY ou LOMOPAY_SECRET_KEY non configurés (DB ou ENV).");
+      throw new Error(`LOMOPAY_PUBLIC_KEY ou LOMOPAY_SECRET_KEY non configurés pour le site ${request.appId}.`);
     }
 
     // On encode l'appId et l'orderId dans l'external_reference pour le routage au retour
@@ -79,7 +79,16 @@ export class LomoPayProvider implements IPaymentProvider {
   }
 
   async verifyWebhookSignature(rawBody: string, headers: Record<string, string | string[] | undefined>): Promise<boolean> {
-    const { secretKey } = await getProviderConfig(this.name);
+    let appId = "verifsms";
+    try {
+      const payload = JSON.parse(rawBody);
+      const extRef = payload.data?.external_reference || "";
+      if (extRef.includes(":::")) {
+        appId = extRef.split(":::")[0];
+      }
+    } catch {}
+
+    const { secretKey } = await getAppProviderConfig(appId, this.name);
     const signatureHeader = (headers["x-lomopay-signature"] || headers["X-Lomopay-Signature"]) as string;
 
     if (!secretKey || !signatureHeader) {
