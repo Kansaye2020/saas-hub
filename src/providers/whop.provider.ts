@@ -60,15 +60,6 @@ export class WhopProvider implements IPaymentProvider {
         },
       };
 
-      if (customerEmail) {
-        whopPayload.email = customerEmail;
-        whopPayload.customer_email = customerEmail;
-        whopPayload.customer = {
-          email: customerEmail,
-          name: customerName || undefined,
-        };
-      }
-
       const response = await fetch(apiBaseUrl, {
         method: "POST",
         headers: {
