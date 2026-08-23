@@ -11,11 +11,14 @@ export const checkoutRouter = Router();
 checkoutRouter.post("/session", requireAppAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const clientApp = req.clientApp!;
-    let { amount, currency, returnUrl, cancelUrl, orderId, description, customerEmail, customerName } = req.body;
+    let { amount, currency, returnUrl, cancelUrl, orderId, description, customerEmail, customerName, email, name, customer } = req.body;
 
     if (!amount || !currency || !orderId) {
       return res.status(400).json({ error: "amount, currency, and orderId are required" });
     }
+
+    customerEmail = customerEmail || email || customer?.email || undefined;
+    customerName = customerName || name || customer?.name || undefined;
 
     // Utiliser la returnUrl de l'application cliente par défaut si non spécifiée
     returnUrl = returnUrl || clientApp.returnUrl || `${req.protocol}://${req.get("host")}/public/test-redirect.html?status=success`;
@@ -133,7 +136,7 @@ checkoutRouter.get("/:token", async (req: Request, res: Response) => {
 
 // Process payment from the checkout page
 checkoutRouter.post("/pay", async (req: Request, res: Response) => {
-  const { token, provider } = req.body;
+  const { token, provider, customerEmail, customerName, email, name } = req.body;
 
   try {
     const session = await dbGet("SELECT * FROM checkout_sessions WHERE token = ?", [token]);
@@ -154,6 +157,15 @@ checkoutRouter.post("/pay", async (req: Request, res: Response) => {
       cancelUrl = `${protocol}://${host}${cancelUrl.startsWith("/") ? cancelUrl : "/" + cancelUrl}`;
     }
 
+    const finalEmail = (customerEmail || email || session.customerEmail || session.customeremail || "").trim() || undefined;
+    const finalName = (customerName || name || session.customerName || session.customername || "").trim() || undefined;
+
+    if (finalEmail && (!session.customerEmail && !session.customeremail)) {
+      try {
+        await dbRun("UPDATE checkout_sessions SET customerEmail = ?, customerName = ? WHERE token = ?", [finalEmail, finalName || "", token]);
+      } catch (e) {}
+    }
+
     // Call PaymentService directly
     const result = await PaymentService.createPayment({
       appId: session.appId || session.appid,
@@ -163,8 +175,8 @@ checkoutRouter.post("/pay", async (req: Request, res: Response) => {
       description: session.description || `Commande #${session.orderId || session.orderid}`,
       orderId: session.orderId || session.orderid,
       customer: {
-        email: session.customerEmail || session.customeremail || undefined,
-        name: session.customerName || session.customername || undefined
+        email: finalEmail,
+        name: finalName
       },
       returnUrl: returnUrl,
       cancelUrl: cancelUrl || returnUrl

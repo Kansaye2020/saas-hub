@@ -75,6 +75,20 @@
             <!-- Payment Form -->
             <form id="payment-form" action="/checkout/pay" method="POST">
                 <input type="hidden" name="token" value="<%= session.token %>">
+
+                <!-- Client Email Badge ou Saisie -->
+                <% if (session.customerEmail) { %>
+                    <div class="flex items-center justify-between mb-4 bg-base-200/60 p-2.5 px-3.5 rounded-xl border border-base-300 text-xs">
+                        <span class="text-base-content/60">Email client :</span>
+                        <span class="font-bold text-base-content truncate"><%= session.customerEmail %></span>
+                        <input type="hidden" id="checkout-customerEmail" value="<%= session.customerEmail %>">
+                    </div>
+                <% } else { %>
+                    <div class="form-control mb-4">
+                        <label class="label py-1"><span class="label-text font-bold text-xs text-base-content/70">Votre adresse email (pour le reçu de paiement)</span></label>
+                        <input type="email" id="checkout-customerEmail" placeholder="nom@exemple.com" class="input input-bordered input-sm sm:input-md w-full rounded-xl text-xs sm:text-sm font-medium" />
+                    </div>
+                <% } %>
                 
                 <div class="form-control mb-6">
                     <label class="label py-1 pb-2.5">
@@ -169,6 +183,9 @@
             const providerInput = document.querySelector('input[name="provider"]:checked');
             if (!providerInput) return;
 
+            const emailInput = document.getElementById('checkout-customerEmail');
+            const customerEmail = emailInput ? emailInput.value.trim() : undefined;
+
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<span class="loading loading-spinner loading-sm"></span> Redirection sécurisée...';
 
@@ -178,7 +195,8 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         token: document.querySelector('input[name="token"]').value,
-                        provider: providerInput.value
+                        provider: providerInput.value,
+                        customerEmail: customerEmail
                     })
                 });
 

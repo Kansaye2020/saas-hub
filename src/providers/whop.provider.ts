@@ -33,8 +33,41 @@ export class WhopProvider implements IPaymentProvider {
       ? "https://sandbox-api.whop.com/api/v1/checkout_configurations"
       : "https://api.whop.com/api/v1/checkout_configurations";
 
+    const customerEmail = request.customer?.email || (request as any).customerEmail || (request as any).email;
+    const customerName = request.customer?.name || (request as any).customerName || (request as any).name;
+
     try {
-      console.log(`[Whop] Envoi de la requête pour ${request.appId}: ${amountUSD} USD`);
+      console.log(`[Whop] Envoi de la requête pour ${request.appId}: ${amountUSD} USD (Client: ${customerEmail || 'anonyme'})`);
+
+      const whopPayload: any = {
+        redirect_url: request.returnUrl,
+        plan: {
+          company_id: companyId.trim(),
+          initial_price: amountUSD,
+          plan_type: "one_time",
+          currency: "usd",
+        },
+        metadata: {
+          appId: request.appId,
+          orderId: request.orderId,
+          customerEmail: customerEmail || "",
+          customerName: customerName || "",
+          email: customerEmail || "",
+          name: customerName || "",
+          originalAmount: request.amount.toString(),
+          originalCurrency: request.currency || "XOF",
+          ...(request.metadata || {}),
+        },
+      };
+
+      if (customerEmail) {
+        whopPayload.email = customerEmail;
+        whopPayload.customer_email = customerEmail;
+        whopPayload.customer = {
+          email: customerEmail,
+          name: customerName || undefined,
+        };
+      }
 
       const response = await fetch(apiBaseUrl, {
         method: "POST",
@@ -42,22 +75,7 @@ export class WhopProvider implements IPaymentProvider {
           Authorization: `Bearer ${apiKey.trim()}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          redirect_url: request.returnUrl,
-          plan: {
-            company_id: companyId.trim(),
-            initial_price: amountUSD,
-            plan_type: "one_time",
-            currency: "usd",
-          },
-          metadata: {
-            appId: request.appId,
-            orderId: request.orderId,
-            originalAmount: request.amount.toString(),
-            originalCurrency: request.currency || "XOF",
-            ...(request.metadata || {}),
-          },
-        }),
+        body: JSON.stringify(whopPayload),
       });
 
       if (!response.ok) {
@@ -74,7 +92,16 @@ export class WhopProvider implements IPaymentProvider {
         ? "https://sandbox.whop.com/checkout"
         : "https://whop.com/checkout";
 
-      const paymentUrl = checkoutConfig.purchase_url || checkoutConfig.url || `${baseCheckoutUrl}/${checkoutConfig.id}`;
+      let paymentUrl = checkoutConfig.purchase_url || checkoutConfig.url || `${baseCheckoutUrl}/${checkoutConfig.id}`;
+
+      // Pré-remplissage de l'email et du nom dans l'URL de checkout Whop
+      if (customerEmail) {
+        const separator = paymentUrl.includes("?") ? "&" : "?";
+        paymentUrl += `${separator}email=${encodeURIComponent(customerEmail)}`;
+        if (customerName) {
+          paymentUrl += `&name=${encodeURIComponent(customerName)}`;
+        }
+      }
 
       return {
         success: true,
@@ -114,6 +141,30 @@ export class WhopProvider implements IPaymentProvider {
     const originalAmount = metadata.originalAmount ? Number(metadata.originalAmount) : (paymentData.amount || 0);
     const originalCurrency = metadata.originalCurrency || "USD";
 
+    const user = paymentData.user || paymentData.customer || {};
+    const member = paymentData.member || {};
+
+    const customerEmail = 
+      paymentData.customer_email ||
+      paymentData.email ||
+      user.email ||
+      member.email ||
+      metadata.customerEmail ||
+      metadata.email ||
+      metadata.userEmail ||
+      undefined;
+
+    const customerName =
+      paymentData.customer_name ||
+      paymentData.name ||
+      user.name ||
+      user.username ||
+      member.name ||
+      metadata.customerName ||
+      metadata.name ||
+      metadata.userName ||
+      undefined;
+
     return {
       event: "payment.succeeded",
       appId,
@@ -123,8 +174,8 @@ export class WhopProvider implements IPaymentProvider {
       amount: originalAmount,
       currency: originalCurrency,
       customer: {
-        email: paymentData.customer_email || paymentData.email || metadata.userEmail,
-        name: paymentData.customer_name || metadata.userName,
+        email: customerEmail,
+        name: customerName,
       },
       providerTransactionId,
       metadata,
