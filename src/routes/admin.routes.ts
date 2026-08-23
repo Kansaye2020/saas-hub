@@ -97,15 +97,15 @@ export const ALL_PROVIDERS = [
   {
     id: "ikeepay",
     name: "iKeepay",
-    tagline: "Paiements Mobile Money et Cartes en Afrique",
+    tagline: "Mobile Money & Cartes Virtuelles en Afrique (Checkout Inline & H2H)",
     category: "Mobile Money & Cartes",
-    publicKeyLabel: "Public Key (ou API Key)",
-    publicKeyPlaceholder: "Ex: ikp_pub_...",
-    secretKeyLabel: "Secret Key (ou Merchant ID)",
-    secretKeyPlaceholder: "Ex: ikp_sec_...",
+    publicKeyLabel: "Clé Publique pk (Checkout Inline)",
+    publicKeyPlaceholder: "Ex: votre_cle_publique",
+    secretKeyLabel: "Clé Secrète / x-api-key (API H2H & iKeeCard)",
+    secretKeyPlaceholder: "Ex: votre_secret_key",
     hasExtraConfig: true,
     extraConfigLabel: "Configuration additionnelle (JSON optionnel)",
-    extraConfigPlaceholder: '{"webhookSecret": "..."}',
+    extraConfigPlaceholder: '{"mode": "inline", "isSandbox": false}',
   },
   {
     id: "chariow",
@@ -205,24 +205,36 @@ adminRouter.get("/app/:appId", async (req: Request, res: Response) => {
     const providerRows = await dbQuery("SELECT * FROM providers_config WHERE appId = ?", [appId]);
     
     const configuredProviders = providerRows.map((row: any) => {
-      const pId = row.providerId || row.providerid || '';
+      const pId = (row.providerId || row.providerid || '').trim();
       const rawSec = row.secretKey || row.secretkey || '';
       const meta = ALL_PROVIDERS.find(p => p.id === pId) || {
         id: pId,
         name: pId ? (pId.charAt(0).toUpperCase() + pId.slice(1)) : 'Processeur',
-        tagline: "Processeur de paiement personnalisé",
+        tagline: "Processeur de paiement",
         category: "Paiement",
         publicKeyLabel: "Clé Publique",
         publicKeyPlaceholder: "",
         secretKeyLabel: "Clé Secrète",
         secretKeyPlaceholder: "",
         hasExtraConfig: !!(row.extraConfig || row.extraconfig),
-        extraConfigLabel: "Configuration additionnelle"
+        extraConfigLabel: "Configuration additionnelle",
+        extraConfigPlaceholder: ""
       };
 
+      const isActiveBool = (row.isActive === 1 || row.isactive === 1 || row.isActive === true);
+
       return {
+        id: pId,
         providerId: pId,
-        isActive: (row.isActive ?? row.isactive) === 1,
+        name: meta.name,
+        tagline: meta.tagline,
+        category: meta.category,
+        publicKeyLabel: meta.publicKeyLabel,
+        secretKeyLabel: meta.secretKeyLabel,
+        hasExtraConfig: meta.hasExtraConfig,
+        extraConfigLabel: meta.extraConfigLabel,
+        extraConfigPlaceholder: meta.extraConfigPlaceholder || "",
+        isActive: isActiveBool,
         publicKey: row.publicKey || row.publickey || '',
         secretKey: rawSec,
         maskedSecretKey: maskSecret(rawSec),
@@ -332,36 +344,34 @@ adminRouter.post("/apps/delete", async (req: Request, res: Response) => {
 adminRouter.post("/app/:appId/provider", async (req: Request, res: Response) => {
   const appId = req.params.appId;
   try {
-    const { providerId, publicKey, secretKey, extraConfig, isEdit } = req.body;
-    const isActive = (req.body.isActive === '1' || req.body.isActive === 'on' || req.body.isActive === true) ? 1 : 0;
+    let { providerId, publicKey, secretKey, extraConfig } = req.body;
+    const isActive = (req.body.isActive === '1' || req.body.isActive === 'on' || req.body.isActive === true || req.body.isActive === 1) ? 1 : 0;
 
     if (!providerId) {
       return res.redirect(`/admin/app/${appId}?tab=processors&error=` + encodeURIComponent("Veuillez sélectionner un processeur."));
     }
 
+    providerId = providerId.trim().toLowerCase();
+
     const existing = await dbQuery("SELECT * FROM providers_config WHERE appId = ? AND providerId = ?", [appId, providerId]);
     const isAlreadyConfigured = existing.length > 0;
-
-    if (!isEdit && isAlreadyConfigured) {
-      return res.redirect(`/admin/app/${appId}?tab=processors&error=` + encodeURIComponent("Ce processeur est déjà configuré pour ce site. Vous pouvez modifier sa configuration."));
-    }
 
     let finalSecretKey = '';
     if (isAlreadyConfigured && (!secretKey || secretKey.includes('••••') || secretKey.trim() === '')) {
       finalSecretKey = existing[0].secretKey || existing[0].secretkey || '';
-    } else if (secretKey) {
+    } else if (secretKey && secretKey.trim() !== '') {
       finalSecretKey = encryptSecret(secretKey.trim());
     }
 
     if (isAlreadyConfigured) {
       await dbRun(
         `UPDATE providers_config SET isActive = ?, publicKey = ?, secretKey = ?, extraConfig = ? WHERE appId = ? AND providerId = ?`,
-        [isActive, publicKey || '', finalSecretKey, extraConfig || '', appId, providerId]
+        [isActive, publicKey ? publicKey.trim() : '', finalSecretKey, extraConfig ? extraConfig.trim() : '', appId, providerId]
       );
     } else {
       await dbRun(
         `INSERT INTO providers_config (appId, providerId, isActive, publicKey, secretKey, extraConfig) VALUES (?, ?, ?, ?, ?, ?)`,
-        [appId, providerId, isActive, publicKey || '', finalSecretKey, extraConfig || '']
+        [appId, providerId, isActive, publicKey ? publicKey.trim() : '', finalSecretKey, extraConfig ? extraConfig.trim() : '']
       );
     }
 
@@ -369,7 +379,7 @@ adminRouter.post("/app/:appId/provider", async (req: Request, res: Response) => 
     const providerName = match ? match.name : providerId;
     const statusText = isActive === 1 ? 'Actif' : 'Inactif';
 
-    res.redirect(`/admin/app/${appId}?tab=processors&success=` + encodeURIComponent(`Le processeur ${providerName} a été enregistré pour ce site. Statut : ${statusText}.`));
+    res.redirect(`/admin/app/${appId}?tab=processors&success=` + encodeURIComponent(`Le processeur ${providerName} a été enregistré avec succès (Statut : ${statusText}).`));
   } catch (error: any) {
     console.error("Save site provider error:", error);
     res.redirect(`/admin/app/${appId}?tab=processors&error=` + encodeURIComponent("Erreur: " + (error?.message || "Une erreur est survenue lors de l'enregistrement.")));
@@ -380,10 +390,12 @@ adminRouter.post("/app/:appId/provider", async (req: Request, res: Response) => 
 adminRouter.post("/app/:appId/provider/toggle", async (req: Request, res: Response) => {
   const appId = req.params.appId;
   try {
-    const { providerId } = req.body;
+    let { providerId } = req.body;
     if (!providerId) {
       return res.redirect(`/admin/app/${appId}?tab=processors&error=` + encodeURIComponent("Processeur introuvable."));
     }
+
+    providerId = providerId.trim().toLowerCase();
 
     const row = await dbGet("SELECT * FROM providers_config WHERE appId = ? AND providerId = ?", [appId, providerId]);
     if (!row) {
@@ -392,15 +404,16 @@ adminRouter.post("/app/:appId/provider/toggle", async (req: Request, res: Respon
 
     const match = ALL_PROVIDERS.find(p => p.id === providerId);
     const providerName = match ? match.name : providerId;
-    const newStatus = row.isActive === 1 ? 0 : 1;
+    const currentIsActive = (row.isActive === 1 || row.isactive === 1 || row.isActive === true) ? 1 : 0;
+    const newStatus = currentIsActive === 1 ? 0 : 1;
 
     await dbRun("UPDATE providers_config SET isActive = ? WHERE appId = ? AND providerId = ?", [newStatus, appId, providerId]);
 
     const statusText = newStatus === 1 ? 'Actif' : 'Inactif';
-    res.redirect(`/admin/app/${appId}?tab=processors&success=` + encodeURIComponent(`Le statut de ${providerName} pour ce site est maintenant : ${statusText}.`));
-  } catch (error) {
+    res.redirect(`/admin/app/${appId}?tab=processors&success=` + encodeURIComponent(`Le statut de ${providerName} est maintenant : ${statusText}.`));
+  } catch (error: any) {
     console.error("Toggle site provider error:", error);
-    res.redirect(`/admin/app/${appId}?tab=processors&error=` + encodeURIComponent("Erreur lors du changement de statut."));
+    res.redirect(`/admin/app/${appId}?tab=processors&error=` + encodeURIComponent("Erreur lors du changement de statut: " + (error?.message || error)));
   }
 });
 
@@ -408,16 +421,22 @@ adminRouter.post("/app/:appId/provider/toggle", async (req: Request, res: Respon
 adminRouter.post("/app/:appId/provider/delete", async (req: Request, res: Response) => {
   const appId = req.params.appId;
   try {
-    const { providerId } = req.body;
+    let { providerId } = req.body;
     if (!providerId) {
       return res.redirect(`/admin/app/${appId}?tab=processors&error=` + encodeURIComponent("Processeur introuvable."));
     }
 
+    providerId = providerId.trim().toLowerCase();
+
     await dbRun("DELETE FROM providers_config WHERE appId = ? AND providerId = ?", [appId, providerId]);
-    res.redirect(`/admin/app/${appId}?tab=processors&success=` + encodeURIComponent("Processeur supprimé avec succès pour ce site."));
-  } catch (error) {
+
+    const match = ALL_PROVIDERS.find(p => p.id === providerId);
+    const providerName = match ? match.name : providerId;
+
+    res.redirect(`/admin/app/${appId}?tab=processors&success=` + encodeURIComponent(`Processeur "${providerName}" supprimé avec succès pour ce site.`));
+  } catch (error: any) {
     console.error("Delete site provider error:", error);
-    res.redirect(`/admin/app/${appId}?tab=processors&error=` + encodeURIComponent("Erreur lors de la suppression du processeur."));
+    res.redirect(`/admin/app/${appId}?tab=processors&error=` + encodeURIComponent("Erreur lors de la suppression: " + (error?.message || error)));
   }
 });
 
@@ -428,6 +447,30 @@ adminRouter.get("/settings", async (_req: Request, res: Response) => {
     return res.redirect(`/admin/app/${apps[0].id}?tab=processors`);
   }
   res.redirect("/admin/apps");
+});
+
+adminRouter.post("/settings/provider/toggle", async (req: Request, res: Response) => {
+  const apps = await dbQuery("SELECT id FROM client_apps LIMIT 1");
+  const appId = apps.length > 0 ? apps[0].id : "verifsms";
+  const { providerId } = req.body;
+  if (providerId) {
+    const row = await dbGet("SELECT * FROM providers_config WHERE appId = ? AND providerId = ?", [appId, providerId]);
+    if (row) {
+      const newStatus = (row.isActive === 1 || row.isactive === 1) ? 0 : 1;
+      await dbRun("UPDATE providers_config SET isActive = ? WHERE appId = ? AND providerId = ?", [newStatus, appId, providerId]);
+    }
+  }
+  res.redirect(`/admin/app/${appId}?tab=processors`);
+});
+
+adminRouter.post("/settings/provider/delete", async (req: Request, res: Response) => {
+  const apps = await dbQuery("SELECT id FROM client_apps LIMIT 1");
+  const appId = apps.length > 0 ? apps[0].id : "verifsms";
+  const { providerId } = req.body;
+  if (providerId) {
+    await dbRun("DELETE FROM providers_config WHERE appId = ? AND providerId = ?", [appId, providerId]);
+  }
+  res.redirect(`/admin/app/${appId}?tab=processors`);
 });
 
 adminRouter.get("/api/stats", async (req: Request, res: Response) => {

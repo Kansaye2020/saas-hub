@@ -33,6 +33,14 @@ export const config = {
     secretKey: process.env.CHARIOW_SECRET_KEY || "",
     publicKey: process.env.CHARIOW_PUBLIC_KEY || "",
   },
+
+  // iKeepay config
+  ikeepay: {
+    publicKey: process.env.IKEEPAY_PUBLIC_KEY || "",
+    secretKey: process.env.IKEEPAY_SECRET_KEY || "",
+    apiUrl: process.env.IKEEPAY_API_URL || "https://api.ikeepay.com",
+    checkoutUrl: process.env.IKEEPAY_CHECKOUT_URL || "https://ikeepay.com/checkout/v1/inline",
+  },
 };
 
 import { decryptSecret } from "../utils/encryption";

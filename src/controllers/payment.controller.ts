@@ -43,4 +43,48 @@ export class PaymentController {
       providers,
     });
   }
+
+  /**
+   * Effectuer un retrait H2H iKeePay (Payout)
+   * POST /api/v1/payments/ikeepay/payout
+   */
+  static async ikeepayPayout(req: AuthenticatedRequest, res: Response) {
+    try {
+      const clientApp = req.clientApp!;
+      const ikeepay = providerRegistry.getProvider("ikeepay") as any;
+      const result = await ikeepay.createPayout(clientApp.id, req.body);
+      return res.status(200).json({ success: true, data: result });
+    } catch (err: any) {
+      console.error("❌ Erreur dans PaymentController.ikeepayPayout:", err);
+      return res.status(500).json({
+        success: false,
+        error: err.message || "Erreur lors du payout iKeePay",
+      });
+    }
+  }
+
+  /**
+   * Actions Cartes Virtuelles iKeeCard (create-card, get-details, fund-withdraw, delete-card)
+   * POST /api/v1/payments/ikeepay/card
+   */
+  static async ikeepayCardAction(req: AuthenticatedRequest, res: Response) {
+    try {
+      const clientApp = req.clientApp!;
+      const { action, payload, isSandbox } = req.body;
+
+      if (!action) {
+        return res.status(400).json({ success: false, error: "Le champ 'action' est requis (create-card, get-details, fund-withdraw, delete-card)" });
+      }
+
+      const ikeepay = providerRegistry.getProvider("ikeepay") as any;
+      const result = await ikeepay.cardAction(clientApp.id, action, payload || req.body, isSandbox);
+      return res.status(200).json({ success: true, data: result });
+    } catch (err: any) {
+      console.error("❌ Erreur dans PaymentController.ikeepayCardAction:", err);
+      return res.status(500).json({
+        success: false,
+        error: err.message || "Erreur lors de l'action carte iKeePay",
+      });
+    }
+  }
 }

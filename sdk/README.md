@@ -40,7 +40,7 @@ export async function POST(req: Request) {
 
   // Appel au Hub Unifié
   const payment = await paymentClient.createPayment({
-    provider: "lomopay", // ou "whop", "stripe", "chariow", ou "auto"
+    provider: "lomopay", // ou "ikeepay", "whop", "stripe", "chariow", ou "auto"
     amount: amount,
     currency: "XOF",
     orderId: localTransaction.id,

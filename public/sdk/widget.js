@@ -20,11 +20,16 @@ class HubWidgetClass {
 
     _setupPostMessageListener() {
         window.addEventListener('message', (event) => {
-            if (event.data && (event.data.type === 'HUB_PAYMENT_SUCCESS' || event.data.type === 'payment_success')) {
-                console.log('✅ HubWidget: Paiement confirmé reçu par postMessage:', event.data);
+            const data = event.data;
+            if (data === 'ikeepay-success' || (data && (data.type === 'HUB_PAYMENT_SUCCESS' || data.type === 'payment_success'))) {
+                console.log('✅ HubWidget: Paiement confirmé reçu par postMessage:', data);
                 if (typeof this.onSuccessCallback === 'function') {
-                    this.onSuccessCallback(event.data);
+                    this.onSuccessCallback(data);
                 }
+                this.close();
+            }
+            if (data === 'ikeepay-close') {
+                console.log('ℹ️ HubWidget: Fermeture demandée par iKeePay');
                 this.close();
             }
         });

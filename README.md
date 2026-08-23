@@ -12,8 +12,8 @@
 2. **Multi-Passerelles Intégrées aux Normes Officielles** :
    - 📱 **LomoPay** : Mobile Money pour l'Afrique de l'Ouest et Centrale (Wave, Orange Money, MTN MoMo, Moov Money) en **XOF** et **XAF** avec confirmation par Webhook signé HMAC-SHA256.
    - 💳 **Whop** : Cartes bancaires internationales (Visa, Mastercard, Amex), Apple Pay, Google Pay et checkout global avec conversion intelligente USD/XOF.
-   - ⚡ **Stripe** : Sessions Checkout directes par Carte bancaire (EUR / USD) avec conversion automatique.
-   - 🔄 **Chariow & iKeepay** : Passerelles Mobile Money et cartes alternatives en Afrique.
+   - ⚡ **iKeepay** : Mobile Money (Wave, Orange, MTN, Moov) via Checkout Inline / WebViews (Flutter, React Native, iOS, Android), Encaissements & Retraits directs H2H (Payin & Payout) et Cartes Virtuelles Visa / Mastercard (iKeeCard).
+   - 🔄 **Chariow** : Passerelle Mobile Money alternative.
 3. **Expérience Checkout Mobile-First & Sous-domaine Dédié** :
    - Page de paiement responsive ultra-rapide adaptée aux smartphones et ordinateurs (`https://checkout.inquart.xyz/checkout/:token`).
    - Support des sous-domaines personnalisés (`checkout.votredomaine.com`).

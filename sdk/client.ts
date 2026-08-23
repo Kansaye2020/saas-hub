@@ -1,7 +1,7 @@
 import crypto from "crypto";
 
 export interface CreatePaymentOptions {
-  provider?: "lomopay" | "whop" | "stripe" | "chariow" | "auto";
+  provider?: "lomopay" | "whop" | "stripe" | "chariow" | "ikeepay" | "auto";
   amount: number;
   currency?: string;
   orderId: string;
@@ -33,6 +33,7 @@ export interface UnifiedWebhookEvent {
   customer?: {
     email?: string;
     name?: string;
+    phone?: string;
   };
   metadata?: Record<string, any>;
   providerTransactionId?: string;
@@ -84,6 +85,49 @@ export class SaasPaymentClient {
       provider?: string;
       error?: string;
     };
+  }
+
+  /**
+   * Retrait H2H Direct iKeePay (Payout)
+   */
+  async ikeepayPayout(options: {
+    amount: number;
+    currency?: string;
+    country: string;
+    phoneNumber: string;
+    operator: string;
+    orderId?: string;
+  }) {
+    const url = `${this.hubBaseUrl}/api/v1/payments/ikeepay/payout`;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Hub-Api-Key": this.apiKey,
+      },
+      body: JSON.stringify(options),
+    });
+    return await response.json();
+  }
+
+  /**
+   * Gestion Cartes Virtuelles iKeeCard (create-card, get-details, fund-withdraw, delete-card)
+   */
+  async ikeepayCardAction(
+    action: "create-card" | "get-details" | "fund-withdraw" | "delete-card",
+    payload: any,
+    isSandbox?: boolean
+  ) {
+    const url = `${this.hubBaseUrl}/api/v1/payments/ikeepay/card`;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Hub-Api-Key": this.apiKey,
+      },
+      body: JSON.stringify({ action, payload, isSandbox }),
+    });
+    return await response.json();
   }
 
   /**

@@ -305,11 +305,81 @@ HubWidget.open(token);
 
 ---
 
+---
+
+## ⚡ Guide Spécifique : Intégration iKeePay
+
+Le SaaS Payment Hub intègre nativement l'ensemble des fonctionnalités d'**iKeePay** :
+
+### 1. Checkout Inline & Redirection (Par défaut)
+Pour rediriger vos clients vers le tunnel iKeePay officiel (ou l'intégrer en iframe / WebView Flutter, React Native, iOS, Android) :
+- Configurer votre `Clé Publique pk` et votre `Clé Secrète x-api-key` dans l'admin du Hub (`/admin`).
+- Passer `provider: "ikeepay"` lors de la création du paiement (ou laisser en `"auto"`).
+- L'URL de paiement générée `https://ikeepay.com/checkout/v1/inline?pk=...` est prête à être chargée.
+
+### 2. Encaissement Direct H2H (Payin)
+Pour initier directement un prélèvement Mobile Money (Wave, Orange, MTN, Moov...) sans redirection :
+```json
+POST /api/v1/payments/create
+Header: X-Hub-Api-Key: sk_hub_...
+{
+  "provider": "ikeepay",
+  "amount": 500,
+  "currency": "XOF",
+  "orderId": "CMD_1700000000",
+  "returnUrl": "https://monsite.com/merci",
+  "metadata": {
+    "mode": "h2h",
+    "country": "CI",
+    "phoneNumber": "2250700000000",
+    "operator": "ORANGE",
+    "otp": "123456"
+  }
+}
+```
+
+### 3. Retraits H2H (Payouts)
+Pour transférer des fonds vers un compte Mobile Money client :
+```json
+POST /api/v1/payments/ikeepay/payout
+Header: X-Hub-Api-Key: sk_hub_...
+{
+  "amount": 200,
+  "currency": "XOF",
+  "country": "CI",
+  "phoneNumber": "2250700000000",
+  "operator": "ORANGE",
+  "orderId": "PAYOUT_1700000000"
+}
+```
+
+### 4. Cartes Virtuelles Visa/Mastercard (iKeeCard)
+Pour créer et gérer des cartes virtuelles :
+```json
+POST /api/v1/payments/ikeepay/card
+Header: X-Hub-Api-Key: sk_hub_...
+{
+  "action": "create-card", // ou "get-details", "fund-withdraw", "delete-card"
+  "payload": {
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "johndoe@example.com",
+    "phone": "+2348012345678",
+    "brand": "MasterCard",
+    "initialAmountCents": 500
+  }
+}
+```
+
+---
+
 ## 🎯 Récapitulatif des Endpoints API
 
 | Action | Méthode | URL | Header Requis |
 | :--- | :--- | :--- | :--- |
 | **Créer une Session Checkout** | `POST` | `/checkout/session` | `X-Hub-Api-Key: sk_hub_...` |
 | **Créer un Paiement Direct (API)** | `POST` | `/api/v1/payments/create` | `X-Hub-Api-Key: sk_hub_...` |
-| **Vérifier le statut d'un paiement** | `GET` | `/api/v1/payments/:id` | `X-Hub-Api-Key: sk_hub_...` |
+| **Retrait H2H iKeePay** | `POST` | `/api/v1/payments/ikeepay/payout` | `X-Hub-Api-Key: sk_hub_...` |
+| **Cartes Virtuelles iKeeCard** | `POST` | `/api/v1/payments/ikeepay/card` | `X-Hub-Api-Key: sk_hub_...` |
+| **Liste des passerelles disponibles** | `GET` | `/api/v1/payments/providers` | `X-Hub-Api-Key: sk_hub_...` |
 | **Page de Santé (Anti-veille)** | `GET` | `/health` | Aucun |

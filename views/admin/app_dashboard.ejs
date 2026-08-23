@@ -241,48 +241,62 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-8">
-                <% configuredProviders.forEach(function(prov) { %>
-                    <div class="card bg-base-100 shadow-sm border border-base-300 rounded-2xl">
-                        <div class="card-body p-4 sm:p-6">
-                            <div class="flex justify-between items-start mb-3">
-                                <div>
-                                    <h3 class="card-title text-lg sm:text-xl font-bold"><%= prov.name %></h3>
-                                    <p class="text-xs text-base-content/60"><%= prov.tagline %></p>
-                                </div>
-                                
-                                <form method="POST" action="/admin/app/<%= currentApp.id %>/provider/toggle">
-                                    <input type="hidden" name="providerId" value="<%= prov.id %>">
-                                    <input type="hidden" name="isActive" value="<%= prov.isActive ? '0' : '1' %>">
-                                    <button type="submit" class="badge <%= prov.isActive ? 'badge-success text-white' : 'badge-ghost text-base-content/50' %> font-bold gap-1 py-3 px-3 cursor-pointer">
-                                        <span class="w-1.5 h-1.5 rounded-full <%= prov.isActive ? 'bg-white' : 'bg-base-content/30' %>"></span>
-                                        <%= prov.isActive ? 'Actif sur le site' : 'Désactivé' %>
-                                    </button>
-                                </form>
-                            </div>
-
-                            <div class="bg-base-200 p-3 rounded-xl border border-base-300 text-xs font-mono mb-4 space-y-1.5">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-base-content/60"><%= prov.publicKeyLabel || 'Clé Publique' %>:</span>
-                                    <span class="font-bold truncate max-w-[150px]"><%= prov.publicKey ? (prov.publicKey.substring(0, 8) + '••••••••') : 'Non requise' %></span>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <span class="text-base-content/60"><%= prov.secretKeyLabel || 'Clé Secrète' %>:</span>
-                                    <span class="font-bold truncate max-w-[150px]"><%= prov.maskedSecretKey || (prov.secretKey ? '••••••••' : 'Non configurée') %></span>
-                                </div>
-                            </div>
-
-                            <div class="card-actions justify-end gap-2 pt-2 border-t border-base-200">
-                                <form method="POST" action="/admin/app/<%= currentApp.id %>/provider/delete" onsubmit="return confirm('Retirer ce processeur ?')" class="m-0">
-                                    <input type="hidden" name="providerId" value="<%= prov.id %>">
-                                    <button type="submit" class="btn btn-ghost btn-sm text-error font-bold rounded-lg">Supprimer</button>
-                                </form>
-                                <button type="button" class="btn btn-outline btn-primary btn-sm font-bold rounded-lg" onclick="openEditProcessorModal('<%= prov.id %>', '<%= prov.publicKey || '' %>', '<%= prov.secretKey || '' %>', '<%= prov.extraConfig || '' %>', <%= prov.isActive ? 'true' : 'false' %>)">
-                                    Modifier les clés
-                                </button>
-                            </div>
+                <% if (configuredProviders.length === 0) { %>
+                    <div class="col-span-full card bg-base-100 shadow-sm border border-dashed border-base-300 p-8 sm:p-12 text-center rounded-2xl">
+                        <div class="w-16 h-16 rounded-full bg-primary/10 text-primary mx-auto flex items-center justify-center mb-3 text-2xl">
+                            ⚡
+                        </div>
+                        <h3 class="font-bold text-lg text-base-content">Aucun processeur configuré</h3>
+                        <p class="text-xs sm:text-sm text-base-content/60 max-w-md mx-auto mt-1 mb-5">Ajoutez une passerelle de paiement (LomoPay, iKeePay, Stripe, Whop, Chariow) pour activer les encaissements sur <%= currentApp.name %>.</p>
+                        <div>
+                            <button class="btn btn-primary btn-sm font-bold rounded-xl shadow-sm" onclick="openAddProcessorModal()">
+                                + Ajouter un processeur
+                            </button>
                         </div>
                     </div>
-                <% }); %>
+                <% } else { %>
+                    <% configuredProviders.forEach(function(prov) { %>
+                        <div class="card bg-base-100 shadow-sm border border-base-300 rounded-2xl">
+                            <div class="card-body p-4 sm:p-6">
+                                <div class="flex justify-between items-start mb-3">
+                                    <div>
+                                        <h3 class="card-title text-lg sm:text-xl font-bold"><%= prov.name || prov.meta?.name || prov.providerId %></h3>
+                                        <p class="text-xs text-base-content/60"><%= prov.tagline || prov.meta?.tagline || 'Processeur de paiement' %></p>
+                                    </div>
+                                    
+                                    <form method="POST" action="/admin/app/<%= currentApp.id %>/provider/toggle" class="m-0">
+                                        <input type="hidden" name="providerId" value="<%= prov.providerId %>">
+                                        <button type="submit" class="badge <%= prov.isActive ? 'badge-success text-white' : 'badge-ghost text-base-content/50' %> font-bold gap-1.5 py-3 px-3 cursor-pointer hover:opacity-80 transition-opacity">
+                                            <span class="w-1.5 h-1.5 rounded-full <%= prov.isActive ? 'bg-white' : 'bg-base-content/30' %>"></span>
+                                            <%= prov.isActive ? 'Actif sur le site' : 'Désactivé' %>
+                                        </button>
+                                    </form>
+                                </div>
+
+                                <div class="bg-base-200 p-3 rounded-xl border border-base-300 text-xs font-mono mb-4 space-y-1.5">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-base-content/60"><%= prov.publicKeyLabel || prov.meta?.publicKeyLabel || 'Clé Publique' %>:</span>
+                                        <span class="font-bold truncate max-w-[160px]"><%= prov.publicKey ? (prov.publicKey.substring(0, 8) + '••••••••') : 'Non requise' %></span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-base-content/60"><%= prov.secretKeyLabel || prov.meta?.secretKeyLabel || 'Clé Secrète' %>:</span>
+                                        <span class="font-bold truncate max-w-[160px]"><%= prov.maskedSecretKey || (prov.secretKey ? '••••••••' : 'Non configurée') %></span>
+                                    </div>
+                                </div>
+
+                                <div class="card-actions justify-end gap-2 pt-2 border-t border-base-200">
+                                    <form method="POST" action="/admin/app/<%= currentApp.id %>/provider/delete" onsubmit="return confirm('Retirer définitivement ce processeur pour ce site ?')" class="m-0">
+                                        <input type="hidden" name="providerId" value="<%= prov.providerId %>">
+                                        <button type="submit" class="btn btn-ghost btn-sm text-error font-bold rounded-lg hover:bg-error/10">Supprimer</button>
+                                    </form>
+                                    <button type="button" class="btn btn-outline btn-primary btn-sm font-bold rounded-lg" onclick="openEditProcessorModal('<%= prov.providerId %>', '<%= (prov.publicKey || '').replace(/'/g, "\\'") %>', '', '<%= (prov.extraConfig || '').replace(/'/g, "\\'") %>', <%= prov.isActive ? 1 : 0 %>)">
+                                        Modifier les clés
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    <% }); %>
+                <% } %>
             </div>
 
         <!-- CONTENU ONGLET 3 : PARAMÈTRES & CLÉS API DU SITE -->
@@ -350,13 +364,14 @@
 
             <form method="POST" action="/admin/app/<%= currentApp.id %>/provider" id="processor-form">
                 <input type="hidden" name="isEdit" id="proc-form-isEdit" value="0">
+                <input type="hidden" name="providerId" id="proc-form-hidden-providerId" value="" disabled>
                 
                 <div class="form-control w-full mb-3.5">
                     <label class="label py-1"><span class="label-text font-bold text-xs">Choisir la passerelle</span></label>
                     <select name="providerId" id="proc-form-providerId" class="select select-bordered select-sm sm:select-md w-full font-medium rounded-xl text-xs sm:text-sm" onchange="onProviderSelectChange(this.value)" required>
                         <option value="" disabled selected>-- Sélectionnez un processeur --</option>
                         <% allAvailableProviders.forEach(function(prov) { %>
-                            <option value="<%= prov.id %>" data-pub-label="<%= prov.publicKeyLabel %>" data-pub-ph="<%= prov.publicKeyPlaceholder %>" data-sec-label="<%= prov.secretKeyLabel %>" data-sec-ph="<%= prov.secretKeyPlaceholder %>" data-extra="<%= prov.hasExtraConfig %>" data-extra-label="<%= prov.extraConfigLabel %>" data-extra-ph="<%= prov.extraConfigPlaceholder %>">
+                            <option value="<%= prov.id %>">
                                 <%= prov.name %> — <%= prov.tagline %>
                             </option>
                         <% }); %>
@@ -370,7 +385,7 @@
 
                 <div class="form-control w-full mb-3.5">
                     <label class="label py-1"><span class="label-text font-bold text-xs" id="proc-label-secretKey">Clé Secrète / API Key</span></label>
-                    <input type="password" name="secretKey" id="proc-form-secretKey" class="input input-bordered input-sm sm:input-md w-full font-mono text-xs rounded-xl" placeholder="sk_..." />
+                    <input type="password" name="secretKey" id="proc-form-secretKey" class="input input-bordered input-sm sm:input-md w-full font-mono text-xs rounded-xl" placeholder="sk_..." autocomplete="new-password" />
                 </div>
 
                 <div class="form-control w-full mb-4" id="proc-wrapper-extraConfig">
@@ -469,16 +484,16 @@
             if (!meta) return;
 
             document.getElementById('proc-label-publicKey').innerText = meta.pubLabel || 'Clé Publique / ID';
-            document.getElementById('proc-form-publicKey').placeholder = meta.pubPlaceholder || '';
+            document.getElementById('proc-form-publicKey').placeholder = meta.pubPlaceholder || 'pk_...';
 
             document.getElementById('proc-label-secretKey').innerText = meta.secLabel || 'Clé Secrète / API Key';
-            document.getElementById('proc-form-secretKey').placeholder = meta.secPlaceholder || '';
+            document.getElementById('proc-form-secretKey').placeholder = meta.secPlaceholder || 'sk_...';
 
             const extraWrapper = document.getElementById('proc-wrapper-extraConfig');
             if (meta.hasExtra) {
                 extraWrapper.style.display = 'block';
                 document.getElementById('proc-label-extraConfig').innerText = meta.extraLabel || 'Configuration additionnelle';
-                document.getElementById('proc-form-extraConfig').placeholder = meta.extraPlaceholder || '';
+                document.getElementById('proc-form-extraConfig').placeholder = meta.extraPlaceholder || '{"option": "valeur"}';
             } else {
                 extraWrapper.style.display = 'none';
             }
@@ -487,19 +502,23 @@
         function openAddProcessorModal() {
             document.getElementById('proc-modal-title').innerText = "Ajouter un processeur";
             document.getElementById('proc-form-isEdit').value = "0";
-            document.getElementById('proc-form-providerId').disabled = false;
-            document.getElementById('proc-form-providerId').value = "";
+
+            const selectEl = document.getElementById('proc-form-providerId');
+            selectEl.disabled = false;
+            selectEl.required = true;
+
+            const hiddenId = document.getElementById('proc-form-hidden-providerId');
+            hiddenId.disabled = true;
+            hiddenId.value = "";
+
             document.getElementById('proc-form-publicKey').value = "";
             document.getElementById('proc-form-secretKey').value = "";
             document.getElementById('proc-form-extraConfig').value = "";
             document.getElementById('proc-form-isActive').checked = true;
 
-            const hiddenProvider = document.getElementById('hidden-edit-providerId');
-            if (hiddenProvider) hiddenProvider.remove();
-            
-            const firstOption = document.querySelector('#proc-form-providerId option:not([disabled])');
+            const firstOption = selectEl.querySelector('option:not([disabled])');
             if (firstOption) {
-                document.getElementById('proc-form-providerId').value = firstOption.value;
+                selectEl.value = firstOption.value;
                 onProviderSelectChange(firstOption.value);
             }
             
@@ -507,22 +526,17 @@
         }
 
         function openEditProcessorModal(providerId, publicKey, secretKey, extraConfig, isActive) {
-            document.getElementById('proc-modal-title').innerText = "Modifier les clés";
+            document.getElementById('proc-modal-title').innerText = "Modifier le processeur";
             document.getElementById('proc-form-isEdit').value = "1";
             
             const selectEl = document.getElementById('proc-form-providerId');
             selectEl.value = providerId;
             selectEl.disabled = true;
+            selectEl.required = false;
 
-            let hiddenProviderInput = document.getElementById('hidden-edit-providerId');
-            if (!hiddenProviderInput) {
-                hiddenProviderInput = document.createElement('input');
-                hiddenProviderInput.type = 'hidden';
-                hiddenProviderInput.name = 'providerId';
-                hiddenProviderInput.id = 'hidden-edit-providerId';
-                document.getElementById('processor-form').appendChild(hiddenProviderInput);
-            }
-            hiddenProviderInput.value = providerId;
+            const hiddenId = document.getElementById('proc-form-hidden-providerId');
+            hiddenId.disabled = false;
+            hiddenId.value = providerId;
 
             onProviderSelectChange(providerId);
 
@@ -530,7 +544,7 @@
             document.getElementById('proc-form-secretKey').value = '';
             document.getElementById('proc-form-secretKey').placeholder = 'Laisser vide pour conserver la clé chiffrée actuelle';
             document.getElementById('proc-form-extraConfig').value = extraConfig || '';
-            document.getElementById('proc-form-isActive').checked = !!isActive;
+            document.getElementById('proc-form-isActive').checked = (isActive === 1 || isActive === true || isActive === '1');
 
             document.getElementById('processor_modal').showModal();
         }
