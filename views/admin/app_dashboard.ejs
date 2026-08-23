@@ -267,7 +267,7 @@
                                 </div>
                                 <div class="flex items-center justify-between">
                                     <span class="text-base-content/60"><%= prov.secretKeyLabel || 'Clé Secrète' %>:</span>
-                                    <span class="font-bold truncate max-w-[150px]"><%= prov.secretKey ? (prov.secretKey.substring(0, 6) + '••••••••') : 'Non configurée' %></span>
+                                    <span class="font-bold truncate max-w-[150px]"><%= prov.maskedSecretKey || (prov.secretKey ? '••••••••' : 'Non configurée') %></span>
                                 </div>
                             </div>
 
@@ -527,7 +527,8 @@
             onProviderSelectChange(providerId);
 
             document.getElementById('proc-form-publicKey').value = publicKey || '';
-            document.getElementById('proc-form-secretKey').value = secretKey || '';
+            document.getElementById('proc-form-secretKey').value = '';
+            document.getElementById('proc-form-secretKey').placeholder = 'Laisser vide pour conserver la clé chiffrée actuelle';
             document.getElementById('proc-form-extraConfig').value = extraConfig || '';
             document.getElementById('proc-form-isActive').checked = !!isActive;
 
@@ -536,6 +537,18 @@
 
         function openEditAppModal() {
             document.getElementById('app_modal').showModal();
+        }
+
+        function togglePasswordVisibility(id, btn) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (el.type === 'password') {
+                el.type = 'text';
+                btn.innerText = '🙈';
+            } else {
+                el.type = 'password';
+                btn.innerText = '👁️';
+            }
         }
     </script>
 </body>

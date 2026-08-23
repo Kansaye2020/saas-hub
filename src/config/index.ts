@@ -35,14 +35,24 @@ export const config = {
   },
 };
 
+import { decryptSecret } from "../utils/encryption";
+
 export async function getClientAppById(appId: string): Promise<ClientAppConfig | undefined> {
   const { dbGet } = require("../database/db");
-  return await dbGet("SELECT * FROM client_apps WHERE id = ?", [appId]);
+  const row = await dbGet("SELECT * FROM client_apps WHERE id = ?", [appId]);
+  if (row) {
+    row.webhookSecret = decryptSecret(row.webhookSecret);
+  }
+  return row;
 }
 
 export async function getClientAppByApiKey(apiKey: string): Promise<ClientAppConfig | undefined> {
   const { dbGet } = require("../database/db");
-  return await dbGet("SELECT * FROM client_apps WHERE apiKey = ?", [apiKey]);
+  const row = await dbGet("SELECT * FROM client_apps WHERE apiKey = ?", [apiKey]);
+  if (row) {
+    row.webhookSecret = decryptSecret(row.webhookSecret);
+  }
+  return row;
 }
 
 export async function getAppProviderConfig(appId: string, providerId: string): Promise<{ publicKey: string; secretKey: string; isActive: boolean; extraConfig?: any }> {
@@ -57,7 +67,7 @@ export async function getAppProviderConfig(appId: string, providerId: string): P
       return {
         isActive: row.isActive === 1,
         publicKey: row.publicKey || "",
-        secretKey: row.secretKey || "",
+        secretKey: decryptSecret(row.secretKey || ""),
         extraConfig: extra
       };
     }
@@ -71,7 +81,7 @@ export async function getAppProviderConfig(appId: string, providerId: string): P
     return {
       isActive: false,
       publicKey: envConfig.publicKey || envConfig.apiKey || "",
-      secretKey: envConfig.secretKey || envConfig.webhookSecret || "",
+      secretKey: decryptSecret(envConfig.secretKey || envConfig.webhookSecret || ""),
     };
   }
 
@@ -90,7 +100,7 @@ export async function getAppActiveProviders(appId: string): Promise<Array<{ prov
       return {
         providerId: row.providerId,
         publicKey: row.publicKey || "",
-        secretKey: row.secretKey || "",
+        secretKey: decryptSecret(row.secretKey || ""),
         extraConfig: extra
       };
     });

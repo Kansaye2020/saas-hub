@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import crypto from "crypto";
 import { requireAdminAuth, getExpectedSessionToken } from "../middleware/adminAuth";
 import { dbQuery, dbRun, dbGet } from "../database/db";
+import { encryptSecret, decryptSecret, maskSecret } from "../utils/encryption";
 
 export const adminRouter = Router();
 
@@ -205,6 +206,7 @@ adminRouter.get("/app/:appId", async (req: Request, res: Response) => {
     
     const configuredProviders = providerRows.map((row: any) => {
       const pId = row.providerId || row.providerid || '';
+      const rawSec = row.secretKey || row.secretkey || '';
       const meta = ALL_PROVIDERS.find(p => p.id === pId) || {
         id: pId,
         name: pId ? (pId.charAt(0).toUpperCase() + pId.slice(1)) : 'Processeur',
@@ -222,7 +224,8 @@ adminRouter.get("/app/:appId", async (req: Request, res: Response) => {
         providerId: pId,
         isActive: (row.isActive ?? row.isactive) === 1,
         publicKey: row.publicKey || row.publickey || '',
-        secretKey: row.secretKey || row.secretkey || '',
+        secretKey: rawSec,
+        maskedSecretKey: maskSecret(rawSec),
         extraConfig: row.extraConfig || row.extraconfig || '',
         meta
       };
@@ -275,19 +278,28 @@ adminRouter.post("/apps", async (req: Request, res: Response) => {
     // Normaliser l'id (minuscules, sans espaces)
     id = id.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
 
-    if (!apiKey) apiKey = 'sk_hub_' + crypto.randomBytes(16).toString('hex');
-    if (!webhookSecret) webhookSecret = 'whsec_' + crypto.randomBytes(16).toString('hex');
-    
     const existingApp = await dbQuery("SELECT * FROM client_apps WHERE id = ?", [id]);
+
+    if (!apiKey) apiKey = 'sk_hub_' + crypto.randomBytes(16).toString('hex');
+    
+    let encWebhookSecret = '';
+    if (existingApp.length > 0 && (!webhookSecret || webhookSecret.includes('••••') || webhookSecret.trim() === '')) {
+      encWebhookSecret = existingApp[0].webhookSecret || existingApp[0].webhooksecret || '';
+    } else if (webhookSecret) {
+      encWebhookSecret = encryptSecret(webhookSecret.trim());
+    } else {
+      encWebhookSecret = encryptSecret('whsec_' + crypto.randomBytes(16).toString('hex'));
+    }
+    
     if (existingApp.length > 0) {
       await dbRun(
         `UPDATE client_apps SET name = ?, apiKey = ?, webhookUrl = ?, webhookSecret = ?, returnUrl = ?, cancelUrl = ? WHERE id = ?`,
-        [name, apiKey, webhookUrl || '', webhookSecret, returnUrl || '', cancelUrl || '', id]
+        [name, apiKey, webhookUrl || '', encWebhookSecret, returnUrl || '', cancelUrl || '', id]
       );
     } else {
       await dbRun(
         `INSERT INTO client_apps (id, name, apiKey, webhookUrl, webhookSecret, returnUrl, cancelUrl) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [id, name, apiKey, webhookUrl || '', webhookSecret, returnUrl || '', cancelUrl || '']
+        [id, name, apiKey, webhookUrl || '', encWebhookSecret, returnUrl || '', cancelUrl || '']
       );
     }
 
@@ -334,15 +346,22 @@ adminRouter.post("/app/:appId/provider", async (req: Request, res: Response) => 
       return res.redirect(`/admin/app/${appId}?tab=processors&error=` + encodeURIComponent("Ce processeur est déjà configuré pour ce site. Vous pouvez modifier sa configuration."));
     }
 
+    let finalSecretKey = '';
+    if (isAlreadyConfigured && (!secretKey || secretKey.includes('••••') || secretKey.trim() === '')) {
+      finalSecretKey = existing[0].secretKey || existing[0].secretkey || '';
+    } else if (secretKey) {
+      finalSecretKey = encryptSecret(secretKey.trim());
+    }
+
     if (isAlreadyConfigured) {
       await dbRun(
         `UPDATE providers_config SET isActive = ?, publicKey = ?, secretKey = ?, extraConfig = ? WHERE appId = ? AND providerId = ?`,
-        [isActive, publicKey || '', secretKey || '', extraConfig || '', appId, providerId]
+        [isActive, publicKey || '', finalSecretKey, extraConfig || '', appId, providerId]
       );
     } else {
       await dbRun(
         `INSERT INTO providers_config (appId, providerId, isActive, publicKey, secretKey, extraConfig) VALUES (?, ?, ?, ?, ?, ?)`,
-        [appId, providerId, isActive, publicKey || '', secretKey || '', extraConfig || '']
+        [appId, providerId, isActive, publicKey || '', finalSecretKey, extraConfig || '']
       );
     }
 

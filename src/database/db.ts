@@ -323,7 +323,35 @@ export const initDB = async () => {
       }
     }
     
-    console.log("✅ Base de données initialisée et synchronisée avec succès !");
+    // 6. Migration automatique : Chiffrement des secrets existants en base avec AES-256-GCM
+    try {
+      const { encryptSecret } = require("../utils/encryption");
+      
+      const providerList = await dbQuery("SELECT * FROM providers_config");
+      for (const p of providerList) {
+        const sec = p.secretKey || p.secretkey;
+        if (sec && typeof sec === "string" && !sec.startsWith("enc:v1:")) {
+          const encSec = encryptSecret(sec);
+          await dbRun(
+            "UPDATE providers_config SET secretKey = ? WHERE appId = ? AND providerId = ?",
+            [encSec, p.appId || p.appid, p.providerId || p.providerid]
+          );
+        }
+      }
+
+      const appList = await dbQuery("SELECT * FROM client_apps");
+      for (const app of appList) {
+        const sec = app.webhookSecret || app.webhooksecret;
+        if (sec && typeof sec === "string" && !sec.startsWith("enc:v1:")) {
+          const encSec = encryptSecret(sec);
+          await dbRun("UPDATE client_apps SET webhookSecret = ? WHERE id = ?", [encSec, app.id]);
+        }
+      }
+    } catch (migErr) {
+      console.warn("Notice: Auto-encryption migration:", migErr);
+    }
+
+    console.log("✅ Base de données initialisée, synchronisée et sécurisée (AES-256) avec succès !");
   } catch (err) {
     console.error("❌ Erreur lors de l'initialisation de la base de données:", err);
   }
