@@ -264,12 +264,19 @@
                                         <p class="text-xs text-base-content/60"><%= prov.tagline || prov.meta?.tagline || 'Processeur de paiement' %></p>
                                     </div>
                                     
-                                    <form method="POST" action="/admin/app/<%= currentApp.id %>/provider/toggle" class="m-0">
+                                    <form method="POST" action="/admin/app/<%= currentApp.id %>/provider/toggle" class="m-0 flex items-center">
                                         <input type="hidden" name="providerId" value="<%= prov.providerId %>">
-                                        <button type="submit" class="badge <%= prov.isActive ? 'badge-success text-white' : 'badge-ghost text-base-content/50' %> font-bold gap-1.5 py-3 px-3 cursor-pointer hover:opacity-80 transition-opacity">
-                                            <span class="w-1.5 h-1.5 rounded-full <%= prov.isActive ? 'bg-white' : 'bg-base-content/30' %>"></span>
-                                            <%= prov.isActive ? 'Actif sur le site' : 'Désactivé' %>
-                                        </button>
+                                        <label class="cursor-pointer flex items-center gap-2 select-none bg-base-200 hover:bg-base-300/70 px-3 py-1.5 rounded-full border border-base-300 transition-all shadow-xs" title="Cliquer pour <%= prov.isActive ? 'désactiver' : 'activer' %> ce processeur">
+                                            <span class="text-[11px] sm:text-xs font-black uppercase tracking-wider <%= prov.isActive ? 'text-success' : 'text-base-content/40' %>">
+                                                <%= prov.isActive ? 'Actif' : 'Inactif' %>
+                                            </span>
+                                            <input 
+                                                type="checkbox" 
+                                                class="toggle toggle-success toggle-sm cursor-pointer transition-all duration-200 ease-in-out" 
+                                                <%= prov.isActive ? 'checked' : '' %> 
+                                                onchange="this.form.submit()" 
+                                            />
+                                        </label>
                                     </form>
                                 </div>
 
