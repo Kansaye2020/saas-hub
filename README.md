@@ -1,26 +1,41 @@
 # 💳 SaaS Payment Hub (Unificateur de Paiement Multi-SaaS)
 
-**SaaS Payment Hub** est une passerelle de paiement unifiée, auto-hébergée et multi-tenant. Elle centralise la gestion de toutes vos passerelles de paiement (**LomoPay, Whop, Stripe, Chariow, iKeepay**) et permet à l'ensemble de vos projets SaaS de s'y connecter via une API unique, unifiée et standardisée.
+**SaaS Payment Hub** est une infrastructure de paiement unifiée, auto-hébergée et multi-tenant. Elle centralise la gestion de toutes vos passerelles de paiement (**LomoPay, iKeePay, Whop, Stripe, Chariow**) et permet à l'ensemble de vos projets SaaS et sites e-commerce de s'y connecter via une API unique, unifiée et standardisée.
 
 ---
 
-## 🌟 Avantages Clés
+## 🌟 Avantages & Fonctionnalités Clés
 
 1. **Isolation Multi-Tenant Complète** :
-   - Connectez autant de sites et de SaaS que vous voulez.
-   - Chaque site possède son propre Dashboard dédié (`/admin/app/:appId`), ses propres passerelles configurées avec leurs clés API indépendantes, ses statistiques de chiffre d'affaires isolées et ses propres URLs de Webhook et de retour.
+   - Connectez autant de sites et de SaaS que vous le souhaitez.
+   - Chaque site possède son propre Dashboard dédié (`/admin/app/:appId`), ses propres passerelles configurées avec leurs clés API indépendantes chiffrées (AES-256-GCM), ses statistiques de chiffre d'affaires isolées et ses propres URLs de Webhook et de redirection.
+
 2. **Multi-Passerelles Intégrées aux Normes Officielles** :
    - 📱 **LomoPay** : Mobile Money pour l'Afrique de l'Ouest et Centrale (Wave, Orange Money, MTN MoMo, Moov Money) en **XOF** et **XAF** avec confirmation par Webhook signé HMAC-SHA256.
-   - 💳 **Whop** : Cartes bancaires internationales (Visa, Mastercard, Amex), Apple Pay, Google Pay et checkout global avec conversion intelligente USD/XOF.
-   - ⚡ **iKeepay** : Mobile Money (Wave, Orange, MTN, Moov) via Checkout Inline / WebViews (Flutter, React Native, iOS, Android), Encaissements & Retraits directs H2H (Payin & Payout) et Cartes Virtuelles Visa / Mastercard (iKeeCard).
+   - ⚡ **iKeePay** :
+     - **Checkout Inline** : Tunnel de paiement iframe / WebView (Flutter, React Native, iOS, Android) ultra-fluide sans flash blanc avec écoute des signaux postMessage (`ikeepay-ready`, `ikeepay-success`, `ikeepay-close`).
+     - **Encaissement Direct H2H (Payin)** : Prélèvement direct Mobile Money via API.
+     - **Retrait Direct H2H (Payout)** : Virement de fonds vers un compte Mobile Money client (`POST /api/v1/payments/ikeepay/payout`).
+     - **Cartes Virtuelles (iKeeCard)** : Création et gestion complète de cartes Visa / Mastercard virtuelles (`POST /api/v1/payments/ikeepay/card`).
+   - 💳 **Whop** : Cartes bancaires internationales (Visa, Mastercard, Amex), Apple Pay, Google Pay, avec conversion intelligente USD/XOF, transmission des métadonnées et pré-remplissage automatique de l'email client.
+   - 💳 **Stripe** : Cartes bancaires internationales directes avec session Checkout officielle.
    - 🔄 **Chariow** : Passerelle Mobile Money alternative.
-3. **Expérience Checkout Mobile-First & Sous-domaine Dédié** :
-   - Page de paiement responsive ultra-rapide adaptée aux smartphones et ordinateurs (`https://checkout.inquart.xyz/checkout/:token`).
-   - Support des sous-domaines personnalisés (`checkout.votredomaine.com`).
-4. **Dispatcher de Webhooks Sécurisé** :
-   - Les passerelles notifient le Hub, qui vérifie les signatures cryptographiques, met à jour la base de données et transmet un webhook unifié signé HMAC-SHA256 à votre SaaS cible.
-5. **Base de Données Hybride & Migrations Automatiques** :
-   - Support natif de **PostgreSQL (Neon.tech / Supabase / Render)** en production et de **SQLite** en développement local, avec auto-migration des colonnes au démarrage.
+
+3. **Dashboard d'Administration Moderne & Réactif** :
+   - **Interrupteurs coulissants (Switch Toggles)** : Activez ou désactivez une passerelle pour un site en un clic avec mise à jour en temps réel (AJAX).
+   - **Popups Toast Dynamiques (5 secondes)** : Notifications flottantes temporaires adaptatives (🟢 Vert pour Actif / Succès, 🟠 Orange pour Inactif / Désactivé, 🔴 Rouge pour Erreur).
+   - **Gestion sécurisée des secrets** : Les clés privées sont masquées (`••••••••`) et chiffrées en base de données.
+
+4. **Expérience Checkout Mobile-First & Marque Blanche** :
+   - Page de paiement hébergée responsive ultra-rapide (`/checkout/:token`).
+   - Support des widgets Pop-up modale et redirection in-app.
+   - Pré-remplissage et validation automatique de l'email client pour l'émission des reçus.
+
+5. **Dispatcher de Webhooks Sécurisé** :
+   - Les passerelles notifient le Hub, qui vérifie les signatures cryptographiques, met à jour la base de données et transmet un webhook unifié signé HMAC-SHA256 (`x-hub-signature`) à votre SaaS cible.
+
+6. **Base de Données Hybride & Migrations Automatiques** :
+   - Support natif de **PostgreSQL (Neon.tech / Supabase / Render / Railway / Koyeb)** en production et de **SQLite** en local, avec auto-migration des tables et colonnes au démarrage.
 
 ---
 
@@ -42,7 +57,7 @@
          ┌───────────────────────────┼───────────────────────────┐
          ▼                           ▼                           ▼
 ┌──────────────────┐       ┌──────────────────┐       ┌──────────────────┐
-│     LomoPay      │       │       Whop       │       │  Stripe / Autres │
+│ LomoPay / iKeePay│       │       Whop       │       │      Stripe      │
 │ (Wave, OM, MTN)  │       │ (Cartes, AppleP) │       │ (Cartes Directes)│
 └────────┬─────────┘       └────────┬─────────┘       └────────┬─────────┘
          │                          │                          │
@@ -52,7 +67,7 @@
                       ┌─────────────────────────────┐
                       │    Dispatcher de Webhooks   │
                       └─────────────┬───────────────┘
-                                    │ Notification POST sécurisée
+                                    │ Notification POST sécurisée (x-hub-signature)
                                     ▼
                       [ Callback vers le SaaS émetteur ]
 ```
@@ -63,24 +78,28 @@
 
 ```text
 saas-payment-hub/
-├── Dockerfile                  # Image Docker Alpine multi-stage optimisée
 ├── package.json                # Dépendances Node.js & TypeScript
 ├── tsconfig.json               # Configuration TypeScript
+├── render.yaml                 # Fichier Blueprint pour déploiement Render
 ├── .env.example                # Modèle de variables d'environnement
 ├── README.md                   # Présentation générale du Hub
-├── INTEGRATION_GUIDE.md        # Guide pas-à-pas pour connecter vos SaaS (Node, PHP, Python)
+├── INTEGRATION_GUIDE.md        # Guide pas-à-pas d'intégration SaaS (Node, PHP, Python)
 ├── public/                     # Fichiers statiques, pages de test et widget SDK
 │   ├── sdk/widget.js           # SDK Pop-up Iframe pour intégration in-app
 │   ├── test-redirect.html      # Page de démonstration redirection
 │   └── test-widget.html        # Page de démonstration modal pop-up
+├── sdk/                        # SDK Client TypeScript pour projets Next.js / Node.js
+│   ├── client.ts               # Client API TypeScript et vérification HMAC
+│   └── README.md               # Guide d'utilisation du SDK Client
 ├── views/                      # Vues EJS (Dashboard Admin & Checkout)
 │   ├── admin/                  # Login, liste des sites, dashboard site & processeurs
 │   └── checkout/               # Page de paiement client mobile-first
 └── src/
     ├── config/                 # Gestion des configurations dynamiques
+    ├── controllers/            # Contrôleurs de paiement et actions passerelles
     ├── database/               # Connecteur Neon PostgreSQL / SQLite & migrations
     ├── middleware/             # Authentification API SaaS et Session Admin
-    ├── providers/              # Adaptateurs passerelles (LomoPay, Whop, Stripe, etc.)
+    ├── providers/              # Adaptateurs (LomoPay, iKeePay, Whop, Stripe, Chariow)
     ├── routes/                 # Routes API, Admin, Webhooks et Checkout
     ├── services/               # Moteurs de paiement et dispatcher de webhooks
     └── server.ts               # Point d'entrée Express
@@ -90,16 +109,16 @@ saas-payment-hub/
 
 ## ⚙️ Configuration (`.env`)
 
-Créez votre fichier `.env` :
+Créez un fichier `.env` à la racine :
 
 ```env
 PORT=4000
 NODE_ENV=production
 
 # URL publique de votre Hub de paiement
-HUB_BASE_URL=https://checkout.inquart.xyz
+HUB_BASE_URL=https://checkout.votredomaine.com
 
-# Base de données PostgreSQL (ex: Neon.tech / Render) ou laisser vide pour SQLite
+# Base de données PostgreSQL (ex: Neon.tech / Render / Railway) ou laisser vide pour SQLite
 DATABASE_URL=postgresql://user:password@ep-xyz.neon.tech/neondb?sslmode=require
 
 # Identifiants du Master Admin
@@ -112,10 +131,10 @@ ADMIN_JWT_SECRET=un_secret_jwt_tres_long_et_securise
 
 ## 🚀 Déploiement
 
-### Déploiement sur Render.com (Recommandé - Gratuit & Automatique)
+### Déploiement en 1 Clic (Render / Koyeb / Railway / VPS)
 
-1. Connectez votre dépôt GitHub à **Render.com**.
-2. Créez un **Web Service** :
+1. Connectez votre dépôt GitHub à votre plateforme d'hébergement.
+2. Configurez les commandes de build et démarrage :
    - **Build Command :** `npm run build`
    - **Start Command :** `npm start`
 3. Ajoutez vos variables d'environnement (`DATABASE_URL`, `ADMIN_PASSWORD`, `HUB_BASE_URL`).

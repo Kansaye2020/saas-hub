@@ -328,6 +328,10 @@ Header: X-Hub-Api-Key: sk_hub_...
   "currency": "XOF",
   "orderId": "CMD_1700000000",
   "returnUrl": "https://monsite.com/merci",
+  "customer": {
+    "email": "client@exemple.com",
+    "name": "Jean Dupont"
+  },
   "metadata": {
     "mode": "h2h",
     "country": "CI",
@@ -373,13 +377,32 @@ Header: X-Hub-Api-Key: sk_hub_...
 
 ---
 
+## 💳 Guide Spécifique : Intégration Whop
+
+**Whop** gère les paiements internationaux par Carte Bancaire (Visa, Mastercard, American Express), Apple Pay et Google Pay :
+
+- **Transmission de l'email client :** Lorsque vous passez `customerEmail` ou `customer: { email }`, le Hub transmet automatiquement l'email dans les métadonnées de la session Whop et pré-remplit le champ sur la page de paiement sécurisée Whop (`?email=client@domaine.com`).
+- **Conversion automatique :** Si le montant est en FCFA (`XOF` ou `XAF`), le Hub applique une conversion dynamique en USD pour Whop tout en conservant le montant initial en devise locale dans le webhook de retour.
+- **Réception du Webhook :** Une fois le paiement validé sur Whop, le Hub transmet à votre SaaS l'événement unifié `payment.succeeded` avec l'email du client acheteur.
+
+---
+
+## 📱 Guide Spécifique : Intégration LomoPay
+
+**LomoPay** est spécialisé dans les encaissements Mobile Money pour l'Afrique de l'Ouest et Centrale (Wave, Orange Money, MTN MoMo, Moov Money) :
+
+- **Devises gérées :** `XOF` (UEMOA) et `XAF` (CEMAC).
+- **Webhooks signés HMAC :** Confirmation instantanée de paiement avec vérification cryptographique des transactions.
+
+---
+
 ## 🎯 Récapitulatif des Endpoints API
 
-| Action | Méthode | URL | Header Requis |
-| :--- | :--- | :--- | :--- |
-| **Créer une Session Checkout** | `POST` | `/checkout/session` | `X-Hub-Api-Key: sk_hub_...` |
-| **Créer un Paiement Direct (API)** | `POST` | `/api/v1/payments/create` | `X-Hub-Api-Key: sk_hub_...` |
-| **Retrait H2H iKeePay** | `POST` | `/api/v1/payments/ikeepay/payout` | `X-Hub-Api-Key: sk_hub_...` |
-| **Cartes Virtuelles iKeeCard** | `POST` | `/api/v1/payments/ikeepay/card` | `X-Hub-Api-Key: sk_hub_...` |
-| **Liste des passerelles disponibles** | `GET` | `/api/v1/payments/providers` | `X-Hub-Api-Key: sk_hub_...` |
-| **Page de Santé (Anti-veille)** | `GET` | `/health` | Aucun |
+| Action | Méthode | URL | Header Requis | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **Créer une Session Checkout** | `POST` | `/checkout/session` | `X-Hub-Api-Key: sk_hub_...` | Génère un token et une URL de paiement hébergée |
+| **Créer un Paiement Direct (API)** | `POST` | `/api/v1/payments/create` | `X-Hub-Api-Key: sk_hub_...` | Initialisation directe auprès d'une passerelle |
+| **Retrait H2H iKeePay** | `POST` | `/api/v1/payments/ikeepay/payout` | `X-Hub-Api-Key: sk_hub_...` | Transfert direct vers Mobile Money client |
+| **Cartes Virtuelles iKeeCard** | `POST` | `/api/v1/payments/ikeepay/card` | `X-Hub-Api-Key: sk_hub_...` | Création / gestion de cartes Visa et Mastercard |
+| **Liste des passerelles disponibles** | `GET` | `/api/v1/payments/providers` | `X-Hub-Api-Key: sk_hub_...` | Liste des processeurs actifs pour ce site |
+| **Page de Santé (Anti-veille)** | `GET` | `/health` | Aucun | Monitoring et uptime check |

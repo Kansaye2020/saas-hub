@@ -88,20 +88,58 @@ export async function POST(req: Request) {
 
   // 2. Traitement du paiement réussi
   if (event.event === "payment.succeeded") {
-    const { orderId, amount, provider } = event;
+    const { orderId, amount, provider, customer } = event;
 
-    // Mettre à jour votre BDD
+    // Mettre à jour votre BDD (Commande payée, crédits ajoutés)
     await db.transaction.update({
       where: { id: orderId },
-      data: { status: "COMPLETED" },
-    });
-
-    await db.user.update({
-      where: { id: userId },
-      data: { balance: { increment: amount } },
+      data: { status: "COMPLETED", payerEmail: customer?.email },
     });
   }
 
   return NextResponse.json({ received: true });
 }
+```
+
+---
+
+## ⚡ 4. Fonctionnalités Avancées (iKeePay & Checkout)
+
+### Créer une session Checkout hébergée :
+```typescript
+const session = await paymentClient.createSession({
+  amount: 5000,
+  currency: "XOF",
+  orderId: "CMD_12345",
+  description: "Abonnement Pro",
+  customerEmail: "client@exemple.com",
+  returnUrl: "https://monsaas.com/merci",
+  cancelUrl: "https://monsaas.com/tarifs",
+});
+
+// Redirection vers session.checkoutUrl
+```
+
+### Effectuer un Retrait Mobile Money iKeePay (Payout) :
+```typescript
+const payout = await paymentClient.ikeepayPayout({
+  amount: 1000,
+  currency: "XOF",
+  country: "CI",
+  phoneNumber: "2250700000000",
+  operator: "ORANGE",
+  orderId: "RETRAIT_12345",
+});
+```
+
+### Gérer des Cartes Virtuelles Visa / Mastercard (iKeeCard) :
+```typescript
+const card = await paymentClient.ikeepayCardAction("create-card", {
+  firstName: "Jean",
+  lastName: "Dupont",
+  email: "jean.dupont@example.com",
+  phone: "+2250700000000",
+  brand: "MasterCard",
+  initialAmountCents: 500,
+});
 ```
