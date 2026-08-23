@@ -85,10 +85,10 @@ export class WhopProvider implements IPaymentProvider {
 
       let paymentUrl = checkoutConfig.purchase_url || checkoutConfig.url || `${baseCheckoutUrl}/${checkoutConfig.id}`;
 
-      // Pré-remplissage de l'email et du nom dans l'URL de checkout Whop
+      // Transmission directe de l'email et masquage du champ email sur la page Whop
       if (customerEmail) {
         const separator = paymentUrl.includes("?") ? "&" : "?";
-        paymentUrl += `${separator}email=${encodeURIComponent(customerEmail)}`;
+        paymentUrl += `${separator}email=${encodeURIComponent(customerEmail)}&email.hidden=1&email.disabled=1`;
         if (customerName) {
           paymentUrl += `&name=${encodeURIComponent(customerName)}`;
         }
