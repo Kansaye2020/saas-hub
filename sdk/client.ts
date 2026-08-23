@@ -52,7 +52,37 @@ export class SaasPaymentClient {
   }
 
   /**
-   * Crée une session de paiement unifiée
+   * Crée une session de paiement hébergée (Checkout Portal / Widget)
+   */
+  async createSession(options: {
+    amount: number;
+    currency?: string;
+    orderId: string;
+    description?: string;
+    customerEmail?: string;
+    customerName?: string;
+    returnUrl?: string;
+    cancelUrl?: string;
+  }) {
+    const url = `${this.hubBaseUrl}/checkout/session`;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Hub-Api-Key": this.apiKey,
+      },
+      body: JSON.stringify(options),
+    });
+    return (await response.json()) as {
+      success: boolean;
+      token?: string;
+      checkoutUrl?: string;
+      error?: string;
+    };
+  }
+
+  /**
+   * Crée un paiement direct auprès d'un processeur
    */
   async createPayment(options: CreatePaymentOptions) {
     const url = `${this.hubBaseUrl}/api/v1/payments/create`;
