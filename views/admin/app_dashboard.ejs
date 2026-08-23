@@ -350,11 +350,12 @@
 
             <form method="POST" action="/admin/app/<%= currentApp.id %>/provider" id="processor-form">
                 <input type="hidden" name="isEdit" id="proc-form-isEdit" value="0">
-                <input type="hidden" name="providerId" id="proc-form-hidden-providerId" value="" disabled>
+                <input type="hidden" name="providerId" id="proc-form-providerId-input" value="">
                 
-                <div class="form-control w-full mb-3.5">
+                <!-- Vue Ajout : Sélecteur déroulant -->
+                <div class="form-control w-full mb-3.5" id="proc-dropdown-wrapper">
                     <label class="label py-1"><span class="label-text font-bold text-xs">Choisir la passerelle</span></label>
-                    <select name="providerId" id="proc-form-providerId" class="select select-bordered select-sm sm:select-md w-full font-medium rounded-xl text-xs sm:text-sm" onchange="onProviderSelectChange(this.value)" required>
+                    <select id="proc-form-select-providerId" class="select select-bordered select-sm sm:select-md w-full font-medium rounded-xl text-xs sm:text-sm" onchange="onSelectProviderDropdown(this.value)">
                         <option value="" disabled selected>-- Sélectionnez un processeur --</option>
                         <% allAvailableProviders.forEach(function(prov) { %>
                             <option value="<%= prov.id %>">
@@ -364,6 +365,15 @@
                     </select>
                 </div>
 
+                <!-- Vue Modification : Badge / Nom du processeur -->
+                <div class="form-control w-full mb-3.5 hidden" id="proc-edit-badge-wrapper">
+                    <label class="label py-1"><span class="label-text font-bold text-xs">Passerelle de paiement</span></label>
+                    <div class="bg-base-200 border border-base-300 p-3 rounded-xl flex items-center justify-between">
+                        <span class="font-bold text-sm text-base-content" id="proc-edit-provider-name">LomoPay</span>
+                        <span class="badge badge-primary font-mono text-xs uppercase" id="proc-edit-provider-id">lomopay</span>
+                    </div>
+                </div>
+
                 <div class="form-control w-full mb-3.5">
                     <label class="label py-1"><span class="label-text font-bold text-xs" id="proc-label-publicKey">Clé Publique / ID</span></label>
                     <input type="text" name="publicKey" id="proc-form-publicKey" class="input input-bordered input-sm sm:input-md w-full font-mono text-xs rounded-xl" placeholder="pk_..." />
@@ -371,7 +381,10 @@
 
                 <div class="form-control w-full mb-3.5">
                     <label class="label py-1"><span class="label-text font-bold text-xs" id="proc-label-secretKey">Clé Secrète / API Key</span></label>
-                    <input type="password" name="secretKey" id="proc-form-secretKey" class="input input-bordered input-sm sm:input-md w-full font-mono text-xs rounded-xl" placeholder="sk_..." autocomplete="new-password" />
+                    <div class="relative">
+                        <input type="password" name="secretKey" id="proc-form-secretKey" class="input input-bordered input-sm sm:input-md w-full font-mono text-xs rounded-xl pr-10" placeholder="sk_..." autocomplete="new-password" />
+                        <button type="button" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-base-content/40 hover:text-base-content text-sm" onclick="togglePasswordVisibility('proc-form-secretKey', this)">👁️</button>
+                    </div>
                 </div>
 
                 <div class="form-control w-full mb-4" id="proc-wrapper-extraConfig">
@@ -454,6 +467,7 @@
         const providersMeta = {
             <% allAvailableProviders.forEach(function(prov) { %>
                 '<%= prov.id %>': {
+                    name: '<%= prov.name %>',
                     pubLabel: '<%= prov.publicKeyLabel %>',
                     pubPlaceholder: '<%= prov.publicKeyPlaceholder %>',
                     secLabel: '<%= prov.secretKeyLabel %>',
@@ -464,6 +478,11 @@
                 },
             <% }); %>
         };
+
+        function onSelectProviderDropdown(providerId) {
+            document.getElementById('proc-form-providerId-input').value = providerId;
+            onProviderSelectChange(providerId);
+        }
 
         function onProviderSelectChange(providerId) {
             const meta = providersMeta[providerId];
@@ -489,13 +508,12 @@
             document.getElementById('proc-modal-title').innerText = "Ajouter un processeur";
             document.getElementById('proc-form-isEdit').value = "0";
 
-            const selectEl = document.getElementById('proc-form-providerId');
-            selectEl.disabled = false;
-            selectEl.required = true;
+            document.getElementById('proc-dropdown-wrapper').classList.remove('hidden');
+            document.getElementById('proc-edit-badge-wrapper').classList.add('hidden');
 
-            const hiddenId = document.getElementById('proc-form-hidden-providerId');
-            hiddenId.disabled = true;
-            hiddenId.value = "";
+            const selectEl = document.getElementById('proc-form-select-providerId');
+            selectEl.value = "";
+            document.getElementById('proc-form-providerId-input').value = "";
 
             document.getElementById('proc-form-publicKey').value = "";
             document.getElementById('proc-form-secretKey').value = "";
@@ -505,6 +523,7 @@
             const firstOption = selectEl.querySelector('option:not([disabled])');
             if (firstOption) {
                 selectEl.value = firstOption.value;
+                document.getElementById('proc-form-providerId-input').value = firstOption.value;
                 onProviderSelectChange(firstOption.value);
             }
             
@@ -515,14 +534,13 @@
             document.getElementById('proc-modal-title').innerText = "Modifier le processeur";
             document.getElementById('proc-form-isEdit').value = "1";
             
-            const selectEl = document.getElementById('proc-form-providerId');
-            selectEl.value = providerId;
-            selectEl.disabled = true;
-            selectEl.required = false;
+            document.getElementById('proc-dropdown-wrapper').classList.add('hidden');
+            document.getElementById('proc-edit-badge-wrapper').classList.remove('hidden');
 
-            const hiddenId = document.getElementById('proc-form-hidden-providerId');
-            hiddenId.disabled = false;
-            hiddenId.value = providerId;
+            const meta = providersMeta[providerId] || {};
+            document.getElementById('proc-edit-provider-name').innerText = meta.name || providerId.toUpperCase();
+            document.getElementById('proc-edit-provider-id').innerText = providerId;
+            document.getElementById('proc-form-providerId-input').value = providerId;
 
             onProviderSelectChange(providerId);
 

@@ -345,13 +345,16 @@ adminRouter.post("/app/:appId/provider", async (req: Request, res: Response) => 
   const appId = req.params.appId;
   try {
     let { providerId, publicKey, secretKey, extraConfig } = req.body;
-    const isActive = (req.body.isActive === '1' || req.body.isActive === 'on' || req.body.isActive === true || req.body.isActive === 1) ? 1 : 0;
+    if (Array.isArray(providerId)) {
+      providerId = providerId.find((p: any) => p && typeof p === 'string' && p.trim().length > 0) || '';
+    }
 
-    if (!providerId) {
+    if (!providerId || typeof providerId !== 'string' || !providerId.trim()) {
       return res.redirect(`/admin/app/${appId}?tab=processors&error=` + encodeURIComponent("Veuillez sélectionner un processeur."));
     }
 
     providerId = providerId.trim().toLowerCase();
+    const isActive = (req.body.isActive === '1' || req.body.isActive === 'on' || req.body.isActive === true || req.body.isActive === 1) ? 1 : 0;
 
     const existing = await dbQuery("SELECT * FROM providers_config WHERE appId = ? AND providerId = ?", [appId, providerId]);
     const isAlreadyConfigured = existing.length > 0;
@@ -392,7 +395,11 @@ adminRouter.post("/app/:appId/provider/toggle", async (req: Request, res: Respon
   const isAjax = req.xhr || req.headers["x-requested-with"] === "XMLHttpRequest" || req.headers.accept?.includes("application/json");
   try {
     let { providerId } = req.body;
-    if (!providerId) {
+    if (Array.isArray(providerId)) {
+      providerId = providerId.find((p: any) => p && typeof p === 'string' && p.trim().length > 0) || '';
+    }
+
+    if (!providerId || typeof providerId !== 'string' || !providerId.trim()) {
       if (isAjax) return res.status(400).json({ success: false, error: "Processeur introuvable." });
       return res.redirect(`/admin/app/${appId}?tab=processors&error=` + encodeURIComponent("Processeur introuvable."));
     }
@@ -430,9 +437,15 @@ adminRouter.post("/app/:appId/provider/toggle", async (req: Request, res: Respon
 // Supprimer un processeur configuré pour un Site spécifique
 adminRouter.post("/app/:appId/provider/delete", async (req: Request, res: Response) => {
   const appId = req.params.appId;
+  const isAjax = req.xhr || req.headers["x-requested-with"] === "XMLHttpRequest" || req.headers.accept?.includes("application/json");
   try {
     let { providerId } = req.body;
-    if (!providerId) {
+    if (Array.isArray(providerId)) {
+      providerId = providerId.find((p: any) => p && typeof p === 'string' && p.trim().length > 0) || '';
+    }
+
+    if (!providerId || typeof providerId !== 'string' || !providerId.trim()) {
+      if (isAjax) return res.status(400).json({ success: false, error: "Processeur introuvable." });
       return res.redirect(`/admin/app/${appId}?tab=processors&error=` + encodeURIComponent("Processeur introuvable."));
     }
 
@@ -442,10 +455,16 @@ adminRouter.post("/app/:appId/provider/delete", async (req: Request, res: Respon
 
     const match = ALL_PROVIDERS.find(p => p.id === providerId);
     const providerName = match ? match.name : providerId;
+    const message = `Processeur "${providerName}" supprimé avec succès pour ce site.`;
 
-    res.redirect(`/admin/app/${appId}?tab=processors&success=` + encodeURIComponent(`Processeur "${providerName}" supprimé avec succès pour ce site.`));
+    if (isAjax) {
+      return res.json({ success: true, providerId, providerName, message });
+    }
+
+    res.redirect(`/admin/app/${appId}?tab=processors&success=` + encodeURIComponent(message));
   } catch (error: any) {
     console.error("Delete site provider error:", error);
+    if (isAjax) return res.status(500).json({ success: false, error: error?.message || "Erreur lors de la suppression." });
     res.redirect(`/admin/app/${appId}?tab=processors&error=` + encodeURIComponent("Erreur lors de la suppression: " + (error?.message || error)));
   }
 });
