@@ -283,24 +283,74 @@ echo json_encode(["status" => "success"]);
 
 ---
 
-## 🎨 Option Pop-up (Widget Iframe sans quitter votre site)
+## 🎨 Option Pop-up In-App (Whop Embed & Paiement sans quitter votre site)
 
-Si vous préférez ouvrir le paiement dans une fenêtre modale sur votre site sans changer de page :
+Pour offrir une expérience fluide où le client paie en Pop-up sans quitter votre site, avec **crédit instantané** et **fermeture automatique** :
 
-1. Insérez le script dans votre page HTML :
-```html
-<script src="https://checkout.inquart.xyz/public/sdk/widget.js"></script>
+### 1. Endpoint Backend (`app/api/checkout/route.ts`) :
+```typescript
+import { NextResponse } from "next/server";
+
+export async function POST(req: Request) {
+  try {
+    const { amount, packId, userEmail, userName } = await req.json();
+
+    // 1. Appel au Hub pour générer la session sécurisée
+    const response = await fetch("https://checkout.inquart.xyz/checkout/session", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Hub-Api-Key": process.env.PAYMENT_HUB_API_KEY!,
+      },
+      body: JSON.stringify({
+        amount: amount,
+        currency: "FCFA", // ou "XOF", "USD"
+        orderId: `CMD_${Date.now()}`,
+        description: `Pack #${packId}`,
+        customerEmail: userEmail, // Transmet et masque l'email automatiquement sur Whop
+        customerName: userName,
+        returnUrl: "https://checkout.inquart.xyz/checkout/complete"
+      }),
+    });
+
+    const data = await response.json();
+    return NextResponse.json(data);
+  } catch (err: any) {
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
+  }
+}
 ```
 
-2. Ouvrez le widget avec le `token` reçu :
-```javascript
-// 1. Créer la session via votre backend pour obtenir le token
-const res = await fetch('/api/checkout', { method: 'POST' });
-const { token } = await res.json();
+### 2. Frontend Client (React, Next.js, Vue, ou HTML) :
+```html
+<!-- 1. Charger le SDK Widget dans votre page -->
+<script src="https://checkout.inquart.xyz/public/sdk/widget.js"></script>
 
-// 2. Ouvrir la modale de paiement
+<script>
+// Initialiser avec l'URL de votre Hub
 HubWidget.init({ hubUrl: 'https://checkout.inquart.xyz' });
-HubWidget.open(token);
+
+async function declencherPaiementPopUp() {
+  // Flux tout-en-un : Appel à route.ts -> Ouverture Modale -> Crédit Instantané & Auto-close
+  await HubWidget.checkout({
+    route: '/api/checkout',
+    payload: {
+      amount: 5000,
+      packId: 'PRO_MONTHLY',
+      userEmail: 'client.connecte@exemple.com',
+      userName: 'Jean Dupont'
+    },
+    onSuccess: (event) => {
+      console.log('✅ Paiement complété !', event);
+      // ⚡ Crédit instantané du solde ou mise à jour de l'UI sans recharger la page
+      mettreAJourSoldeUtilisateur();
+    },
+    onError: (err) => {
+      alert("Erreur de paiement : " + err.message);
+    }
+  });
+}
+</script>
 ```
 
 ---

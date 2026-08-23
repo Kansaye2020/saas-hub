@@ -43,29 +43,41 @@
         const orderId = "<%= session ? session.orderId : '' %>";
         const token = "<%= token %>";
 
-        // Détection mode Pop-up vs Redirection directe
+        const paymentSuccessPayload = {
+            type: 'HUB_PAYMENT_SUCCESS',
+            status: 'success',
+            orderId: orderId,
+            token: token
+        };
+
+        // 1. Détection Iframe (Modale / Popup Widget intégrée dans la page)
+        if (window.parent && window.parent !== window) {
+            try {
+                window.parent.postMessage(paymentSuccessPayload, '*');
+                window.parent.postMessage('payment_success', '*');
+                window.parent.postMessage('whop:payment:success', '*');
+            } catch (e) {
+                console.error("Erreur postMessage parent:", e);
+            }
+        }
+
+        // 2. Détection Popup Fenêtre indépendante
         if (window.opener && window.opener !== window) {
             document.getElementById('popup-notice').classList.remove('hidden');
             document.getElementById('redirect-notice').classList.add('hidden');
 
             try {
-                // Notifier le site parent (SaaS)
-                window.opener.postMessage({
-                    type: 'HUB_PAYMENT_SUCCESS',
-                    status: 'success',
-                    orderId: orderId,
-                    token: token
-                }, '*');
+                window.opener.postMessage(paymentSuccessPayload, '*');
+                window.opener.postMessage('payment_success', '*');
             } catch (e) {
-                console.error("Erreur postMessage:", e);
+                console.error("Erreur postMessage opener:", e);
             }
 
-            // Fermeture automatique de la popup
             setTimeout(() => {
                 window.close();
-            }, 1800);
-        } else {
-            // Mode Redirection directe
+            }, 1500);
+        } else if (window.self === window.top) {
+            // Mode Redirection directe (si pas dans une iframe ni popup)
             if (returnUrl && returnUrl.startsWith('http')) {
                 setTimeout(() => {
                     window.location.href = returnUrl;

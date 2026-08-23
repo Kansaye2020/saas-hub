@@ -1,85 +1,154 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="fr" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Widget | SaaS Payment Hub</title>
+    <title>Démonstration Pop-up Widget In-App | SaaS Payment Hub</title>
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.10.2/dist/full.min.css" rel="stylesheet" type="text/css" />
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>body { font-family: 'Inter', sans-serif; }</style>
     <script src="/public/sdk/widget.js"></script>
 </head>
-<body class="bg-base-200 flex flex-col items-center justify-center min-h-screen">
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 antialiased">
     
-    <div class="card bg-base-100 shadow-xl max-w-md w-full">
-        <div class="card-body text-center">
-            <h1 class="card-title justify-center text-3xl font-bold mb-2">Mon Super SaaS</h1>
-            <p class="text-base-content/70 mb-8">Abonnement Mensuel Pro - 5000 FCFA</p>
+    <div class="card bg-slate-800/90 backdrop-blur-xl border border-slate-700/80 shadow-2xl max-w-lg w-full rounded-3xl overflow-hidden">
+        <div class="card-body p-6 sm:p-8">
             
-            <button id="pay-btn" class="btn btn-primary btn-block btn-lg shadow-sm">
-                Acheter l'abonnement
-            </button>
-            <p class="text-xs text-base-content/40 mt-4">Le widget va générer un test token et s'ouvrir.</p>
-            
-            <div class="divider mt-8">Simulateur Manuel</div>
-            
-            <div class="text-left bg-base-200 p-4 rounded-box">
-                <p class="text-xs text-base-content/60 mb-2">Collez un "token" généré manuellement :</p>
-                <div class="flex gap-2">
-                    <input type="text" id="token-input" placeholder="Token..." class="input input-bordered input-sm flex-1">
-                    <button id="manual-pay-btn" class="btn btn-secondary btn-sm">Ouvrir</button>
+            <!-- Header SaaS Démo -->
+            <div class="flex items-center justify-between border-b border-slate-700 pb-5 mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-black text-white text-lg shadow-lg">
+                        ⚡
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-black text-white tracking-tight">Mon SaaS Pro</h1>
+                        <p class="text-xs text-slate-400">Espace Utilisateur Connecté</p>
+                    </div>
                 </div>
+                
+                <div class="text-right bg-slate-900/80 px-3.5 py-1.5 rounded-2xl border border-slate-700">
+                    <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Solde Crédits</span>
+                    <span id="user-balance" class="text-base font-black text-emerald-400 font-mono">10 000 FCFA</span>
+                </div>
+            </div>
+
+            <!-- Offre d'achat -->
+            <div class="bg-gradient-to-br from-blue-900/30 to-indigo-900/20 border border-blue-500/20 rounded-2xl p-5 mb-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="badge badge-primary font-bold text-xs uppercase tracking-wider">Pack Recommandé</span>
+                    <span class="text-xs text-slate-400">Recharge immédiate</span>
+                </div>
+                <h2 class="text-2xl font-black text-white mb-1">Recharge 5 000 FCFA</h2>
+                <p class="text-xs text-slate-300 mb-4">Créditez votre compte instantanément par Carte Bancaire ou Mobile Money sans recharger la page.</p>
+                
+                <div class="space-y-2 text-xs text-slate-300">
+                    <div class="flex items-center gap-2">
+                        <span class="text-emerald-400 font-bold">✓</span>
+                        <span>Appel direct à <code>route.ts</code> (redirection HTTPS garantie)</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-emerald-400 font-bold">✓</span>
+                        <span>Formulaire sécurisé Whop Embed en pop-up sans quitter le site</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-emerald-400 font-bold">✓</span>
+                        <span>Crédit instantané et fermeture automatique dès validation</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Bouton d'action -->
+            <button id="pay-btn" class="btn btn-primary btn-lg btn-block rounded-2xl shadow-xl shadow-blue-600/30 font-black text-base tracking-wide h-14 min-h-[56px]">
+                <span>Payer 5 000 FCFA en Pop-up</span>
+            </button>
+
+            <!-- Message d'état -->
+            <div id="status-box" class="hidden mt-4 p-3.5 rounded-xl text-xs font-semibold text-center transition-all"></div>
+
+            <div class="divider text-slate-600 my-6 text-xs uppercase font-bold tracking-wider">Ou tester avec un Token existant</div>
+            
+            <div class="bg-slate-900/60 p-3.5 rounded-2xl border border-slate-700/60 flex gap-2">
+                <input type="text" id="token-input" placeholder="Coller un token checkout..." class="input input-bordered input-sm bg-slate-800 border-slate-700 text-white flex-1 text-xs rounded-xl font-mono">
+                <button id="manual-pay-btn" class="btn btn-outline btn-sm rounded-xl font-bold">Ouvrir</button>
             </div>
         </div>
     </div>
 
     <script>
-        // Configuration dynamique
+        // 1. Initialisation du SDK avec l'URL de votre Hub
         HubWidget.init({ hubUrl: window.location.origin });
 
-        document.getElementById('manual-pay-btn').addEventListener('click', () => {
-            const token = document.getElementById('token-input').value;
-            if (!token) return alert('Entrez un token');
-            HubWidget.open(token);
-        });
+        let currentBalance = 10000;
+        const balanceEl = document.getElementById('user-balance');
+        const statusBox = document.getElementById('status-box');
 
-        // Test automatisé : On appelle directement notre propre backend (Hub) pour générer un token
+        function showStatus(msg, isSuccess = true) {
+            statusBox.className = `mt-4 p-3.5 rounded-xl text-xs font-semibold text-center transition-all ${
+                isSuccess ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/30' : 'bg-rose-950/80 text-rose-300 border border-rose-500/30'
+            }`;
+            statusBox.innerHTML = msg;
+            statusBox.classList.remove('hidden');
+        }
+
+        // 2. Flux 1 Clic : Appel direct à route.ts -> Pop-up Whop Embed -> Crédit Instantané
         document.getElementById('pay-btn').addEventListener('click', async () => {
             const btn = document.getElementById('pay-btn');
-            const originalText = btn.innerText;
-            btn.innerHTML = '<span class="loading loading-spinner"></span> Préparation...';
+            btn.innerHTML = '<span class="loading loading-spinner loading-sm"></span> Initialisation sécurisée...';
             btn.disabled = true;
 
             try {
-                const res = await fetch(`${window.location.origin}/checkout/session`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Hub-Api-Key': 'default_verifsms_secret_key_change_me' // Clé de test par défaut
-                    },
-                    body: JSON.stringify({
+                // Utilisation de la méthode tout-en-un checkout()
+                await HubWidget.checkout({
+                    route: `${window.location.origin}/checkout/session`, // Simule votre app/api/checkout/route.ts
+                    payload: {
                         amount: 5000,
                         currency: 'FCFA',
-                        description: 'Abonnement Mensuel Pro',
-                        orderId: 'test_order_' + Date.now(),
-                        returnUrl: window.location.href,
-                        customer: { email: 'test@example.com' }
-                    })
-                });
+                        orderId: 'DEMO_' + Date.now(),
+                        description: 'Recharge 5 000 FCFA Mon SaaS Pro',
+                        customerEmail: 'utilisateur.connecte@exemple.com',
+                        customerName: 'Jean Dupont',
+                        returnUrl: `${window.location.origin}/checkout/complete`
+                    },
+                    onSuccess: (eventData) => {
+                        console.log('🎉 PAIEMENT REÇU & VALIDÉ !', eventData);
+                        
+                        // ⚡ Crédit instantané du solde sans recharger la page
+                        currentBalance += 5000;
+                        balanceEl.innerText = `${currentBalance.toLocaleString()} FCFA`;
+                        balanceEl.classList.add('text-emerald-300', 'scale-110');
+                        setTimeout(() => balanceEl.classList.remove('scale-110'), 600);
 
-                const data = await res.json();
-                
-                if (data.token) {
-                    HubWidget.open(data.token);
-                } else {
-                    alert('Erreur: ' + JSON.stringify(data));
-                }
+                        showStatus(`✅ <strong>Paiement validé avec succès !</strong> Votre compte a été crédité de 5 000 FCFA.`);
+                    },
+                    onError: (err) => {
+                        console.error('Erreur checkout:', err);
+                        showStatus(`❌ Erreur: ${err.message || 'Échec du paiement'}`, false);
+                    },
+                    onClose: () => {
+                        btn.innerHTML = '<span>Payer 5 000 FCFA en Pop-up</span>';
+                        btn.disabled = false;
+                    }
+                });
             } catch (err) {
-                console.error(err);
-                alert('Erreur de connexion au serveur local. Le serveur est-il lancé sur le port 4000 ?');
-            } finally {
-                btn.innerText = originalText;
+                btn.innerHTML = '<span>Payer 5 000 FCFA en Pop-up</span>';
                 btn.disabled = false;
+                showStatus(`❌ Erreur: ${err.message}`, false);
             }
+        });
+
+        // Mode manuel avec token
+        document.getElementById('manual-pay-btn').addEventListener('click', () => {
+            const token = document.getElementById('token-input').value.trim();
+            if (!token) return alert('Veuillez coller un token');
+
+            HubWidget.open(token, {
+                onSuccess: (data) => {
+                    currentBalance += 5000;
+                    balanceEl.innerText = `${currentBalance.toLocaleString()} FCFA`;
+                    showStatus(`✅ <strong>Paiement validé !</strong> Solde crédité.`, true);
+                }
+            });
         });
     </script>
 </body>
