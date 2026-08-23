@@ -650,10 +650,16 @@
                     body: new URLSearchParams({ providerId })
                 });
 
-                const data = await response.json();
+                let data = {};
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    data = await response.json();
+                } else {
+                    data = { success: response.ok, isActive: isChecked };
+                }
 
-                if (response.ok && data.success) {
-                    if (data.isActive) {
+                if (response.ok && data.success !== false) {
+                    if (isChecked) {
                         showToast(data.message || `Processeur "${data.providerName || providerId}" activé avec succès.`, 'success', 5000);
                     } else {
                         showToast(data.message || `Processeur "${data.providerName || providerId}" désactivé.`, 'warning', 5000);
@@ -662,6 +668,7 @@
                     throw new Error(data.error || "Erreur lors du changement de statut");
                 }
             } catch (err) {
+                console.error("Toggle error:", err);
                 // Annuler la bascule visuelle en cas d'erreur
                 checkboxEl.checked = !isChecked;
                 if (statusTextEl) {
@@ -700,5 +707,6 @@
                 window.history.replaceState({}, document.title, cleanUrl || window.location.pathname);
             }
         });
+    </script>
 </body>
 </html>
