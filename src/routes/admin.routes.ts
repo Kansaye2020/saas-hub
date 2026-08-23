@@ -389,9 +389,11 @@ adminRouter.post("/app/:appId/provider", async (req: Request, res: Response) => 
 // Basculer le statut d'un processeur pour un Site spécifique
 adminRouter.post("/app/:appId/provider/toggle", async (req: Request, res: Response) => {
   const appId = req.params.appId;
+  const isAjax = req.xhr || req.headers["x-requested-with"] === "XMLHttpRequest" || req.headers.accept?.includes("application/json");
   try {
     let { providerId } = req.body;
     if (!providerId) {
+      if (isAjax) return res.status(400).json({ success: false, error: "Processeur introuvable." });
       return res.redirect(`/admin/app/${appId}?tab=processors&error=` + encodeURIComponent("Processeur introuvable."));
     }
 
@@ -399,6 +401,7 @@ adminRouter.post("/app/:appId/provider/toggle", async (req: Request, res: Respon
 
     const row = await dbGet("SELECT * FROM providers_config WHERE appId = ? AND providerId = ?", [appId, providerId]);
     if (!row) {
+      if (isAjax) return res.status(404).json({ success: false, error: "Processeur non configuré pour ce site." });
       return res.redirect(`/admin/app/${appId}?tab=processors&error=` + encodeURIComponent("Processeur non configuré pour ce site."));
     }
 
@@ -410,9 +413,16 @@ adminRouter.post("/app/:appId/provider/toggle", async (req: Request, res: Respon
     await dbRun("UPDATE providers_config SET isActive = ? WHERE appId = ? AND providerId = ?", [newStatus, appId, providerId]);
 
     const statusText = newStatus === 1 ? 'Actif' : 'Inactif';
-    res.redirect(`/admin/app/${appId}?tab=processors&success=` + encodeURIComponent(`Le statut de ${providerName} est maintenant : ${statusText}.`));
+    const message = `Le processeur ${providerName} est maintenant ${statusText.toLowerCase()} pour ce site.`;
+
+    if (isAjax) {
+      return res.json({ success: true, isActive: newStatus === 1, providerId, providerName, message });
+    }
+
+    res.redirect(`/admin/app/${appId}?tab=processors&success=` + encodeURIComponent(message));
   } catch (error: any) {
     console.error("Toggle site provider error:", error);
+    if (isAjax) return res.status(500).json({ success: false, error: error?.message || "Erreur lors du changement de statut." });
     res.redirect(`/admin/app/${appId}?tab=processors&error=` + encodeURIComponent("Erreur lors du changement de statut: " + (error?.message || error)));
   }
 });
