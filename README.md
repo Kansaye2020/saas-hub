@@ -28,7 +28,8 @@
 
 4. **Expérience Checkout Mobile-First & Marque Blanche** :
    - Page de paiement hébergée responsive ultra-rapide (`/checkout/:token`).
-   - Support des widgets Pop-up modale et redirection in-app.
+   - **Personnalisation de marque** : Affichez le logo officiel et le nom de chaque site ou entreprise sur le portail de paiement et le dashboard.
+   - Support des widgets Pop-up modale et redirection in-app avec logo animé.
    - Pré-remplissage et validation automatique de l'email client pour l'émission des reçus.
 
 5. **Dispatcher de Webhooks Sécurisé** :

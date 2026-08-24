@@ -55,6 +55,7 @@ function normalizeRow(row: any): any {
   if (row.createdat !== undefined && row.createdAt === undefined) normalized.createdAt = row.createdat;
   if (row.customeremail !== undefined && row.customerEmail === undefined) normalized.customerEmail = row.customeremail;
   if (row.customername !== undefined && row.customerName === undefined) normalized.customerName = row.customername;
+  if (row.logourl !== undefined && row.logoUrl === undefined) normalized.logoUrl = row.logourl;
 
   return normalized;
 }
@@ -176,6 +177,7 @@ export const initDB = async () => {
         CREATE TABLE IF NOT EXISTS client_apps (
           id VARCHAR(50) PRIMARY KEY,
           name VARCHAR(255) NOT NULL,
+          logoUrl TEXT,
           apiKey VARCHAR(255) NOT NULL UNIQUE,
           webhookUrl TEXT,
           webhookSecret VARCHAR(255) NOT NULL,
@@ -185,6 +187,7 @@ export const initDB = async () => {
         )
       `);
       try {
+        await dbRun(`ALTER TABLE client_apps ADD COLUMN IF NOT EXISTS logoUrl TEXT`);
         await dbRun(`ALTER TABLE client_apps ADD COLUMN IF NOT EXISTS returnUrl TEXT`);
         await dbRun(`ALTER TABLE client_apps ADD COLUMN IF NOT EXISTS cancelUrl TEXT`);
         await dbRun(`ALTER TABLE client_apps ADD COLUMN IF NOT EXISTS webhookUrl TEXT`);
@@ -287,6 +290,7 @@ export const initDB = async () => {
         CREATE TABLE IF NOT EXISTS client_apps (
           id TEXT PRIMARY KEY,
           name TEXT NOT NULL,
+          logoUrl TEXT,
           apiKey TEXT NOT NULL UNIQUE,
           webhookUrl TEXT,
           webhookSecret TEXT NOT NULL,
@@ -297,6 +301,9 @@ export const initDB = async () => {
       `);
       try {
         const caCols = await dbQuery("PRAGMA table_info(client_apps)");
+        if (!caCols.some((c: any) => c.name === 'logoUrl' || c.name === 'logourl')) {
+          await dbRun(`ALTER TABLE client_apps ADD COLUMN logoUrl TEXT`);
+        }
         if (!caCols.some((c: any) => c.name === 'returnUrl')) {
           await dbRun(`ALTER TABLE client_apps ADD COLUMN returnUrl TEXT`);
         }

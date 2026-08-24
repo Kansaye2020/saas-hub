@@ -60,17 +60,22 @@ checkoutRouter.get("/complete", async (req: Request, res: Response) => {
 
     let returnUrl = session?.returnUrl || session?.returnurl || "/public/test-redirect.html?status=success";
     let storeName = "Boutique";
+    let storeLogo = "";
 
     if (session) {
       const clientApp = await getClientAppById(session.appId);
-      if (clientApp) storeName = clientApp.name;
+      if (clientApp) {
+        storeName = clientApp.name;
+        storeLogo = clientApp.logoUrl || "";
+      }
     }
 
     res.render("checkout/complete", {
       session,
       token,
       returnUrl,
-      storeName
+      storeName,
+      storeLogo
     });
   } catch (error) {
     console.error("Error rendering complete page:", error);
@@ -98,9 +103,10 @@ checkoutRouter.get("/:token", async (req: Request, res: Response) => {
       return res.status(400).send("Session is already completed or cancelled");
     }
 
-    // Fetch the client app config to get the store name
+    // Fetch the client app config to get the store name and logo
     const clientApp = await getClientAppById(session.appId);
     const storeName = clientApp ? clientApp.name : session.appId;
+    const storeLogo = clientApp?.logoUrl || "";
 
     // Fetch active providers configured specifically for THIS site
     const appActiveProviders = await getAppActiveProviders(session.appId);
@@ -125,6 +131,7 @@ checkoutRouter.get("/:token", async (req: Request, res: Response) => {
     res.render("checkout/index", {
       session,
       storeName,
+      storeLogo,
       providers,
       mode
     });

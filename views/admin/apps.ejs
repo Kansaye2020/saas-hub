@@ -93,13 +93,22 @@
                     <div class="card-body p-4 sm:p-6">
                         
                         <div class="flex justify-between items-start mb-3 sm:mb-4">
-                            <div class="flex-1 pr-2">
-                                <h2 class="card-title text-xl sm:text-2xl font-black text-base-content truncate">
-                                    <%= app.name %>
-                                </h2>
-                                <div class="badge badge-primary badge-outline text-[11px] mt-1 font-mono">ID: <%= app.id %></div>
+                            <div class="flex items-center gap-3 flex-1 min-w-0 pr-2">
+                                <% if (app.logoUrl && app.logoUrl.trim()) { %>
+                                    <img src="<%= app.logoUrl %>" alt="<%= app.name %>" class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl object-contain bg-base-200 border border-base-300 p-1 shrink-0" onerror="this.style.display='none'" />
+                                <% } else { %>
+                                    <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-primary/10 text-primary font-black flex items-center justify-center text-base sm:text-lg shrink-0">
+                                        <%= app.name.charAt(0).toUpperCase() %>
+                                    </div>
+                                <% } %>
+                                <div class="min-w-0">
+                                    <h2 class="card-title text-lg sm:text-xl font-black text-base-content truncate">
+                                        <%= app.name %>
+                                    </h2>
+                                    <div class="badge badge-primary badge-outline text-[10px] sm:text-[11px] mt-0.5 font-mono">ID: <%= app.id %></div>
+                                </div>
                             </div>
-                            <div class="dropdown dropdown-end">
+                            <div class="dropdown dropdown-end shrink-0">
                                 <div tabindex="0" role="button" class="btn btn-ghost btn-sm btn-circle">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" /></svg>
                                 </div>
@@ -175,6 +184,12 @@
                 <div class="form-control w-full mb-3.5">
                     <label class="label py-1"><span class="label-text font-bold text-xs">Nom Public du Site (affiché au client au checkout)</span></label>
                     <input type="text" name="name" class="input input-bordered input-sm sm:input-md w-full font-semibold text-xs sm:text-sm rounded-xl" placeholder="ex: Ma Boutique Officielle" required />
+                </div>
+
+                <div class="form-control w-full mb-3.5">
+                    <label class="label py-1"><span class="label-text font-bold text-xs">🖼️ URL du Logo de l'entreprise (Optionnel)</span></label>
+                    <input type="url" name="logoUrl" class="input input-bordered input-sm sm:input-md w-full font-mono text-xs rounded-xl" placeholder="https://monsite.com/logo.png" />
+                    <label class="label pb-0 py-0.5"><span class="label-text-alt text-base-content/60 text-[11px]">Affiché en haut du tunnel de paiement et sur le dashboard.</span></label>
                 </div>
 
                 <div class="form-control w-full mb-3.5 bg-primary/5 p-3 rounded-xl border border-primary/20">

@@ -180,11 +180,22 @@
             
             <!-- Store Header -->
             <div class="text-center mb-6">
-                <div class="avatar placeholder mb-3">
-                    <div class="bg-primary text-primary-content rounded-2xl w-14 h-14 shadow-md flex items-center justify-center font-black text-xl">
-                        <span><%= (storeName && storeName.length > 0) ? storeName.charAt(0).toUpperCase() : 'S' %></span>
+                <% if (locals.storeLogo && storeLogo.trim()) { %>
+                    <div class="mb-3 flex justify-center">
+                        <img src="<%= storeLogo %>" alt="<%= storeName %>" class="w-16 h-16 rounded-2xl object-contain bg-base-100 shadow-md p-1.5 border border-base-300 max-h-16" onerror="this.parentElement.style.display='none'; document.getElementById('store-fallback-avatar').style.display='inline-flex';" />
                     </div>
-                </div>
+                    <div id="store-fallback-avatar" class="avatar placeholder mb-3 hidden">
+                        <div class="bg-primary text-primary-content rounded-2xl w-14 h-14 shadow-md flex items-center justify-center font-black text-xl">
+                            <span><%= (storeName && storeName.length > 0) ? storeName.charAt(0).toUpperCase() : 'S' %></span>
+                        </div>
+                    </div>
+                <% } else { %>
+                    <div class="avatar placeholder mb-3">
+                        <div class="bg-primary text-primary-content rounded-2xl w-14 h-14 shadow-md flex items-center justify-center font-black text-xl">
+                            <span><%= (storeName && storeName.length > 0) ? storeName.charAt(0).toUpperCase() : 'S' %></span>
+                        </div>
+                    </div>
+                <% } %>
                 <h1 class="text-xl sm:text-2xl font-black text-base-content tracking-tight"><%= storeName || 'Boutique' %></h1>
                 <div class="flex items-center justify-center gap-1.5 text-xs text-base-content/60 mt-1">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">

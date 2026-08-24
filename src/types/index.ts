@@ -16,6 +16,7 @@ export interface ClientAppConfig {
   webhookSecret: string;
   returnUrl?: string;
   cancelUrl?: string;
+  logoUrl?: string;
 }
 
 export interface CreatePaymentRequest {

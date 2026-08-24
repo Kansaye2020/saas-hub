@@ -281,7 +281,7 @@ adminRouter.get("/app/:appId", async (req: Request, res: Response) => {
 // Créer ou modifier un site SaaS
 adminRouter.post("/apps", async (req: Request, res: Response) => {
   try {
-    let { id, name, apiKey, webhookUrl, webhookSecret, returnUrl, cancelUrl } = req.body;
+    let { id, name, logoUrl, apiKey, webhookUrl, webhookSecret, returnUrl, cancelUrl } = req.body;
     
     if (!id || !name) {
       return res.redirect("/admin/apps?error=" + encodeURIComponent("L'ID et le nom du site sont requis."));
@@ -302,16 +302,18 @@ adminRouter.post("/apps", async (req: Request, res: Response) => {
     } else {
       encWebhookSecret = encryptSecret('whsec_' + crypto.randomBytes(16).toString('hex'));
     }
+
+    const finalLogoUrl = (logoUrl && typeof logoUrl === 'string') ? logoUrl.trim() : '';
     
     if (existingApp.length > 0) {
       await dbRun(
-        `UPDATE client_apps SET name = ?, apiKey = ?, webhookUrl = ?, webhookSecret = ?, returnUrl = ?, cancelUrl = ? WHERE id = ?`,
-        [name, apiKey, webhookUrl || '', encWebhookSecret, returnUrl || '', cancelUrl || '', id]
+        `UPDATE client_apps SET name = ?, logoUrl = ?, apiKey = ?, webhookUrl = ?, webhookSecret = ?, returnUrl = ?, cancelUrl = ? WHERE id = ?`,
+        [name, finalLogoUrl, apiKey, webhookUrl || '', encWebhookSecret, returnUrl || '', cancelUrl || '', id]
       );
     } else {
       await dbRun(
-        `INSERT INTO client_apps (id, name, apiKey, webhookUrl, webhookSecret, returnUrl, cancelUrl) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [id, name, apiKey, webhookUrl || '', encWebhookSecret, returnUrl || '', cancelUrl || '']
+        `INSERT INTO client_apps (id, name, logoUrl, apiKey, webhookUrl, webhookSecret, returnUrl, cancelUrl) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id, name, finalLogoUrl, apiKey, webhookUrl || '', encWebhookSecret, returnUrl || '', cancelUrl || '']
       );
     }
 
