@@ -131,22 +131,130 @@ class HubWidgetClass {
             .hub-widget-loader {
                 position: absolute;
                 inset: 0;
-                background: #ffffff;
+                background: radial-gradient(circle at 50% 40%, #ffffff 0%, #f8fafc 100%);
                 display: flex;
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                gap: 12px;
+                padding: 24px;
+                text-align: center;
                 z-index: 10;
-                transition: opacity 0.3s ease;
+                transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
             }
-            .hub-widget-loader-spinner {
+            .hub-anim-logo-container {
+                position: relative;
+                width: 96px;
+                height: 96px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin-bottom: 20px;
+            }
+            .hub-ripple-ring {
+                position: absolute;
+                inset: -10px;
+                border-radius: 34px;
+                border: 2px solid rgba(99, 102, 241, 0.35);
+                animation: hub-ripple 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+                pointer-events: none;
+            }
+            .hub-ripple-ring.ring-2 {
+                animation-delay: 0.8s;
+            }
+            .hub-orbit-spinner {
+                position: absolute;
+                inset: -5px;
+                border-radius: 28px;
+                padding: 2px;
+                background: linear-gradient(135deg, #4f46e5, #06b6d4, #ec4899, #4f46e5);
+                -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+                -webkit-mask-composite: xor;
+                mask-composite: exclude;
+                animation: hub-spin-grad 3s linear infinite;
+            }
+            .hub-anim-card-badge {
+                position: relative;
+                width: 72px;
+                height: 72px;
+                background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #2563eb 100%);
+                border-radius: 22px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 14px 30px -6px rgba(79, 70, 229, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.3) inset;
+                animation: hub-float-pulse 2.8s ease-in-out infinite;
+                overflow: hidden;
+            }
+            .hub-badge-shimmer {
+                position: absolute;
+                top: -50%;
+                left: -50%;
+                width: 200%;
+                height: 200%;
+                background: linear-gradient(
+                    45deg,
+                    transparent 40%,
+                    rgba(255, 255, 255, 0.45) 50%,
+                    transparent 60%
+                );
+                transform: rotate(25deg);
+                animation: hub-shimmer-sweep 2.6s ease-in-out infinite;
+            }
+            .hub-brand-svg {
                 width: 40px;
                 height: 40px;
-                border: 3.5px solid #e2e8f0;
-                border-top-color: #3b82f6;
-                border-radius: 50%;
-                animation: hub-spin 0.8s linear infinite;
+                color: #ffffff;
+                filter: drop-shadow(0 2px 6px rgba(0,0,0,0.25));
+                z-index: 2;
+                animation: hub-card-heartbeat 2.8s ease-in-out infinite;
+            }
+            .hub-loader-title {
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                font-size: 16px;
+                font-weight: 800;
+                color: #0f172a;
+                letter-spacing: -0.02em;
+                margin-bottom: 4px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+            }
+            .hub-loader-subtitle {
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                font-size: 12px;
+                font-weight: 500;
+                color: #64748b;
+                margin-bottom: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 2px;
+            }
+            .hub-dots span {
+                display: inline-block;
+                animation: hub-dot-blink 1.4s infinite;
+                font-weight: 700;
+            }
+            .hub-dots span:nth-child(2) { animation-delay: 0.2s; }
+            .hub-dots span:nth-child(3) { animation-delay: 0.4s; }
+            .hub-loader-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                background: #f1f5f9;
+                border: 1px solid #e2e8f0;
+                border-radius: 9999px;
+                padding: 4px 10px;
+                font-size: 11px;
+                font-weight: 600;
+                color: #475569;
+                font-family: system-ui, -apple-system, sans-serif;
+            }
+            .hub-loader-badge svg {
+                width: 12px;
+                height: 12px;
+                color: #10b981;
             }
             .hub-widget-success-overlay {
                 position: absolute;
@@ -181,6 +289,37 @@ class HubWidgetClass {
                 margin-bottom: 16px;
                 box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4);
                 animation: hub-bounce 0.6s ease;
+            }
+            @keyframes hub-ripple {
+                0% { transform: scale(0.85); opacity: 0.8; }
+                50% { opacity: 0.4; }
+                100% { transform: scale(1.6); opacity: 0; }
+            }
+            @keyframes hub-spin-grad {
+                to { transform: rotate(360deg); }
+            }
+            @keyframes hub-float-pulse {
+                0%, 100% {
+                    transform: translateY(0) scale(1);
+                    box-shadow: 0 14px 30px -6px rgba(79, 70, 229, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.3) inset;
+                }
+                50% {
+                    transform: translateY(-5px) scale(1.04);
+                    box-shadow: 0 20px 38px -4px rgba(124, 58, 237, 0.65), 0 0 20px rgba(99, 102, 241, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.45) inset;
+                }
+            }
+            @keyframes hub-card-heartbeat {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.08); }
+            }
+            @keyframes hub-shimmer-sweep {
+                0% { transform: translateX(-120%) rotate(25deg); }
+                100% { transform: translateX(140%) rotate(25deg); }
+            }
+            @keyframes hub-dot-blink {
+                0%, 20% { opacity: 0; }
+                50% { opacity: 1; }
+                100% { opacity: 0; }
             }
             @keyframes hub-spin {
                 to { transform: rotate(360deg); }
@@ -362,13 +501,38 @@ class HubWidgetClass {
         closeBtn.onclick = () => this.close();
         this.container.appendChild(closeBtn);
 
-        // Loader de chargement élégant
+        // Loader de chargement élégant avec logo animé SaaS Payment Hub
         this.loader = document.createElement('div');
         this.loader.className = 'hub-widget-loader';
         this.loader.innerHTML = `
-            <div class="hub-widget-loader-spinner"></div>
-            <div style="font-family: system-ui, sans-serif; font-size: 13px; font-weight: 600; color: #64748b;">
-                Chargement du paiement sécurisé...
+            <div class="hub-anim-logo-container">
+                <div class="hub-ripple-ring ring-1"></div>
+                <div class="hub-ripple-ring ring-2"></div>
+                <div class="hub-orbit-spinner"></div>
+                <div class="hub-anim-card-badge">
+                    <div class="hub-badge-shimmer"></div>
+                    <svg class="hub-brand-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="2" y="5" width="20" height="14" rx="3" fill="currentColor" fill-opacity="0.15" stroke="currentColor" stroke-width="2"/>
+                        <path d="M2 10H22" stroke="currentColor" stroke-width="2" stroke-opacity="0.7"/>
+                        <rect x="5" y="13" width="4" height="3" rx="0.75" fill="#FDE047"/>
+                        <circle cx="17" cy="14.5" r="1.5" fill="#38BDF8"/>
+                        <circle cx="14.5" cy="14.5" r="1.5" fill="#F472B6" fill-opacity="0.8"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="hub-loader-title">
+                <span>SaaS Payment Hub</span>
+            </div>
+            <div class="hub-loader-subtitle">
+                <span>Initialisation sécurisée</span>
+                <span class="hub-dots"><span>.</span><span>.</span><span>.</span></span>
+            </div>
+            <div class="hub-loader-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    <path d="M9 12l2 2 4-4"/>
+                </svg>
+                <span>Paiement crypté SSL 256-bit</span>
             </div>
         `;
         this.container.appendChild(this.loader);

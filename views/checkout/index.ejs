@@ -29,9 +29,150 @@
         }
         body { font-family: 'Inter', sans-serif; }
         input, button, label { -webkit-tap-highlight-color: transparent; }
+
+        /* SaaS Payment Hub Animated Logo Styles */
+        .hub-anim-logo-container {
+            position: relative;
+            width: 88px;
+            height: 88px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 18px auto;
+        }
+        .hub-ripple-ring {
+            position: absolute;
+            inset: -8px;
+            border-radius: 32px;
+            border: 2px solid rgba(99, 102, 241, 0.35);
+            animation: hub-ripple 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+            pointer-events: none;
+        }
+        .hub-ripple-ring.ring-2 {
+            animation-delay: 0.8s;
+        }
+        .hub-orbit-spinner {
+            position: absolute;
+            inset: -4px;
+            border-radius: 26px;
+            padding: 2px;
+            background: linear-gradient(135deg, #4f46e5, #06b6d4, #ec4899, #4f46e5);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            animation: hub-spin-grad 3s linear infinite;
+        }
+        .hub-anim-card-badge {
+            position: relative;
+            width: 66px;
+            height: 66px;
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #2563eb 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 14px 28px -6px rgba(79, 70, 229, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.3) inset;
+            animation: hub-float-pulse 2.8s ease-in-out infinite;
+            overflow: hidden;
+        }
+        .hub-badge-shimmer {
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent 40%,
+                rgba(255, 255, 255, 0.45) 50%,
+                transparent 60%
+            );
+            transform: rotate(25deg);
+            animation: hub-shimmer-sweep 2.6s ease-in-out infinite;
+        }
+        .hub-brand-svg {
+            width: 36px;
+            height: 36px;
+            color: #ffffff;
+            filter: drop-shadow(0 2px 6px rgba(0,0,0,0.25));
+            z-index: 2;
+            animation: hub-card-heartbeat 2.8s ease-in-out infinite;
+        }
+        .hub-dots span {
+            display: inline-block;
+            animation: hub-dot-blink 1.4s infinite;
+            font-weight: 700;
+        }
+        .hub-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .hub-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes hub-ripple {
+            0% { transform: scale(0.85); opacity: 0.8; }
+            50% { opacity: 0.4; }
+            100% { transform: scale(1.6); opacity: 0; }
+        }
+        @keyframes hub-spin-grad {
+            to { transform: rotate(360deg); }
+        }
+        @keyframes hub-float-pulse {
+            0%, 100% {
+                transform: translateY(0) scale(1);
+                box-shadow: 0 14px 28px -6px rgba(79, 70, 229, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.3) inset;
+            }
+            50% {
+                transform: translateY(-5px) scale(1.04);
+                box-shadow: 0 20px 36px -4px rgba(124, 58, 237, 0.65), 0 0 18px rgba(99, 102, 241, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.45) inset;
+            }
+        }
+        @keyframes hub-card-heartbeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+        }
+        @keyframes hub-shimmer-sweep {
+            0% { transform: translateX(-120%) rotate(25deg); }
+            100% { transform: translateX(140%) rotate(25deg); }
+        }
+        @keyframes hub-dot-blink {
+            0%, 20% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0; }
+        }
     </style>
 </head>
-<body class="<%= mode === 'widget' ? 'bg-transparent' : 'bg-base-200' %> min-h-screen flex items-center justify-center p-3 sm:p-6 antialiased">
+<body class="<%= mode === 'widget' ? 'bg-transparent' : 'bg-base-200' %> min-h-screen flex items-center justify-center p-3 sm:p-6 antialiased relative">
+    
+    <!-- Écran de chargement avec logo animé SaaS Payment Hub -->
+    <div id="checkout-loader-overlay" class="fixed inset-0 bg-base-100/95 backdrop-blur-md z-50 flex flex-col items-center justify-center p-6 text-center transition-all duration-400">
+        <div class="hub-anim-logo-container">
+            <div class="hub-ripple-ring ring-1"></div>
+            <div class="hub-ripple-ring ring-2"></div>
+            <div class="hub-orbit-spinner"></div>
+            <div class="hub-anim-card-badge">
+                <div class="hub-badge-shimmer"></div>
+                <svg class="hub-brand-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="2" y="5" width="20" height="14" rx="3" fill="currentColor" fill-opacity="0.15" stroke="currentColor" stroke-width="2"/>
+                    <path d="M2 10H22" stroke="currentColor" stroke-width="2" stroke-opacity="0.7"/>
+                    <rect x="5" y="13" width="4" height="3" rx="0.75" fill="#FDE047"/>
+                    <circle cx="17" cy="14.5" r="1.5" fill="#38BDF8"/>
+                    <circle cx="14.5" cy="14.5" r="1.5" fill="#F472B6" fill-opacity="0.8"/>
+                </svg>
+            </div>
+        </div>
+        <div class="font-black text-base sm:text-lg text-base-content tracking-tight">
+            <span id="loader-title-text">SaaS Payment Hub</span>
+        </div>
+        <div class="text-xs sm:text-sm font-medium text-base-content/60 mt-1 flex items-center justify-center gap-1">
+            <span id="loader-sub-text">Sécurisation de votre session</span>
+            <span class="hub-dots"><span>.</span><span>.</span><span>.</span></span>
+        </div>
+        <div class="inline-flex items-center gap-1.5 mt-3.5 bg-base-200 border border-base-300 rounded-full px-3 py-1 text-[11px] font-semibold text-base-content/70 shadow-sm">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 text-success">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <path d="M9 12l2 2 4-4"/>
+            </svg>
+            <span>Paiement crypté SSL 256-bit</span>
+        </div>
+    </div>
     
     <!-- Main Payment Card (Marque Blanche) -->
     <div id="payment-card" class="w-full max-w-md <%= mode === 'widget' ? 'bg-base-100' : 'bg-base-100 shadow-2xl' %> rounded-3xl border border-base-300 overflow-hidden my-auto transition-all">
@@ -168,8 +309,44 @@
         const submitBtn = document.getElementById('submit-btn');
         const errorAlert = document.getElementById('error-alert');
         const errorText = document.getElementById('error-text');
+        const loaderOverlay = document.getElementById('checkout-loader-overlay');
+        const loaderTitle = document.getElementById('loader-title-text');
+        const loaderSub = document.getElementById('loader-sub-text');
+
+        // Animation d'entrée douce au chargement de la page
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                if (loaderOverlay) {
+                    loaderOverlay.classList.add('opacity-0', 'pointer-events-none', 'scale-95');
+                    setTimeout(() => {
+                        loaderOverlay.style.display = 'none';
+                    }, 400);
+                }
+            }, 350);
+        });
+
+        function showOverlayLoader(title, subtitle) {
+            if (!loaderOverlay) return;
+            if (loaderTitle && title) loaderTitle.textContent = title;
+            if (loaderSub && subtitle) loaderSub.textContent = subtitle;
+            
+            loaderOverlay.style.display = 'flex';
+            requestAnimationFrame(() => {
+                loaderOverlay.classList.remove('opacity-0', 'pointer-events-none', 'scale-95');
+                loaderOverlay.classList.add('opacity-100', 'scale-100');
+            });
+        }
+
+        function hideOverlayLoader() {
+            if (!loaderOverlay) return;
+            loaderOverlay.classList.add('opacity-0', 'pointer-events-none', 'scale-95');
+            setTimeout(() => {
+                loaderOverlay.style.display = 'none';
+            }, 400);
+        }
 
         function showError(msg) {
+            hideOverlayLoader();
             errorText.textContent = msg;
             errorAlert.classList.remove('hidden');
             submitBtn.disabled = false;
@@ -185,9 +362,18 @@
 
             const emailInput = document.getElementById('checkout-customerEmail');
             const customerEmail = emailInput ? emailInput.value.trim() : undefined;
+            const providerVal = providerInput.value;
 
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="loading loading-spinner loading-sm"></span> Redirection sécurisée...';
+            submitBtn.innerHTML = '<span class="loading loading-spinner loading-sm"></span> Initialisation sécurisée...';
+
+            let providerDisplay = 'Passerelle sécurisée';
+            if (providerVal === 'lomopay') providerDisplay = 'LomoPay (Mobile Money)';
+            else if (providerVal === 'ikeepay') providerDisplay = 'iKeePay';
+            else if (providerVal === 'whop') providerDisplay = 'Whop (Cartes & Apple Pay)';
+            else if (providerVal === 'stripe') providerDisplay = 'Stripe (Cartes bancaires)';
+
+            showOverlayLoader("Connexion sécurisée...", `Ouverture du tunnel ${providerDisplay}`);
 
             try {
                 const response = await fetch('/checkout/pay', {
@@ -195,7 +381,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         token: document.querySelector('input[name="token"]').value,
-                        provider: providerInput.value,
+                        provider: providerVal,
                         customerEmail: customerEmail
                     })
                 });
@@ -203,7 +389,7 @@
                 const data = await response.json();
 
                 if (data.checkoutUrl) {
-                    submitBtn.innerHTML = '<span class="loading loading-spinner loading-sm"></span> Ouverture du paiement...';
+                    showOverlayLoader("Redirection en cours...", "Ouverture de votre espace de paiement");
                     if (window.self !== window.top) {
                         window.top.location.href = data.checkoutUrl;
                     } else {
