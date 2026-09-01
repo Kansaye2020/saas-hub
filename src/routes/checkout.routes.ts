@@ -83,12 +83,50 @@ checkoutRouter.get("/complete", async (req: Request, res: Response) => {
   }
 });
 
+// Annulation de paiement intelligente (Popup vs Redirection directe)
+checkoutRouter.get("/cancel", async (req: Request, res: Response) => {
+  const token = (req.query.token as string) || "";
+  const orderId = (req.query.orderId as string) || (req.query.order_id as string) || "";
+
+  try {
+    let session = null;
+    if (token) {
+      session = await dbGet("SELECT * FROM checkout_sessions WHERE token = ?", [token]);
+    } else if (orderId) {
+      session = await dbGet("SELECT * FROM checkout_sessions WHERE orderId = ? ORDER BY createdAt DESC", [orderId]);
+    }
+
+    let cancelUrl = session?.cancelUrl || session?.cancelurl || session?.returnUrl || session?.returnurl || "/public/test-redirect.html?status=cancel";
+    let storeName = "Boutique";
+    let storeLogo = "";
+
+    if (session) {
+      const clientApp = await getClientAppById(session.appId);
+      if (clientApp) {
+        storeName = clientApp.name;
+        storeLogo = clientApp.logoUrl || "";
+      }
+    }
+
+    res.render("checkout/cancel", {
+      session,
+      token,
+      cancelUrl,
+      storeName,
+      storeLogo
+    });
+  } catch (error) {
+    console.error("Error rendering cancel page:", error);
+    res.redirect("/public/test-redirect.html?status=cancel");
+  }
+});
+
 // Render the checkout page (Browser)
 checkoutRouter.get("/:token", async (req: Request, res: Response) => {
   const token = req.params.token;
   const mode = req.query.mode as string; // 'widget' or undefined
 
-  if (!token || token === 'session' || token === 'pay' || token === 'complete') {
+  if (!token || token === 'session' || token === 'pay' || token === 'complete' || token === 'cancel') {
     return res.status(404).send("Not found");
   }
 

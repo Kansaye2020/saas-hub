@@ -297,9 +297,9 @@
                     </button>
                     
                     <% if (session.cancelUrl) { %>
-                        <a href="<%= session.cancelUrl %>" class="btn btn-ghost btn-sm btn-block font-medium text-xs text-base-content/60 hover:text-error">
+                        <button type="button" id="cancel-btn" class="btn btn-ghost btn-sm btn-block font-medium text-xs text-base-content/60 hover:text-error">
                             Annuler et retourner au site
-                        </a>
+                        </button>
                     <% } %>
                 </div>
             </form>
@@ -413,6 +413,53 @@
                 showError('Erreur de connexion. Veuillez vérifier votre réseau.');
             }
         });
+
+        const cancelBtn = document.getElementById('cancel-btn');
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const cancelUrl = "<%= session.cancelUrl %>";
+                const cancelPayload = {
+                    type: 'HUB_PAYMENT_CANCEL',
+                    status: 'cancelled',
+                    token: "<%= session.token %>",
+                    orderId: "<%= session.orderId %>"
+                };
+
+                // 1. Détection Iframe (Modale Pop-up intégrée sur le site)
+                if (window.parent && window.parent !== window) {
+                    try {
+                        window.parent.postMessage(cancelPayload, '*');
+                        window.parent.postMessage({ type: 'HUB_PAYMENT_CLOSE' }, '*');
+                        window.parent.postMessage('ikeepay-close', '*');
+                        window.parent.postMessage('payment_cancel', '*');
+                    } catch (err) {}
+
+                    // Si une URL d'annulation externe est configurée, rediriger le parent (top)
+                    if (cancelUrl && cancelUrl.startsWith('http') && !cancelUrl.includes('mode=widget')) {
+                        setTimeout(() => {
+                            try {
+                                window.top.location.href = cancelUrl;
+                            } catch (e) {}
+                        }, 200);
+                    }
+                } 
+                // 2. Détection Popup Fenêtre indépendante
+                else if (window.opener && window.opener !== window) {
+                    try {
+                        window.opener.postMessage(cancelPayload, '*');
+                        window.opener.postMessage('payment_cancel', '*');
+                    } catch (err) {}
+                    window.close();
+                } 
+                // 3. Mode Redirection pleine page normale
+                else {
+                    if (cancelUrl && cancelUrl.startsWith('http')) {
+                        window.location.href = cancelUrl;
+                    }
+                }
+            });
+        }
     </script>
 </body>
 </html>

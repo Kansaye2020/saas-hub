@@ -45,8 +45,20 @@ class HubWidgetClass {
                 this._handleSuccess(data);
             }
 
-            if (data === 'ikeepay-close' || (typeof data === 'object' && data.type === 'HUB_PAYMENT_CLOSE')) {
-                console.log('ℹ️ HubWidget: Fermeture demandée');
+            const isCancelOrClose =
+                data === 'ikeepay-close' ||
+                data === 'payment_cancel' ||
+                data === 'whop:payment:cancel' ||
+                data === 'whop:close' ||
+                (typeof data === 'object' && (
+                    data.type === 'HUB_PAYMENT_CLOSE' ||
+                    data.type === 'HUB_PAYMENT_CANCEL' ||
+                    data.status === 'cancelled' ||
+                    data.status === 'cancel'
+                ));
+
+            if (isCancelOrClose) {
+                console.log('ℹ️ HubWidget: Fermeture ou annulation reçue par postMessage:', data);
                 this.close();
             }
         });
