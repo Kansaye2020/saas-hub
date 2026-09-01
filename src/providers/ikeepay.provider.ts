@@ -54,8 +54,8 @@ export class iKeepayProvider implements IPaymentProvider {
    */
   async createPayment(request: CreatePaymentRequest): Promise<UnifiedPaymentResponse> {
     const providerConfig = await getAppProviderConfig(request.appId, this.name);
-    const publicKey = providerConfig.publicKey || config.ikeepay.publicKey;
-    const secretKey = providerConfig.secretKey || config.ikeepay.secretKey;
+    const publicKey = providerConfig.publicKey;
+    const secretKey = providerConfig.secretKey;
     const extraConfig = providerConfig.extraConfig || {};
 
     if (!publicKey && !secretKey) {
@@ -163,7 +163,7 @@ export class iKeepayProvider implements IPaymentProvider {
         params.append("redirect_url", request.returnUrl);
       }
 
-      const checkoutUrl = `${config.ikeepay.checkoutUrl || this.CHECKOUT_INLINE_BASE}?${params.toString()}`;
+      const checkoutUrl = `${extraConfig.checkoutUrl || this.CHECKOUT_INLINE_BASE}?${params.toString()}`;
 
       console.log(`[iKeePay Inline Checkout] Généré pour ${request.appId}:`, checkoutUrl);
 
@@ -189,7 +189,7 @@ export class iKeepayProvider implements IPaymentProvider {
    */
   async createPayout(appId: string, params: IKeepayH2HPayoutRequest): Promise<any> {
     const providerConfig = await getAppProviderConfig(appId, this.name);
-    const secretKey = providerConfig.secretKey || config.ikeepay.secretKey;
+    const secretKey = providerConfig.secretKey;
     const extraConfig = providerConfig.extraConfig || {};
 
     if (!secretKey) {
@@ -229,7 +229,7 @@ export class iKeepayProvider implements IPaymentProvider {
    */
   async cardAction(appId: string, action: "create-card" | "get-details" | "fund-withdraw" | "delete-card", payload: any, isSandbox?: boolean): Promise<any> {
     const providerConfig = await getAppProviderConfig(appId, this.name);
-    const secretKey = providerConfig.secretKey || config.ikeepay.secretKey;
+    const secretKey = providerConfig.secretKey;
     const extraConfig = providerConfig.extraConfig || {};
 
     if (!secretKey) {
@@ -274,7 +274,7 @@ export class iKeepayProvider implements IPaymentProvider {
     } catch {}
 
     const providerConfig = await getAppProviderConfig(appId, this.name);
-    const secretKey = (providerConfig.secretKey || config.ikeepay.secretKey || "").trim();
+    const secretKey = (providerConfig.secretKey || "").trim();
 
     // Si une clé secrète est fournie dans l'en-tête, on la vérifie
     const incomingApiKey = (headers["x-api-key"] || headers["x-ikeepay-api-key"] || headers["X-Api-Key"]) as string;

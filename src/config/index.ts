@@ -7,40 +7,6 @@ export const config = {
   port: parseInt(process.env.PORT || "4000", 10),
   nodeEnv: process.env.NODE_ENV || "development",
   baseUrl: (process.env.HUB_BASE_URL || "http://localhost:4000").replace(/\/$/, ""),
-
-  // Lomopay config
-  lomopay: {
-    publicKey: process.env.LOMOPAY_PUBLIC_KEY || "",
-    secretKey: process.env.LOMOPAY_SECRET_KEY || "",
-    apiUrl: process.env.LOMOPAY_API_URL || "https://lomopay.net/api/v1/payments.php",
-  },
-
-  // Whop config
-  whop: {
-    apiKey: process.env.WHOP_API_KEY || "",
-    companyId: process.env.WHOP_COMPANY_ID || "",
-    isSandbox: process.env.WHOP_SANDBOX === "true",
-  },
-
-  // Stripe config
-  stripe: {
-    secretKey: process.env.STRIPE_SECRET_KEY || "",
-    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || "",
-  },
-
-  // Chariow config
-  chariow: {
-    secretKey: process.env.CHARIOW_SECRET_KEY || "",
-    publicKey: process.env.CHARIOW_PUBLIC_KEY || "",
-  },
-
-  // iKeepay config
-  ikeepay: {
-    publicKey: process.env.IKEEPAY_PUBLIC_KEY || "",
-    secretKey: process.env.IKEEPAY_SECRET_KEY || "",
-    apiUrl: process.env.IKEEPAY_API_URL || "https://api.ikeepay.com",
-    checkoutUrl: process.env.IKEEPAY_CHECKOUT_URL || "https://ikeepay.com/checkout/v1/inline",
-  },
 };
 
 import { decryptSecret } from "../utils/encryption";
@@ -83,17 +49,7 @@ export async function getAppProviderConfig(appId: string, providerId: string): P
     console.error(`Erreur lecture config DB pour app ${appId} / provider ${providerId}:`, error);
   }
 
-  // Fallback to global config or env only if not set in DB
-  const envConfig = (config as any)[providerId];
-  if (envConfig && (envConfig.publicKey || envConfig.apiKey || envConfig.secretKey)) {
-    return {
-      isActive: false,
-      publicKey: envConfig.publicKey || envConfig.apiKey || "",
-      secretKey: decryptSecret(envConfig.secretKey || envConfig.webhookSecret || ""),
-    };
-  }
-
-  return { isActive: false, publicKey: "", secretKey: "" };
+  return { isActive: false, publicKey: "", secretKey: "", extraConfig: {} };
 }
 
 export async function getAppActiveProviders(appId: string): Promise<Array<{ providerId: string; publicKey: string; secretKey: string; extraConfig?: any }>> {

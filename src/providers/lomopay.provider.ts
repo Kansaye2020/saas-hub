@@ -7,8 +7,8 @@ export class LomoPayProvider implements IPaymentProvider {
   readonly name = "lomopay" as const;
 
   async createPayment(request: CreatePaymentRequest): Promise<UnifiedPaymentResponse> {
-    const { publicKey, secretKey } = await getAppProviderConfig(request.appId, this.name);
-    const apiUrl = config.lomopay.apiUrl || "https://lomopay.net/api/v1/payments.php";
+    const { publicKey, secretKey, extraConfig } = await getAppProviderConfig(request.appId, this.name);
+    const apiUrl = extraConfig?.apiUrl || "https://lomopay.net/api/v1/payments.php";
 
     if (!publicKey || !secretKey) {
       return {
@@ -25,17 +25,38 @@ export class LomoPayProvider implements IPaymentProvider {
 
     // Encodage de l'appId et l'orderId dans external_reference pour le routage universel
     const externalRef = `${request.appId}:::${request.orderId}`;
-    const webhookUrl = `${config.baseUrl}/webhooks/lomopay`;
+    
+    // Détermination de l'URL de webhook publique
+    const webhookUrl = (extraConfig?.webhookUrl || `${config.baseUrl}/webhooks/lomopay`).trim();
 
-    const payload = {
+    // Détection d'URL interne / localhost pour éviter le blocage SSRF de LomoPay
+    const isPrivateUrl = (urlStr: string): boolean => {
+      try {
+        const parsed = new URL(urlStr);
+        const host = parsed.hostname.toLowerCase();
+        return (
+          host === "localhost" ||
+          host === "127.0.0.1" ||
+          host === "::1" ||
+          host.startsWith("192.168.") ||
+          host.startsWith("10.") ||
+          (host.startsWith("172.") && parseInt(host.split(".")[1], 10) >= 16 && parseInt(host.split(".")[1], 10) <= 31) ||
+          host.endsWith(".local") ||
+          host.endsWith(".internal")
+        );
+      } catch {
+        return false;
+      }
+    };
+
+    const isWebhookPrivate = isPrivateUrl(webhookUrl);
+
+    const payload: any = {
       amount: Number(request.amount),
       currency: currency,
       description: request.description || `Commande #${request.orderId}`,
       external_reference: externalRef,
       return_url: request.returnUrl,
-      notify_url: webhookUrl,
-      webhook_url: webhookUrl,
-      callback_url: webhookUrl,
       customer_email: request.customer?.email || "",
       email: request.customer?.email || "",
       customer_name: request.customer?.name || "",
@@ -43,6 +64,13 @@ export class LomoPayProvider implements IPaymentProvider {
       customer_phone: request.customer?.phone || "",
       phone: request.customer?.phone || "",
     };
+
+    // On n'envoie les champs de webhook que si l'URL est publique (en local, évite le rejet SSRF de LomoPay)
+    if (!isWebhookPrivate && webhookUrl.startsWith("http")) {
+      payload.notify_url = webhookUrl;
+      payload.webhook_url = webhookUrl;
+      payload.callback_url = webhookUrl;
+    }
 
     try {
       console.log(`[LomoPay] Envoi de la requête de paiement pour l'app ${request.appId}:`, JSON.stringify(payload));

@@ -9,7 +9,7 @@ export class WhopProvider implements IPaymentProvider {
     const providerConfig = await getAppProviderConfig(request.appId, this.name);
     const companyId = providerConfig.publicKey;
     const apiKey = providerConfig.secretKey;
-    const isSandbox = config.whop.isSandbox;
+    const isSandbox = Boolean(providerConfig.extraConfig?.isSandbox || providerConfig.extraConfig?.sandbox);
 
     if (!apiKey || !companyId) {
       return {

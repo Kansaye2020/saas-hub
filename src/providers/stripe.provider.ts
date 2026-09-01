@@ -8,8 +8,8 @@ export class StripeProvider implements IPaymentProvider {
 
   private async getStripeClient(appId: string): Promise<{ client: Stripe; webhookSecret?: string }> {
     const providerConfig = await getAppProviderConfig(appId, this.name);
-    const secretKey = providerConfig.secretKey || config.stripe.secretKey;
-    let webhookSecret = config.stripe.webhookSecret;
+    const secretKey = providerConfig.secretKey;
+    let webhookSecret: string | undefined = undefined;
 
     if (providerConfig.extraConfig) {
       if (typeof providerConfig.extraConfig === "string") {
