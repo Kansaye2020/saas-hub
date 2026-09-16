@@ -8,3 +8,5 @@ paymentRouter.post("/create", requireAppAuth, PaymentController.create);
 paymentRouter.get("/providers", requireAppAuth, PaymentController.listProviders);
 paymentRouter.post("/ikeepay/payout", requireAppAuth, PaymentController.ikeepayPayout);
 paymentRouter.post("/ikeepay/card", requireAppAuth, PaymentController.ikeepayCardAction);
+paymentRouter.post("/saspay/payout", requireAppAuth, PaymentController.saspayPayout);
+paymentRouter.get("/saspay/balances", requireAppAuth, PaymentController.saspayBalances);

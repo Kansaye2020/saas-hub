@@ -253,7 +253,15 @@
                                 
                                 <div class="flex-1 flex items-center justify-between">
                                     <div class="flex items-center gap-3">
-                                        <% if (provider.id === 'lomopay' || provider.id === 'chariow' || provider.id === 'ikeepay') { %>
+                                        <% if (provider.id === 'saspay') { %>
+                                            <div class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center font-bold text-base shrink-0">
+                                                📱💳
+                                            </div>
+                                            <div>
+                                                <div class="font-bold text-base-content text-sm sm:text-base">Mobile Money & Cartes Bancaires (SasPay)</div>
+                                                <div class="text-xs text-base-content/60 mt-0.5">Wave, Orange Money, MTN MoMo, Moov, Visa, Mastercard</div>
+                                            </div>
+                                        <% } else if (provider.id === 'lomopay' || provider.id === 'chariow' || provider.id === 'ikeepay') { %>
                                             <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold text-lg shrink-0">
                                                 📱
                                             </div>
@@ -380,6 +388,7 @@
 
             let providerDisplay = 'Passerelle sécurisée';
             if (providerVal === 'lomopay') providerDisplay = 'LomoPay (Mobile Money)';
+            else if (providerVal === 'saspay') providerDisplay = 'SasPay (Mobile Money & Cartes)';
             else if (providerVal === 'ikeepay') providerDisplay = 'iKeePay';
             else if (providerVal === 'whop') providerDisplay = 'Whop (Cartes & Apple Pay)';
             else if (providerVal === 'stripe') providerDisplay = 'Stripe (Cartes bancaires)';

@@ -119,6 +119,19 @@ export const ALL_PROVIDERS = [
     hasExtraConfig: false,
     extraConfigLabel: "",
   },
+  {
+    id: "saspay",
+    name: "SasPay",
+    tagline: "Mobile Money (Wave, Orange, MTN, Moov) & Cartes en Afrique (saspay.me)",
+    category: "Mobile Money & Cartes",
+    publicKeyLabel: "ID Marchand ou Clé Publique (Optionnel)",
+    publicKeyPlaceholder: "Ex: UUID Marchand ou laisser vide",
+    secretKeyLabel: "Clé Secrète API (sk_live_... ou sk_test_...)",
+    secretKeyPlaceholder: "Ex: sk_live_...",
+    hasExtraConfig: true,
+    extraConfigLabel: "Secret de signature Webhook (whsec_... ou signing secret)",
+    extraConfigPlaceholder: "Ex: votre signing_secret SasPay",
+  },
 ];
 
 adminRouter.get("/", async (_req: Request, res: Response) => {

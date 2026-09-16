@@ -5,7 +5,7 @@ import { getAppActiveProvider } from "../config";
 
 const CreatePaymentSchema = z.object({
   appId: z.string().min(1, "appId requis"),
-  provider: z.enum(["lomopay", "whop", "stripe", "chariow", "ikeepay", "auto"]),
+  provider: z.enum(["lomopay", "whop", "stripe", "chariow", "ikeepay", "saspay", "auto"]),
   amount: z.number().positive("Le montant doit être supérieur à 0"),
   currency: z.string().nullish(),
   description: z.string().nullish(),

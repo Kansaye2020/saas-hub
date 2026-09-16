@@ -1,6 +1,6 @@
 # 💳 SaaS Payment Hub (Unificateur de Paiement Multi-SaaS)
 
-**SaaS Payment Hub** est une infrastructure de paiement unifiée, auto-hébergée et multi-tenant. Elle centralise la gestion de toutes vos passerelles de paiement (**LomoPay, iKeePay, Whop, Stripe, Chariow**) et permet à l'ensemble de vos projets SaaS et sites e-commerce de s'y connecter via une API unique, unifiée et standardisée.
+**SaaS Payment Hub** est une infrastructure de paiement unifiée, auto-hébergée et multi-tenant. Elle centralise la gestion de toutes vos passerelles de paiement (**SasPay, LomoPay, iKeePay, Whop, Stripe, Chariow**) et permet à l'ensemble de vos projets SaaS et sites e-commerce de s'y connecter via une API unique, unifiée et standardisée.
 
 ---
 
@@ -11,6 +11,7 @@
    - Chaque site possède son propre Dashboard dédié (`/admin/app/:appId`), ses propres passerelles configurées avec leurs clés API indépendantes chiffrées (AES-256-GCM), ses statistiques de chiffre d'affaires isolées et ses propres URLs de Webhook et de redirection.
 
 2. **Multi-Passerelles Intégrées aux Normes Officielles** :
+   - 🚀 **SasPay** (`saspay.me`) : Mobile Money (Wave, Orange Money, MTN MoMo, Moov) et Cartes bancaires en Afrique de l'Ouest et Centrale via session Checkout hébergée, Softpay push direct, retraits Mobile Money (Payout) et vérification HMAC-SHA256.
    - 📱 **LomoPay** : Mobile Money pour l'Afrique de l'Ouest et Centrale (Wave, Orange Money, MTN MoMo, Moov Money) en **XOF** et **XAF** avec confirmation par Webhook signé HMAC-SHA256.
    - ⚡ **iKeePay** :
      - **Checkout Inline** : Tunnel de paiement iframe / WebView (Flutter, React Native, iOS, Android) ultra-fluide sans flash blanc avec écoute des signaux postMessage (`ikeepay-ready`, `ikeepay-success`, `ikeepay-close`).

@@ -153,15 +153,20 @@ checkoutRouter.get("/:token", async (req: Request, res: Response) => {
     for (const p of appActiveProviders) {
       const pId = p.providerId || (p as any).providerid || '';
       if (pId) {
+        let name = pId.charAt(0).toUpperCase() + pId.slice(1);
+        if (pId === 'saspay') name = 'SasPay';
+        else if (pId === 'lomopay') name = 'LomoPay';
+        else if (pId === 'ikeepay') name = 'iKeePay';
         providers.push({
           id: pId,
-          name: pId.charAt(0).toUpperCase() + pId.slice(1)
+          name
         });
       }
     }
 
     // Fallback if no providers are active yet so the test UI isn't empty
     if (providers.length === 0) {
+      providers.push({ id: 'saspay', name: 'SasPay (Non configuré)' });
       providers.push({ id: 'lomopay', name: 'LomoPay (Non configuré)' });
       providers.push({ id: 'whop', name: 'Whop (Non configuré)' });
     }

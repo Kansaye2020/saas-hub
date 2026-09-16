@@ -87,4 +87,34 @@ export class PaymentController {
       });
     }
   }
+
+  static async saspayPayout(req: AuthenticatedRequest, res: Response) {
+    try {
+      const clientApp = req.clientApp!;
+      const saspay = providerRegistry.getProvider("saspay") as any;
+      const result = await saspay.createPayout(clientApp.id, req.body);
+      return res.status(200).json({ success: true, data: result });
+    } catch (err: any) {
+      console.error("❌ Erreur dans PaymentController.saspayPayout:", err);
+      return res.status(500).json({
+        success: false,
+        error: err.message || "Erreur lors du payout SasPay",
+      });
+    }
+  }
+
+  static async saspayBalances(req: AuthenticatedRequest, res: Response) {
+    try {
+      const clientApp = req.clientApp!;
+      const saspay = providerRegistry.getProvider("saspay") as any;
+      const result = await saspay.getBalances(clientApp.id);
+      return res.status(200).json({ success: true, data: result });
+    } catch (err: any) {
+      console.error("❌ Erreur dans PaymentController.saspayBalances:", err);
+      return res.status(500).json({
+        success: false,
+        error: err.message || "Erreur lors de la récupération des soldes SasPay",
+      });
+    }
+  }
 }

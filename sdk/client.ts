@@ -1,7 +1,7 @@
 import crypto from "crypto";
 
 export interface CreatePaymentOptions {
-  provider?: "lomopay" | "whop" | "stripe" | "chariow" | "ikeepay" | "auto";
+  provider?: "lomopay" | "whop" | "stripe" | "chariow" | "ikeepay" | "saspay" | "auto";
   amount: number;
   currency?: string;
   orderId: string;
