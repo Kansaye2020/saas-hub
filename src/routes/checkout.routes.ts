@@ -154,9 +154,9 @@ checkoutRouter.get("/:token", async (req: Request, res: Response) => {
       const pId = p.providerId || (p as any).providerid || '';
       if (pId) {
         let name = pId.charAt(0).toUpperCase() + pId.slice(1);
-        if (pId === 'saspay') name = 'SasPay';
-        else if (pId === 'lomopay') name = 'LomoPay';
-        else if (pId === 'ikeepay') name = 'iKeePay';
+        if (pId === 'saspay') name = 'Mobile Money & Carte Bancaire';
+        else if (pId === 'lomopay') name = 'Mobile Money';
+        else if (pId === 'ikeepay') name = 'Mobile Money';
         providers.push({
           id: pId,
           name
@@ -166,9 +166,9 @@ checkoutRouter.get("/:token", async (req: Request, res: Response) => {
 
     // Fallback if no providers are active yet so the test UI isn't empty
     if (providers.length === 0) {
-      providers.push({ id: 'saspay', name: 'SasPay (Non configuré)' });
-      providers.push({ id: 'lomopay', name: 'LomoPay (Non configuré)' });
-      providers.push({ id: 'whop', name: 'Whop (Non configuré)' });
+      providers.push({ id: 'saspay', name: 'Mobile Money & Carte Bancaire (Non configuré)' });
+      providers.push({ id: 'lomopay', name: 'Mobile Money (Non configuré)' });
+      providers.push({ id: 'whop', name: 'Carte Bancaire (Non configuré)' });
     }
 
     res.render("checkout/index", {

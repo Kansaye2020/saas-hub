@@ -258,7 +258,7 @@
                                                 📱💳
                                             </div>
                                             <div>
-                                                <div class="font-bold text-base-content text-sm sm:text-base">Mobile Money & Cartes Bancaires (SasPay)</div>
+                                                <div class="font-bold text-base-content text-sm sm:text-base">Mobile Money & Carte Bancaire</div>
                                                 <div class="text-xs text-base-content/60 mt-0.5">Wave, Orange Money, MTN MoMo, Moov, Visa, Mastercard</div>
                                             </div>
                                         <% } else if (provider.id === 'lomopay' || provider.id === 'chariow' || provider.id === 'ikeepay') { %>
@@ -386,12 +386,12 @@
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<span class="loading loading-spinner loading-sm"></span> Initialisation sécurisée...';
 
-            let providerDisplay = 'Passerelle sécurisée';
-            if (providerVal === 'lomopay') providerDisplay = 'LomoPay (Mobile Money)';
-            else if (providerVal === 'saspay') providerDisplay = 'SasPay (Mobile Money & Cartes)';
-            else if (providerVal === 'ikeepay') providerDisplay = 'iKeePay';
-            else if (providerVal === 'whop') providerDisplay = 'Whop (Cartes & Apple Pay)';
-            else if (providerVal === 'stripe') providerDisplay = 'Stripe (Cartes bancaires)';
+            let providerDisplay = 'sécurisé';
+            if (providerVal === 'lomopay') providerDisplay = 'Mobile Money';
+            else if (providerVal === 'saspay') providerDisplay = 'Mobile Money & Carte Bancaire';
+            else if (providerVal === 'ikeepay') providerDisplay = 'Mobile Money';
+            else if (providerVal === 'whop') providerDisplay = 'Carte Bancaire';
+            else if (providerVal === 'stripe') providerDisplay = 'Carte Bancaire';
 
             showOverlayLoader("Connexion sécurisée...", `Ouverture du tunnel ${providerDisplay}`);
 
