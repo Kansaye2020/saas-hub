@@ -4,6 +4,7 @@ import { CreatePaymentRequest, UnifiedPaymentResponse, UnifiedWebhookPayload } f
 import { getAppProviderConfig } from "../config";
 
 export interface DepiPayExtraConfig {
+  network?: string;
   chainId?: number;
   acceptedTokens?: string[];
   deadlineSecs?: number;
@@ -76,17 +77,38 @@ export class DepiPayProvider implements IPaymentProvider {
       const wallet = this.getWallet(secretKey);
       const conf: DepiPayExtraConfig = typeof extraConfig === "string" ? JSON.parse(extraConfig || "{}") : (extraConfig || {});
 
-      // Détermination du réseau et tokens acceptés
-      const chainId = Number(request.metadata?.chainId || conf.chainId || 1);
+      // Détermination intelligente du réseau et tokens acceptés
+      const network = (request.metadata?.network || conf.network || "").toLowerCase().trim();
+      let chainId = Number(request.metadata?.chainId || conf.chainId || 0);
+
+      if (!chainId) {
+        if (network === "ethereum" || network === "eth" || network === "erc20") {
+          chainId = 1;
+        } else if (network === "polygon" || network === "matic") {
+          chainId = 137;
+        } else {
+          // Par défaut : BNB Smart Chain (BSC - chainId 56) pour des frais minimes (<0.10$)
+          chainId = 56;
+        }
+      }
       
-      // Tokens par défaut (ex: USDT sur Ethereum mainnet)
-      const defaultTokens = [
-        chainId === 137
-          ? "137:0xc2132d05d31c914a87c6611c10748aeb04b58e8f" // USDT sur Polygon
-          : chainId === 56
-          ? "56:0x55d398326f99059ff775485246999027b3197955"  // USDT sur BSC
-          : "1:0xdac17f958d2ee523a2206206994597c13d831ec7"   // USDT sur Ethereum
-      ];
+      // Tokens par défaut selon la blockchain
+      let defaultTokens: string[];
+      if (network === "tron" || network === "trc20") {
+        defaultTokens = ["tron:TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"];
+      } else if (chainId === 56) {
+        // BSC (BNB Smart Chain) : USDT BEP-20
+        defaultTokens = [
+          "56:0x55d398326f99059ff775485246999027b3197955",
+          "56:0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d"
+        ];
+      } else if (chainId === 137) {
+        // Polygon : USDT
+        defaultTokens = ["137:0xc2132d05d31c914a87c6611c10748aeb04b58e8f"];
+      } else {
+        // Ethereum Mainnet (chainId 1) : USDT ERC-20
+        defaultTokens = ["1:0xdac17f958d2ee523a2206206994597c13d831ec7"];
+      }
 
       const acceptedTokens: string[] = request.metadata?.acceptedTokens || conf.acceptedTokens || defaultTokens;
       const deadlineSecs = Number(request.metadata?.deadlineSecs || conf.deadlineSecs || 86400); // 24 heures par défaut

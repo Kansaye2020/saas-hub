@@ -142,8 +142,8 @@ export const ALL_PROVIDERS = [
     secretKeyLabel: "Session Private Key (Clé privée Ethereum / secp256k1, ex: 0x...)",
     secretKeyPlaceholder: "Ex: 0x4f3c... (Clé privée pour signature de session EIP-191)",
     hasExtraConfig: true,
-    extraConfigLabel: "Configuration Réseau & Tokens (JSON optionnel)",
-    extraConfigPlaceholder: '{"chainId": 1, "acceptedTokens": ["1:0xdac17f958d2ee523a2206206994597c13d831ec7"], "deadlineSecs": 86400}',
+    extraConfigLabel: "Réseau Blockchain & Tokens (JSON optionnel)",
+    extraConfigPlaceholder: '{"network": "bsc"} (Défaut: BSC) ou {"network": "tron"} ou {"network": "ethereum"}',
   },
 ];
 
