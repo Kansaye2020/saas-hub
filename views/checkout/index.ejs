@@ -277,6 +277,14 @@
                                                 <div class="font-bold text-base-content text-sm sm:text-base">Carte Bancaire</div>
                                                 <div class="text-xs text-base-content/60 mt-0.5">Visa, Mastercard, Apple Pay, Google Pay</div>
                                             </div>
+                                        <% } else if (provider.id === 'depipay') { %>
+                                            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold text-lg shrink-0">
+                                                🪙
+                                            </div>
+                                            <div>
+                                                <div class="font-bold text-base-content text-sm sm:text-base">Crypto-monnaies (DepiPay)</div>
+                                                <div class="text-xs text-base-content/60 mt-0.5">USDT, USDC, ETH, Polygon, BSC (Paiement direct)</div>
+                                            </div>
                                         <% } else { %>
                                             <div class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-lg shrink-0">
                                                 ⚡

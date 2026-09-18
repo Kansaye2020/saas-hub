@@ -10,3 +10,5 @@ paymentRouter.post("/ikeepay/payout", requireAppAuth, PaymentController.ikeepayP
 paymentRouter.post("/ikeepay/card", requireAppAuth, PaymentController.ikeepayCardAction);
 paymentRouter.post("/saspay/payout", requireAppAuth, PaymentController.saspayPayout);
 paymentRouter.get("/saspay/balances", requireAppAuth, PaymentController.saspayBalances);
+paymentRouter.post("/depipay/poll", requireAppAuth, PaymentController.depipayPoll);
+paymentRouter.get("/depipay/poll", requireAppAuth, PaymentController.depipayPoll);

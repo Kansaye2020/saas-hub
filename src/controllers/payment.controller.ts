@@ -117,4 +117,27 @@ export class PaymentController {
       });
     }
   }
+
+  /**
+   * Déclenche la scrutation manuelle des événements DepiPay pour le site appelant
+   * POST ou GET /api/v1/payments/depipay/poll
+   */
+  static async depipayPoll(req: AuthenticatedRequest, res: Response) {
+    try {
+      const clientApp = req.clientApp!;
+      const { DepiPayPollerService } = require("../services/depipay-poller.service");
+      const events = await DepiPayPollerService.pollApp(clientApp.id);
+      return res.status(200).json({
+        success: true,
+        count: events.length,
+        events,
+      });
+    } catch (err: any) {
+      console.error("❌ Erreur dans PaymentController.depipayPoll:", err);
+      return res.status(500).json({
+        success: false,
+        error: err.message || "Erreur lors de la scrutation DepiPay",
+      });
+    }
+  }
 }

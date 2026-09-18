@@ -6,6 +6,7 @@ import { paymentRouter } from "./routes/payment.routes";
 import { webhookRouter } from "./routes/webhook.routes";
 import { adminRouter } from "./routes/admin.routes";
 import { checkoutRouter } from "./routes/checkout.routes";
+import { DepiPayPollerService } from "./services/depipay-poller.service";
 
 const app = express();
 
@@ -98,6 +99,16 @@ app.listen(PORT, () => {
   console.log(`🚀 SaaS Payment Hub démarré sur le port ${PORT}`);
   console.log(`🌍 URL de Base: ${config.baseUrl}`);
   console.log("==================================================");
+
+  // Démarrage de la scrutation automatique des paiements crypto DepiPay
+  DepiPayPollerService.start(10000);
+});
+
+process.on("SIGTERM", () => {
+  DepiPayPollerService.stop();
+});
+process.on("SIGINT", () => {
+  DepiPayPollerService.stop();
 });
 
 export default app;

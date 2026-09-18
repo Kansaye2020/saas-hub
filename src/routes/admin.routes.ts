@@ -132,6 +132,19 @@ export const ALL_PROVIDERS = [
     extraConfigLabel: "Secret de signature Webhook (whsec_... ou signing secret)",
     extraConfigPlaceholder: "Ex: votre signing_secret SasPay",
   },
+  {
+    id: "depipay",
+    name: "DepiPay",
+    tagline: "Paiements Crypto Décentralisés (USDT, USDC, ETH, Polygon, BSC...)",
+    category: "Crypto-monnaies",
+    publicKeyLabel: "Adresse Ethereum / Owner (Optionnel, ex: 0x...)",
+    publicKeyPlaceholder: "Ex: 0x1a2b3c4d5e6f...",
+    secretKeyLabel: "Session Private Key (Clé privée Ethereum / secp256k1, ex: 0x...)",
+    secretKeyPlaceholder: "Ex: 0x4f3c... (Clé privée pour signature de session EIP-191)",
+    hasExtraConfig: true,
+    extraConfigLabel: "Configuration Réseau & Tokens (JSON optionnel)",
+    extraConfigPlaceholder: '{"chainId": 1, "acceptedTokens": ["1:0xdac17f958d2ee523a2206206994597c13d831ec7"], "deadlineSecs": 86400}',
+  },
 ];
 
 adminRouter.get("/", async (_req: Request, res: Response) => {

@@ -157,6 +157,7 @@ checkoutRouter.get("/:token", async (req: Request, res: Response) => {
         if (pId === 'saspay') name = 'Mobile Money & Carte Bancaire';
         else if (pId === 'lomopay') name = 'Mobile Money';
         else if (pId === 'ikeepay') name = 'Mobile Money';
+        else if (pId === 'depipay') name = 'Crypto-monnaies (DepiPay)';
         providers.push({
           id: pId,
           name

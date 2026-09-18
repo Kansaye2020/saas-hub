@@ -20,6 +20,7 @@
      - **Cartes Virtuelles (iKeeCard)** : Création et gestion complète de cartes Visa / Mastercard virtuelles (`POST /api/v1/payments/ikeepay/card`).
    - 💳 **Whop** : Cartes bancaires internationales (Visa, Mastercard, Amex), Apple Pay, Google Pay, avec conversion intelligente USD/XOF, transmission des métadonnées et pré-remplissage automatique de l'email client.
    - 💳 **Stripe** : Cartes bancaires internationales directes avec session Checkout officielle.
+   - 🪙 **DepiPay** (`depipay.com`) : Paiements crypto décentralisés (USDT, USDC, ETH, Polygon, BSC...) avec authentification cryptographique secp256k1 (EIP-191 personal_sign), génération d'invoices hébergées et scrutation automatique en arrière-plan (`POST /poll/events`).
    - 🔄 **Chariow** : Passerelle Mobile Money alternative.
 
 3. **Dashboard d'Administration Moderne & Réactif** :

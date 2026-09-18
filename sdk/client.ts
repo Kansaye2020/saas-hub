@@ -1,7 +1,7 @@
 import crypto from "crypto";
 
 export interface CreatePaymentOptions {
-  provider?: "lomopay" | "whop" | "stripe" | "chariow" | "ikeepay" | "saspay" | "auto";
+  provider?: "lomopay" | "whop" | "stripe" | "chariow" | "ikeepay" | "saspay" | "depipay" | "auto";
   amount: number;
   currency?: string;
   orderId: string;
@@ -156,6 +156,21 @@ export class SaasPaymentClient {
         "X-Hub-Api-Key": this.apiKey,
       },
       body: JSON.stringify({ action, payload, isSandbox }),
+    });
+    return await response.json();
+  }
+
+  /**
+   * Déclenche la scrutation manuelle des événements de paiement DepiPay
+   */
+  async depipayPoll() {
+    const url = `${this.hubBaseUrl}/api/v1/payments/depipay/poll`;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Hub-Api-Key": this.apiKey,
+      },
     });
     return await response.json();
   }

@@ -446,13 +446,65 @@ Header: X-Hub-Api-Key: sk_hub_...
 
 ---
 
+## 🪙 Guide Spécifique : Intégration Crypto DepiPay (depipay.com)
+
+**DepiPay** est une passerelle de paiement en crypto-monnaies décentralisée (USDT, USDC, ETH, Polygon, BSC...) :
+
+### 1. Fonctionnement & Authentification Cryptographique
+- **Sans compte ni token statique :** L'authentification auprès de `https://api.depipay.com` repose exclusivement sur une clé de session privée secp256k1 (clé privée de wallet Ethereum, ex: `0x...`).
+- Chaque requête est signée avec la norme **EIP-191** (`personal_sign`) sur `sess:{nonce}:{sha256(body)}`.
+- Le Hub gère toute cette signature cryptographique de manière transparente et sécurisée.
+
+### 2. Configuration dans le Dashboard Admin
+Dans l'onglet **Processeurs** de votre site :
+- **Clé Secrète :** Renseignez votre `SESSION_PRIVATE_KEY` (Clé privée Ethereum, ex: `0x...`). Elle est automatiquement chiffrée en base (AES-256-GCM).
+- **Clé Publique (Optionnel) :** Adresse publique de votre wallet (ex: `0x1a2b...`).
+- **Configuration Réseau & Tokens (JSON optionnel) :**
+  ```json
+  {
+    "chainId": 1,
+    "acceptedTokens": ["1:0xdac17f958d2ee523a2206206994597c13d831ec7"],
+    "deadlineSecs": 86400,
+    "xofToUsdRate": 655.957
+  }
+  ```
+  *(Par défaut, USDT sur Ethereum `chainId: 1`, Polygon `chainId: 137` ou BSC `chainId: 56` sont supportés).*
+
+### 3. Création d'un Paiement Crypto
+```json
+POST /api/v1/payments/create
+Header: X-Hub-Api-Key: sk_hub_...
+{
+  "provider": "depipay",
+  "amount": 25.00,
+  "currency": "USD",
+  "orderId": "CRYPTO_1001",
+  "description": "Abonnement Pro",
+  "returnUrl": "https://monsaas.com/success"
+}
+```
+L'URL de paiement `checkoutUrl` retournée (`https://app.depipay.com/?invoice=...`) permet à l'acheteur de payer directement avec son wallet (MetaMask, Phantom, Trust Wallet, etc.).
+
+### 4. Scrutation Automatique & Webhooks
+- Le serveur intègre un service de scrutation en arrière-plan (**DepiPayPollerService**) qui interroge régulièrement `POST /poll/events` pour récupérer les confirmations de paiement sur la blockchain.
+- Dès qu'un paiement passe à l'état `paid`, le Hub met à jour la base de données et envoie instantanément le webhook unifié `payment.succeeded` vers votre SaaS.
+- Vous pouvez également forcer la scrutation manuellement via l'API :
+  ```http
+  POST /api/v1/payments/depipay/poll
+  Header: X-Hub-Api-Key: sk_hub_...
+  ```
+
+---
+
 ## 🎯 Récapitulatif des Endpoints API
 
 | Action | Méthode | URL | Header Requis | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | **Créer une Session Checkout** | `POST` | `/checkout/session` | `X-Hub-Api-Key: sk_hub_...` | Génère un token et une URL de paiement hébergée |
-| **Créer un Paiement Direct (API)** | `POST` | `/api/v1/payments/create` | `X-Hub-Api-Key: sk_hub_...` | Initialisation directe auprès d'une passerelle |
+| **Créer un Paiement Direct (API)** | `POST` | `/api/v1/payments/create` | `X-Hub-Api-Key: sk_hub_...` | Initialisation directe auprès d'une passerelle (DepiPay, SasPay, Stripe...) |
+| **Scrutation Événements DepiPay** | `POST` / `GET` | `/api/v1/payments/depipay/poll` | `X-Hub-Api-Key: sk_hub_...` | Récupère et vide les événements de paiement crypto en attente |
 | **Retrait H2H iKeePay** | `POST` | `/api/v1/payments/ikeepay/payout` | `X-Hub-Api-Key: sk_hub_...` | Transfert direct vers Mobile Money client |
 | **Cartes Virtuelles iKeeCard** | `POST` | `/api/v1/payments/ikeepay/card` | `X-Hub-Api-Key: sk_hub_...` | Création / gestion de cartes Visa et Mastercard |
 | **Liste des passerelles disponibles** | `GET` | `/api/v1/payments/providers` | `X-Hub-Api-Key: sk_hub_...` | Liste des processeurs actifs pour ce site |
 | **Page de Santé (Anti-veille)** | `GET` | `/health` | Aucun | Monitoring et uptime check |
+

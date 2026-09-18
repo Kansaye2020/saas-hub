@@ -1,4 +1,4 @@
-export type PaymentProviderType = "lomopay" | "whop" | "stripe" | "chariow" | "ikeepay" | "saspay";
+export type PaymentProviderType = "lomopay" | "whop" | "stripe" | "chariow" | "ikeepay" | "saspay" | "depipay";
 
 export type PaymentStatus = "pending" | "completed" | "failed" | "canceled";
 

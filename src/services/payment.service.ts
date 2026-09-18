@@ -5,7 +5,7 @@ import { getAppActiveProvider } from "../config";
 
 const CreatePaymentSchema = z.object({
   appId: z.string().min(1, "appId requis"),
-  provider: z.enum(["lomopay", "whop", "stripe", "chariow", "ikeepay", "saspay", "auto"]),
+  provider: z.enum(["lomopay", "whop", "stripe", "chariow", "ikeepay", "saspay", "depipay", "auto"]),
   amount: z.number().positive("Le montant doit être supérieur à 0"),
   currency: z.string().nullish(),
   description: z.string().nullish(),
@@ -64,7 +64,9 @@ export class PaymentService {
         targetProvider = active.providerId as PaymentProviderType;
       } else {
         const cur = (data.currency || "XOF").toUpperCase();
-        if (cur === "XOF" || cur === "XAF" || cur === "FCFA" || cur === "CFA") {
+        if (["USDT", "USDC", "ETH", "BTC", "MATIC", "CRYPTO"].includes(cur)) {
+          targetProvider = "depipay";
+        } else if (cur === "XOF" || cur === "XAF" || cur === "FCFA" || cur === "CFA") {
           targetProvider = "lomopay";
         } else {
           targetProvider = "whop";

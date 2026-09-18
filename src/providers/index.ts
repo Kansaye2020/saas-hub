@@ -5,6 +5,7 @@ import { StripeProvider } from "./stripe.provider";
 import { ChariowProvider } from "./chariow.provider";
 import { iKeepayProvider } from "./ikeepay.provider";
 import { SasPayProvider } from "./saspay.provider";
+import { DepiPayProvider } from "./depipay.provider";
 import { PaymentProviderType } from "../types";
 
 export class ProviderRegistry {
@@ -17,6 +18,7 @@ export class ProviderRegistry {
     this.register(new ChariowProvider());
     this.register(new iKeepayProvider());
     this.register(new SasPayProvider());
+    this.register(new DepiPayProvider());
   }
 
   public register(provider: IPaymentProvider) {
