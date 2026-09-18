@@ -84,6 +84,7 @@ export interface DepiPayExtraConfig {
   acceptedTokens?: string[];
   deadlineSecs?: number;
   xofToUsdRate?: number;
+  eurToUsdRate?: number;
   apiUrl?: string;
 }
 
@@ -187,13 +188,18 @@ export class DepiPayProvider implements IPaymentProvider {
 
       const deadlineSecs = Number(request.metadata?.deadlineSecs || conf.deadlineSecs || 86400); // 24 heures par défaut
 
-      // Conversion de devise si nécessaire (ex: XOF -> USD)
+      // Conversion de devise si nécessaire (ex: XOF -> USD ou EUR -> USD)
       const originalCurrency = (request.currency || "USD").toUpperCase();
       let cryptoValue: string;
 
       if (["XOF", "XAF", "FCFA", "CFA"].includes(originalCurrency)) {
-        const xofRate = conf.xofToUsdRate || 655.957;
+        // Taux standard : 600 FCFA = 1 USD (ex: 5 000 FCFA = 8.33 USD comme sur Whop)
+        const xofRate = Number(conf.xofToUsdRate) || 600;
         const usdVal = Math.max(1, Math.round((Number(request.amount) / xofRate) * 100) / 100);
+        cryptoValue = usdVal.toFixed(2);
+      } else if (originalCurrency === "EUR") {
+        const eurRate = Number(conf.eurToUsdRate) || 1.08;
+        const usdVal = Math.round(Number(request.amount) * eurRate * 100) / 100;
         cryptoValue = usdVal.toFixed(2);
       } else {
         cryptoValue = Number(request.amount).toFixed(2);
