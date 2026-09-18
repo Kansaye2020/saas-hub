@@ -464,8 +464,8 @@ Dans l'onglet **Processeurs** de votre site :
   {
     "chainId": 1,
     "acceptedTokens": ["1:0xdac17f958d2ee523a2206206994597c13d831ec7"],
-    "deadlineSecs": 86400,
-    "xofToUsdRate": 655.957
+    "deadlineSecs": 900,
+    "xofToUsdRate": 600
   }
   ```
   *(Par défaut, USDT sur Ethereum `chainId: 1`, Polygon `chainId: 137` ou BSC `chainId: 56` sont supportés).*

@@ -143,7 +143,7 @@ export const ALL_PROVIDERS = [
     secretKeyPlaceholder: "Ex: 0x4f3c... (Clé privée pour signature de session EIP-191)",
     hasExtraConfig: true,
     extraConfigLabel: "Configuration additionnelle (JSON optionnel)",
-    extraConfigPlaceholder: '{"xofToUsdRate": 600, "network": "bsc"} (Taux FCFA/USD et réseau par défaut)',
+    extraConfigPlaceholder: '{"xofToUsdRate": 600, "network": "bsc", "deadlineSecs": 900} (Taux, réseau et validité 15 min en s)',
   },
 ];
 

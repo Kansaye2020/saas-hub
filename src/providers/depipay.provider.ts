@@ -186,7 +186,7 @@ export class DepiPayProvider implements IPaymentProvider {
         acceptedTokens = Object.values(netConfig.tokens).map((t) => t.acceptedToken);
       }
 
-      const deadlineSecs = Number(request.metadata?.deadlineSecs || conf.deadlineSecs || 86400); // 24 heures par défaut
+      const deadlineSecs = Number(request.metadata?.deadlineSecs || conf.deadlineSecs || 900); // 15 minutes par défaut (900 secondes)
 
       // Conversion de devise si nécessaire (ex: XOF -> USD ou EUR -> USD)
       const originalCurrency = (request.currency || "USD").toUpperCase();

@@ -273,7 +273,8 @@ checkoutRouter.post("/pay", async (req: Request, res: Response) => {
           chainId: result.rawProviderData.chainId,
           paymentUrl: result.checkoutUrl,
           network: cryptoNetwork,
-          cryptoToken: cryptoToken
+          cryptoToken: cryptoToken,
+          deadlineSecs: Number(result.rawProviderData.deadlineSecs || 900)
         } : undefined
       });
     } else {

@@ -434,6 +434,16 @@
                         <span id="crypto-direct-amount">0.00</span> <span id="crypto-direct-token" class="text-lg text-emerald-600 dark:text-emerald-400 font-bold">USDT</span>
                     </div>
                     <p class="text-[11px] opacity-75 mt-0.5">Envoyez exactement ce montant à l'adresse ci-dessous</p>
+
+                    <div class="mt-2.5 pt-2 border-t border-emerald-500/20 flex items-center justify-between text-xs">
+                        <span class="font-medium opacity-80 flex items-center gap-1.5">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>Expire dans :</span>
+                        </span>
+                        <span id="crypto-countdown-timer" class="font-mono font-black text-xs px-2.5 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-900 dark:text-emerald-100">15:00</span>
+                    </div>
                 </div>
 
                 <!-- QR Code centré -->
@@ -745,6 +755,52 @@
         // GESTION PAIEMENT CRYPTO DIRECT IN-PAGE (SANS AUCUNE REDIRECTION)
         // =========================================================================
         let cryptoPollingTimer = null;
+        let cryptoCountdownTimer = null;
+
+        function startCryptoCountdown(durationSecs = 900) {
+            stopCryptoCountdown();
+            let remaining = Number(durationSecs) || 900;
+            const timerEl = document.getElementById('crypto-countdown-timer');
+
+            const updateDisplay = () => {
+                if (!timerEl) return;
+                const m = Math.floor(remaining / 60);
+                const s = remaining % 60;
+                timerEl.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+
+                if (remaining <= 120) {
+                    timerEl.className = 'font-mono font-black text-xs px-2.5 py-0.5 rounded-lg bg-error/20 text-error animate-pulse';
+                } else if (remaining <= 300) {
+                    timerEl.className = 'font-mono font-black text-xs px-2.5 py-0.5 rounded-lg bg-warning/20 text-warning';
+                } else {
+                    timerEl.className = 'font-mono font-black text-xs px-2.5 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-900 dark:text-emerald-100';
+                }
+            };
+
+            updateDisplay();
+            cryptoCountdownTimer = setInterval(() => {
+                remaining--;
+                if (remaining <= 0) {
+                    stopCryptoCountdown();
+                    stopSessionStatusPolling();
+                    if (timerEl) {
+                        timerEl.textContent = 'Expirée (15m)';
+                        timerEl.className = 'font-mono font-black text-xs px-2.5 py-0.5 rounded-lg bg-error text-white';
+                    }
+                    showError('La facture crypto a expiré (validité de 15 minutes dépassée). Veuillez relancer le paiement.');
+                    cancelCryptoDirectPay();
+                    return;
+                }
+                updateDisplay();
+            }, 1000);
+        }
+
+        function stopCryptoCountdown() {
+            if (cryptoCountdownTimer) {
+                clearInterval(cryptoCountdownTimer);
+                cryptoCountdownTimer = null;
+            }
+        }
 
         function renderCryptoDirectPayment(details, checkoutUrl) {
             const formEl = document.getElementById('payment-form');
@@ -772,6 +828,9 @@
             if (qrImg && details.address) {
                 qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(details.address)}`;
             }
+
+            // Lancement du compte à rebours de 15 minutes
+            startCryptoCountdown(details.deadlineSecs || 900);
         }
 
         function copyCryptoAddress() {
@@ -797,6 +856,7 @@
         }
 
         function cancelCryptoDirectPay() {
+            stopCryptoCountdown();
             stopSessionStatusPolling();
             const formEl = document.getElementById('payment-form');
             const cryptoContainer = document.getElementById('crypto-direct-pay-container');
@@ -818,6 +878,7 @@
                     const statusData = await res.json();
 
                     if (statusData.status === 'succeeded') {
+                        stopCryptoCountdown();
                         stopSessionStatusPolling();
 
                         // Affichage écran de succès in-page
