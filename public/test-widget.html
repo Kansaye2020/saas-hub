@@ -141,8 +141,7 @@
                 },
                 onError: (err) => {
                     console.warn('[Checkout Dev] Erreur:', err);
-                    // Ne pas afficher d'erreur sur la page de dev, masquer la boîte de statut
-                    if (statusBox) statusBox.classList.add('hidden');
+                    showStatus(`⚠️ ${err.message || 'Échec du paiement'}`, false);
                 },
                 onClose: () => {
                     console.log('Modale ou popup fermée.');

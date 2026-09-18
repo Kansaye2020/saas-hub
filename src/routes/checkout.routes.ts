@@ -195,7 +195,8 @@ checkoutRouter.get("/:token", async (req: Request, res: Response) => {
       storeName,
       storeLogo,
       providers,
-      mode
+      mode,
+      isDev: process.env.NODE_ENV !== "production"
     });
   } catch (error) {
     console.error("Checkout render error:", error);
@@ -279,15 +280,30 @@ checkoutRouter.post("/pay", async (req: Request, res: Response) => {
       });
     } else {
       console.error(`[Checkout Pay] Échec initialisation avec le processeur ${provider}:`, result.error);
-      let clientError = "Ce moyen de paiement est momentanément indisponible. Veuillez essayer un autre mode de paiement ou réessayer.";
-      if (provider === "depipay") {
-        clientError = "Le paiement en crypto-monnaie est momentanément indisponible. Veuillez sélectionner un autre moyen de paiement (Mobile Money, Carte) ou réessayer plus tard.";
+      const isProd = process.env.NODE_ENV === "production";
+
+      let clientError = result.error || "Échec de l'initialisation du paiement auprès du processeur.";
+      if (isProd) {
+        // En PRODUCTION : masquer les erreurs techniques brutes pour les clients
+        clientError = "Ce moyen de paiement est momentanément indisponible. Veuillez essayer un autre mode de paiement ou réessayer.";
+        if (provider === "depipay") {
+          clientError = "Le paiement en crypto-monnaie est momentanément indisponible. Veuillez sélectionner un autre moyen de paiement (Mobile Money, Carte) ou réessayer plus tard.";
+        }
       }
-      return res.status(400).json({ error: clientError });
+
+      return res.status(400).json({ 
+        error: clientError,
+        technicalError: isProd ? undefined : result.error 
+      });
     }
   } catch (error: any) {
     console.error("Checkout pay error:", error);
-    res.status(500).json({ error: "Une erreur temporaire est survenue lors de l'initialisation du paiement." });
+    const isProd = process.env.NODE_ENV === "production";
+    res.status(500).json({ 
+      error: isProd 
+        ? "Une erreur temporaire est survenue lors de l'initialisation du paiement." 
+        : (error.message || "Erreur interne lors du paiement") 
+    });
   }
 });
 
