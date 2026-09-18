@@ -385,8 +385,8 @@ class HubWidgetClass {
 
             if (!data.success && data.error) {
                 const errorMsg = data.error || "Impossible d'initialiser la session de paiement.";
+                console.warn('[HubWidget] Erreur session:', errorMsg);
                 if (typeof onError === 'function') onError(new Error(errorMsg));
-                else alert(errorMsg);
                 return;
             }
 
@@ -399,8 +399,8 @@ class HubWidgetClass {
 
             if (!targetUrl) {
                 const errorMsg = data.error || "Impossible d'initialiser la session de paiement.";
+                console.warn('[HubWidget] URL introuvable:', errorMsg);
                 if (typeof onError === 'function') onError(new Error(errorMsg));
-                else alert(errorMsg);
                 return;
             }
 
@@ -413,9 +413,8 @@ class HubWidgetClass {
                 this.openModal(targetUrl, { onSuccess, onClose });
             }
         } catch (err) {
-            console.error('[HubWidget] Erreur checkout:', err);
+            console.warn('[HubWidget] Erreur checkout:', err);
             if (typeof onError === 'function') onError(err);
-            else alert("Erreur de connexion au serveur de paiement.");
         }
     }
 

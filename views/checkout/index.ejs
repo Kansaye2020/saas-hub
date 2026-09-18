@@ -967,9 +967,22 @@
             }, 400);
         }
 
+        function sanitizeErrorMessage(msg) {
+            if (!msg || typeof msg !== 'string') {
+                return 'Une erreur temporaire est survenue. Veuillez réessayer.';
+            }
+            // Filtre toute erreur technique brute (HTTP, JSON, codes, adresses 0x, etc.)
+            const isTechnical = /HTTP|\b(429|500|502|503|400|404)\b|owner\s+0x|unpaid\s+invoices|stack|exception|Unexpected|non-JSON|DepiPay/i.test(msg);
+            if (isTechnical) {
+                return 'Ce moyen de paiement est momentanément indisponible. Veuillez sélectionner un autre mode de paiement (Mobile Money, Carte...) ou réessayer dans quelques instants.';
+            }
+            return msg;
+        }
+
         function showError(msg) {
+            console.error('[Checkout Error]:', msg);
             hideOverlayLoader();
-            errorText.textContent = msg;
+            errorText.textContent = sanitizeErrorMessage(msg);
             errorAlert.classList.remove('hidden');
             submitBtn.disabled = false;
             submitBtn.innerHTML = '<span>Réessayer</span>';
