@@ -260,7 +260,22 @@ checkoutRouter.post("/pay", async (req: Request, res: Response) => {
     if (result.success && result.checkoutUrl) {
       // Update session status and provider
       await dbRun("UPDATE checkout_sessions SET provider = ?, status = 'processing' WHERE token = ?", [provider, token]);
-      return res.json({ checkoutUrl: result.checkoutUrl });
+      return res.json({
+        success: true,
+        checkoutUrl: result.checkoutUrl,
+        provider: provider,
+        paymentId: result.paymentId,
+        cryptoDetails: (provider === "depipay" && result.rawProviderData) ? {
+          address: result.rawProviderData.address,
+          value: result.rawProviderData.value,
+          guid: result.rawProviderData.guid,
+          token: result.rawProviderData.token,
+          chainId: result.rawProviderData.chainId,
+          paymentUrl: result.checkoutUrl,
+          network: cryptoNetwork,
+          cryptoToken: cryptoToken
+        } : undefined
+      });
     } else {
       console.error(`[Checkout Pay] Échec initialisation avec le processeur ${provider}:`, result.error);
       return res.status(400).json({ error: result.error || "Échec de l'initialisation du paiement auprès du processeur" });
@@ -268,5 +283,25 @@ checkoutRouter.post("/pay", async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error("Checkout pay error:", error);
     res.status(500).json({ error: error.message || "Erreur interne lors du paiement" });
+  }
+});
+
+// Vérification en direct de l'état d'une session de paiement (pour le suivi in-page sans redirection)
+checkoutRouter.get("/status/:token", async (req: Request, res: Response) => {
+  try {
+    const token = req.params.token;
+    const session = await dbGet("SELECT status, orderId, provider, amount, currency FROM checkout_sessions WHERE token = ?", [token]);
+    if (!session) {
+      return res.status(404).json({ error: "Session introuvable" });
+    }
+    res.json({
+      status: session.status,
+      orderId: session.orderId || session.orderid,
+      provider: session.provider,
+      amount: session.amount,
+      currency: session.currency
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
   }
 });

@@ -384,6 +384,80 @@
                 </div>
             </form>
 
+            <!-- Écran de paiement Crypto direct SANS REDIRECTION -->
+            <div id="crypto-direct-pay-container" class="hidden space-y-4 text-center pt-1">
+                <!-- En-tête statut -->
+                <div class="bg-emerald-500/10 border-2 border-emerald-500/30 rounded-2xl p-3.5 text-emerald-800 dark:text-emerald-200">
+                    <div class="flex items-center justify-between text-xs mb-1 font-bold">
+                        <span class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                            <span>Facture Crypto Prête</span>
+                        </span>
+                        <span id="crypto-direct-network-badge" class="badge badge-sm badge-success text-white font-mono text-[10px] uppercase">BSC</span>
+                    </div>
+                    <div class="text-2xl sm:text-3xl font-black tracking-tight text-base-content mt-1">
+                        <span id="crypto-direct-amount">0.00</span> <span id="crypto-direct-token" class="text-lg text-emerald-600 dark:text-emerald-400 font-bold">USDT</span>
+                    </div>
+                    <p class="text-[11px] opacity-75 mt-0.5">Envoyez exactement ce montant à l'adresse ci-dessous</p>
+                </div>
+
+                <!-- QR Code centré -->
+                <div class="flex flex-col items-center justify-center p-3 bg-white rounded-2xl border-2 border-base-300 shadow-sm max-w-[210px] mx-auto">
+                    <img id="crypto-direct-qr" src="" alt="QR Code Paiement" class="w-40 h-40 object-contain rounded-xl" />
+                    <span class="text-[10px] font-bold text-slate-500 mt-1">Scannez avec votre wallet</span>
+                </div>
+
+                <!-- Adresse de dépôt & Bouton Copier -->
+                <div class="space-y-1.5 text-left">
+                    <label class="text-[11px] font-bold uppercase tracking-wider text-base-content/60 flex items-center justify-between px-0.5">
+                        <span>Adresse de dépôt</span>
+                        <span id="copy-feedback" class="text-success text-[10px] font-bold hidden">✓ Adresse copiée !</span>
+                    </label>
+                    <div class="flex items-center gap-1.5 bg-base-200/80 p-2 rounded-xl border border-base-300">
+                        <input type="text" id="crypto-direct-address" readonly class="input input-xs bg-transparent border-none font-mono text-xs text-base-content flex-1 truncate select-all focus:outline-none" />
+                        <button type="button" id="copy-address-btn" onclick="copyCryptoAddress()" class="btn btn-primary btn-xs rounded-lg font-bold shrink-0">
+                            Copier
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Détection Blockchain en direct -->
+                <div class="bg-base-200/60 rounded-xl p-3 border border-base-300 flex items-center gap-3 text-left">
+                    <div class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-600 flex items-center justify-center shrink-0">
+                        <span class="loading loading-spinner loading-xs text-emerald-600"></span>
+                    </div>
+                    <div class="text-xs">
+                        <div class="font-bold text-base-content flex items-center gap-1.5">
+                            <span>Détection automatique en direct</span>
+                            <span class="flex h-1.5 w-1.5 relative"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span></span>
+                        </div>
+                        <div class="text-[11px] text-base-content/60">Validation instantanée dès confirmation sur la blockchain.</div>
+                    </div>
+                </div>
+
+                <!-- Boutons d'action et retour -->
+                <div class="flex flex-col gap-1.5 pt-1">
+                    <a id="crypto-direct-external-link" href="#" target="_blank" class="btn btn-ghost btn-xs text-base-content/60 hover:text-primary font-medium text-[11px]">
+                        Ouvrir sur le portail DepiPay.com ↗
+                    </a>
+                    <button type="button" onclick="cancelCryptoDirectPay()" class="btn btn-ghost btn-xs text-error font-medium text-[11px]">
+                        Annuler / Choisir un autre moyen
+                    </button>
+                </div>
+            </div>
+
+            <!-- Écran de Succès in-page SANS REDIRECTION -->
+            <div id="direct-pay-success-container" class="hidden space-y-4 text-center py-6">
+                <div class="w-16 h-16 rounded-full bg-success/20 text-success mx-auto flex items-center justify-center text-3xl font-black animate-bounce">
+                    ✓
+                </div>
+                <h2 class="text-2xl font-black text-base-content tracking-tight">Paiement Validé !</h2>
+                <p class="text-xs text-base-content/60 max-w-xs mx-auto">Votre transfert a été confirmé avec succès sur la blockchain. Votre compte est immédiatement crédité.</p>
+                <div class="badge badge-success text-white font-bold text-xs py-2.5 px-3.5">
+                    Transaction confirmée
+                </div>
+            </div>
+
         </div>
         
         <!-- Footer security badge -->
@@ -544,6 +618,137 @@
             }
         }
 
+        // =========================================================================
+        // GESTION PAIEMENT CRYPTO DIRECT IN-PAGE (SANS AUCUNE REDIRECTION)
+        // =========================================================================
+        let cryptoPollingTimer = null;
+
+        function renderCryptoDirectPayment(details, checkoutUrl) {
+            const formEl = document.getElementById('payment-form');
+            const cryptoContainer = document.getElementById('crypto-direct-pay-container');
+            if (formEl) formEl.classList.add('hidden');
+            if (cryptoContainer) cryptoContainer.classList.remove('hidden');
+
+            const netBadge = document.getElementById('crypto-direct-network-badge');
+            const amountEl = document.getElementById('crypto-direct-amount');
+            const tokenEl = document.getElementById('crypto-direct-token');
+            const addressInput = document.getElementById('crypto-direct-address');
+            const qrImg = document.getElementById('crypto-direct-qr');
+            const extLink = document.getElementById('crypto-direct-external-link');
+
+            const tokenSymbol = details.cryptoToken || selectedCryptoToken || 'USDT';
+            const netKey = details.network || selectedCryptoNetwork || 'bsc';
+            const netName = CRYPTO_CONFIG[netKey]?.name || netKey.toUpperCase();
+
+            if (netBadge) netBadge.textContent = netName;
+            if (amountEl) amountEl.textContent = details.value;
+            if (tokenEl) tokenEl.textContent = tokenSymbol;
+            if (addressInput) addressInput.value = details.address;
+            if (extLink && checkoutUrl) extLink.href = checkoutUrl;
+
+            if (qrImg && details.address) {
+                qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(details.address)}`;
+            }
+        }
+
+        function copyCryptoAddress() {
+            const addressInput = document.getElementById('crypto-direct-address');
+            const copyFeedback = document.getElementById('copy-feedback');
+            const copyBtn = document.getElementById('copy-address-btn');
+
+            if (addressInput && addressInput.value) {
+                navigator.clipboard.writeText(addressInput.value).then(() => {
+                    if (copyFeedback) copyFeedback.classList.remove('hidden');
+                    if (copyBtn) copyBtn.textContent = 'Copié !';
+                    setTimeout(() => {
+                        if (copyFeedback) copyFeedback.classList.add('hidden');
+                        if (copyBtn) copyBtn.textContent = 'Copier';
+                    }, 2500);
+                }).catch(() => {
+                    addressInput.select();
+                    document.execCommand('copy');
+                    if (copyBtn) copyBtn.textContent = 'Copié !';
+                    setTimeout(() => { if (copyBtn) copyBtn.textContent = 'Copier'; }, 2000);
+                });
+            }
+        }
+
+        function cancelCryptoDirectPay() {
+            stopSessionStatusPolling();
+            const formEl = document.getElementById('payment-form');
+            const cryptoContainer = document.getElementById('crypto-direct-pay-container');
+            if (cryptoContainer) cryptoContainer.classList.add('hidden');
+            if (formEl) formEl.classList.remove('hidden');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `<span>Payer en ${selectedCryptoToken} (${selectedCryptoNetwork.toUpperCase()})</span>`;
+            }
+        }
+
+        function startSessionStatusPolling() {
+            stopSessionStatusPolling();
+            const sessionToken = "<%= session.token %>";
+            const orderId = "<%= session.orderId %>";
+            const returnUrl = "<%= session.returnUrl %>";
+
+            cryptoPollingTimer = setInterval(async () => {
+                try {
+                    const res = await fetch(`/checkout/status/${sessionToken}`);
+                    if (!res.ok) return;
+                    const statusData = await res.json();
+
+                    if (statusData.status === 'succeeded') {
+                        stopSessionStatusPolling();
+
+                        // Affichage écran de succès in-page
+                        const cryptoContainer = document.getElementById('crypto-direct-pay-container');
+                        const successContainer = document.getElementById('direct-pay-success-container');
+                        if (cryptoContainer) cryptoContainer.classList.add('hidden');
+                        if (successContainer) successContainer.classList.remove('hidden');
+
+                        const payload = {
+                            type: 'HUB_PAYMENT_SUCCESS',
+                            status: 'success',
+                            orderId: orderId,
+                            token: sessionToken
+                        };
+
+                        // Notifier le site parent (Iframe Modale in-app)
+                        if (window.parent && window.parent !== window) {
+                            try {
+                                window.parent.postMessage(payload, '*');
+                                window.parent.postMessage('payment_success', '*');
+                                window.parent.postMessage('whop:payment:success', '*');
+                            } catch (e) {}
+                        }
+
+                        // Notifier la fenêtre parente (Popup)
+                        if (window.opener && window.opener !== window) {
+                            try {
+                                window.opener.postMessage(payload, '*');
+                                window.opener.postMessage('payment_success', '*');
+                            } catch (e) {}
+                            setTimeout(() => window.close(), 1800);
+                        } else if (window.self === window.top && returnUrl && returnUrl.startsWith('http')) {
+                            // Si mode pleine page classique autonome, redirection vers returnUrl après 2s
+                            setTimeout(() => {
+                                window.location.href = returnUrl;
+                            }, 2000);
+                        }
+                    }
+                } catch (e) {
+                    console.warn('[Polling Status] Erreur:', e);
+                }
+            }, 2500);
+        }
+
+        function stopSessionStatusPolling() {
+            if (cryptoPollingTimer) {
+                clearInterval(cryptoPollingTimer);
+                cryptoPollingTimer = null;
+            }
+        }
+
         // Animation d'entrée douce au chargement de la page & initialisation
         window.addEventListener('DOMContentLoaded', () => {
             const checkedProvider = document.querySelector('input[name="provider"]:checked');
@@ -635,6 +840,14 @@
                 });
 
                 const data = await response.json();
+
+                if (data.cryptoDetails && data.cryptoDetails.address) {
+                    // Mode Crypto SANS AUCUNE REDIRECTION : affichage direct in-page / dans la modale
+                    hideOverlayLoader();
+                    renderCryptoDirectPayment(data.cryptoDetails, data.checkoutUrl);
+                    startSessionStatusPolling();
+                    return;
+                }
 
                 if (data.checkoutUrl) {
                     showOverlayLoader("Connexion en cours...", "Ouverture de votre espace de paiement");
