@@ -245,6 +245,12 @@ export class DepiPayProvider implements IPaymentProvider {
         resData = JSON.parse(rawText);
       } catch {
         console.error("[DepiPay] Réponse non-JSON:", rawText);
+        if (response.status === 429 || rawText.includes("unpaid invoices")) {
+          return {
+            success: false,
+            error: "Limite DepiPay atteinte : ce wallet possède 10 factures de test impayées en attente (plafond de sécurité DepiPay). Réglez l'une d'elles, attendez l'expiration des factures précédentes (désormais fixée à 15 min), ou utilisez une nouvelle clé privée de session dans l'espace Admin pour continuer immédiatement."
+          };
+        }
         return {
           success: false,
           error: `Réponse inattendue de DepiPay (Code HTTP ${response.status}): ${rawText.substring(0, 200)}`
