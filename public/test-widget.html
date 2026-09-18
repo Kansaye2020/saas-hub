@@ -58,25 +58,50 @@
                 </div>
             </div>
             
-            <!-- Bouton d'action -->
-            <button id="pay-btn" class="btn btn-primary btn-lg btn-block rounded-2xl shadow-xl shadow-blue-600/30 font-black text-base tracking-wide h-14 min-h-[56px]">
-                <span>Payer 5 000 FCFA en Pop-up</span>
-            </button>
+            <!-- Boutons d'action : Les 2 manières de faire le paiement -->
+            <div class="flex flex-col gap-3">
+                <!-- 1. POP-UP IN-APP SANS REDIRECTION -->
+                <button id="pay-popup-btn" class="btn btn-primary btn-md sm:btn-lg btn-block rounded-2xl shadow-xl shadow-blue-600/25 font-black text-sm sm:text-base tracking-wide flex items-center justify-between px-5">
+                    <span class="flex items-center gap-2">
+                        <span>⚡</span>
+                        <span>Pop-up In-App (Sans redirection)</span>
+                    </span>
+                    <span class="badge badge-sm badge-success font-bold text-white text-[10px] uppercase">Recommandé</span>
+                </button>
 
-            <!-- Message d'état -->
+                <!-- 2. POP-UP FENÊTRE EXTERNE -->
+                <button id="pay-window-btn" class="btn btn-outline btn-md btn-block rounded-2xl font-bold text-xs sm:text-sm text-slate-200 hover:bg-slate-700/60 border-slate-600 flex items-center justify-between px-5">
+                    <span class="flex items-center gap-2">
+                        <span>🪟</span>
+                        <span>Fenêtre Pop-up Flottante</span>
+                    </span>
+                    <span class="text-[11px] text-slate-400">Sans recharger</span>
+                </button>
+
+                <!-- 3. REDIRECTION COMPLÈTE -->
+                <button id="pay-redirect-btn" class="btn btn-ghost btn-sm btn-block rounded-xl font-semibold text-xs text-slate-400 hover:text-white flex items-center justify-center gap-2">
+                    <span>➡️ Redirection pleine page classique</span>
+                </button>
+            </div>
+
+            <!-- Message d'état dynamique -->
             <div id="status-box" class="hidden mt-4 p-3.5 rounded-xl text-xs font-semibold text-center transition-all"></div>
 
-            <div class="divider text-slate-600 my-6 text-xs uppercase font-bold tracking-wider">Ou tester avec un Token existant</div>
+            <div class="divider text-slate-600 my-5 text-xs uppercase font-bold tracking-wider">Ou tester avec un Token existant</div>
             
-            <div class="bg-slate-900/60 p-3.5 rounded-2xl border border-slate-700/60 flex gap-2">
-                <input type="text" id="token-input" placeholder="Coller un token checkout..." class="input input-bordered input-sm bg-slate-800 border-slate-700 text-white flex-1 text-xs rounded-xl font-mono">
-                <button id="manual-pay-btn" class="btn btn-outline btn-sm rounded-xl font-bold">Ouvrir</button>
+            <div class="bg-slate-900/60 p-3.5 rounded-2xl border border-slate-700/60 space-y-2">
+                <input type="text" id="token-input" placeholder="Coller un token checkout..." class="input input-bordered input-sm bg-slate-800 border-slate-700 text-white w-full text-xs rounded-xl font-mono">
+                <div class="grid grid-cols-3 gap-2">
+                    <button id="manual-popup-btn" class="btn btn-primary btn-xs rounded-lg font-bold">Pop-up In-App</button>
+                    <button id="manual-window-btn" class="btn btn-secondary btn-xs rounded-lg font-bold">Fenêtre</button>
+                    <button id="manual-redirect-btn" class="btn btn-outline btn-xs rounded-lg font-bold">Redirection</button>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // 1. Initialisation du SDK avec l'URL de votre Hub
+        // Initialisation du SDK avec l'URL de votre Hub
         HubWidget.init({ hubUrl: window.location.origin });
 
         let currentBalance = 10000;
@@ -91,64 +116,77 @@
             statusBox.classList.remove('hidden');
         }
 
-        // 2. Flux 1 Clic : Appel direct à route.ts -> Pop-up Whop Embed -> Crédit Instantané
-        document.getElementById('pay-btn').addEventListener('click', async () => {
-            const btn = document.getElementById('pay-btn');
-            btn.innerHTML = '<span class="loading loading-spinner loading-sm"></span> Initialisation sécurisée...';
-            btn.disabled = true;
+        async function triggerCheckout(modeName) {
+            showStatus(`Initialisation sécurisée en mode <strong>${modeName}</strong>...`);
 
-            try {
-                // Utilisation de la méthode tout-en-un checkout()
-                await HubWidget.checkout({
-                    route: `${window.location.origin}/checkout/session`, // Simule votre app/api/checkout/route.ts
-                    payload: {
-                        amount: 5000,
-                        currency: 'FCFA',
-                        orderId: 'DEMO_' + Date.now(),
-                        description: 'Recharge 5 000 FCFA Mon SaaS Pro',
-                        customerEmail: 'utilisateur.connecte@exemple.com',
-                        customerName: 'Jean Dupont',
-                        returnUrl: `${window.location.origin}/checkout/complete`
-                    },
-                    onSuccess: (eventData) => {
-                        console.log('🎉 PAIEMENT REÇU & VALIDÉ !', eventData);
-                        
-                        // ⚡ Crédit instantané du solde sans recharger la page
-                        currentBalance += 5000;
-                        balanceEl.innerText = `${currentBalance.toLocaleString()} FCFA`;
-                        balanceEl.classList.add('text-emerald-300', 'scale-110');
-                        setTimeout(() => balanceEl.classList.remove('scale-110'), 600);
+            await HubWidget.checkout({
+                mode: modeName, // 'popup', 'window' ou 'redirect'
+                route: `${window.location.origin}/checkout/session`,
+                payload: {
+                    amount: 5000,
+                    currency: 'FCFA',
+                    orderId: 'DEMO_' + Date.now(),
+                    description: 'Recharge 5 000 FCFA Mon SaaS Pro',
+                    customerEmail: 'utilisateur.connecte@exemple.com',
+                    customerName: 'Jean Dupont',
+                    returnUrl: `${window.location.origin}/checkout/complete`
+                },
+                onSuccess: (eventData) => {
+                    console.log('🎉 PAIEMENT REÇU & VALIDÉ !', eventData);
+                    currentBalance += 5000;
+                    balanceEl.innerText = `${currentBalance.toLocaleString()} FCFA`;
+                    balanceEl.classList.add('text-emerald-300', 'scale-110');
+                    setTimeout(() => balanceEl.classList.remove('scale-110'), 600);
+                    showStatus(`✅ <strong>Paiement validé avec succès !</strong> Votre compte a été crédité de 5 000 FCFA sans quitter la page.`);
+                },
+                onError: (err) => {
+                    console.error('Erreur checkout:', err);
+                    showStatus(`❌ Erreur: ${err.message || 'Échec du paiement'}`, false);
+                },
+                onClose: () => {
+                    console.log('Modale ou popup fermée.');
+                }
+            });
+        }
 
-                        showStatus(`✅ <strong>Paiement validé avec succès !</strong> Votre compte a été crédité de 5 000 FCFA.`);
-                    },
-                    onError: (err) => {
-                        console.error('Erreur checkout:', err);
-                        showStatus(`❌ Erreur: ${err.message || 'Échec du paiement'}`, false);
-                    },
-                    onClose: () => {
-                        btn.innerHTML = '<span>Payer 5 000 FCFA en Pop-up</span>';
-                        btn.disabled = false;
-                    }
-                });
-            } catch (err) {
-                btn.innerHTML = '<span>Payer 5 000 FCFA en Pop-up</span>';
-                btn.disabled = false;
-                showStatus(`❌ Erreur: ${err.message}`, false);
-            }
-        });
+        // 1. Bouton Pop-up In-App sans redirection
+        document.getElementById('pay-popup-btn').addEventListener('click', () => triggerCheckout('popup'));
 
-        // Mode manuel avec token
-        document.getElementById('manual-pay-btn').addEventListener('click', () => {
+        // 2. Bouton Fenêtre Pop-up externe sans recharger
+        document.getElementById('pay-window-btn').addEventListener('click', () => triggerCheckout('window'));
+
+        // 3. Bouton Redirection classique
+        document.getElementById('pay-redirect-btn').addEventListener('click', () => triggerCheckout('redirect'));
+
+        // Mode manuel avec token existant
+        document.getElementById('manual-popup-btn').addEventListener('click', () => {
             const token = document.getElementById('token-input').value.trim();
             if (!token) return alert('Veuillez coller un token');
-
-            HubWidget.open(token, {
+            HubWidget.openModal(token, {
                 onSuccess: (data) => {
                     currentBalance += 5000;
                     balanceEl.innerText = `${currentBalance.toLocaleString()} FCFA`;
-                    showStatus(`✅ <strong>Paiement validé !</strong> Solde crédité.`, true);
+                    showStatus(`✅ <strong>Paiement validé en pop-up !</strong> Solde crédité.`, true);
                 }
             });
+        });
+
+        document.getElementById('manual-window-btn').addEventListener('click', () => {
+            const token = document.getElementById('token-input').value.trim();
+            if (!token) return alert('Veuillez coller un token');
+            HubWidget.openWindow(token, {
+                onSuccess: (data) => {
+                    currentBalance += 5000;
+                    balanceEl.innerText = `${currentBalance.toLocaleString()} FCFA`;
+                    showStatus(`✅ <strong>Paiement validé en fenêtre pop-up !</strong> Solde crédité.`, true);
+                }
+            });
+        });
+
+        document.getElementById('manual-redirect-btn').addEventListener('click', () => {
+            const token = document.getElementById('token-input').value.trim();
+            if (!token) return alert('Veuillez coller un token');
+            HubWidget.openRedirect(token);
         });
     </script>
 </body>

@@ -360,15 +360,16 @@ class HubWidgetClass {
     }
 
     /**
-     * Flux tout-en-un : Appel à route.ts -> Ouverture Pop-up -> Crédit instantané & Auto-close
+     * Flux tout-en-un : Appel à route.ts -> Ouverture (Pop-up ou Redirection) -> Crédit instantané & Auto-close
      * @param {Object} options
-     * @param {string} options.route - URL de votre endpoint Next.js/Node (ex: '/api/checkout')
-     * @param {Object} options.payload - Données de la commande { amount, orderId, customerEmail, ... }
-     * @param {Function} options.onSuccess - Callback appelé immédiatement à la validation du paiement
-     * @param {Function} options.onError - Callback en cas d'erreur de création de session
-     * @param {Function} options.onClose - Callback quand la modale est fermée
+     * @param {'popup'|'modal'|'redirect'|'window'} [options.mode='popup'] - 'popup' (modale in-app sans redirection), 'window' (fenêtre popup externe) ou 'redirect' (pleine page)
+     * @param {string} [options.route='/api/checkout'] - URL de votre endpoint Next.js/Node (ex: '/api/checkout')
+     * @param {Object} [options.payload={}] - Données de la commande { amount, orderId, customerEmail, ... }
+     * @param {Function} [options.onSuccess] - Callback appelé immédiatement à la validation du paiement
+     * @param {Function} [options.onError] - Callback en cas d'erreur de création de session
+     * @param {Function} [options.onClose] - Callback quand la modale est fermée
      */
-    async checkout({ route = '/api/checkout', payload = {}, onSuccess, onError, onClose } = {}) {
+    async checkout({ mode = 'popup', route = '/api/checkout', payload = {}, onSuccess, onError, onClose } = {}) {
         this._injectStyles();
         this.onSuccessCallback = onSuccess;
         this.onCloseCallback = onClose;
@@ -382,7 +383,19 @@ class HubWidgetClass {
 
             const data = await response.json();
 
-            const targetUrl = data.checkoutUrl || (data.token ? `${this.hubUrl}/checkout/${data.token}?mode=widget` : null);
+            if (!data.success && data.error) {
+                const errorMsg = data.error || "Impossible d'initialiser la session de paiement.";
+                if (typeof onError === 'function') onError(new Error(errorMsg));
+                else alert(errorMsg);
+                return;
+            }
+
+            const token = data.token;
+            let targetUrl = data.checkoutUrl;
+
+            if (!targetUrl && token) {
+                targetUrl = `${this.hubUrl}/checkout/${token}`;
+            }
 
             if (!targetUrl) {
                 const errorMsg = data.error || "Impossible d'initialiser la session de paiement.";
@@ -391,7 +404,14 @@ class HubWidgetClass {
                 return;
             }
 
-            this.open(targetUrl, { onSuccess, onClose });
+            if (mode === 'redirect') {
+                this.openRedirect(targetUrl);
+            } else if (mode === 'window') {
+                this.openWindow(targetUrl, { onSuccess, onClose });
+            } else {
+                // Par défaut : mode 'popup' / 'modal' (Sans redirection, reste sur votre site)
+                this.openModal(targetUrl, { onSuccess, onClose });
+            }
         } catch (err) {
             console.error('[HubWidget] Erreur checkout:', err);
             if (typeof onError === 'function') onError(err);
@@ -400,11 +420,11 @@ class HubWidgetClass {
     }
 
     /**
-     * Ouvre le paiement dans une modale iframe sur votre page
-     * @param {string} sessionTokenOrUrl - Token de session ou URL directe (Whop, iKeePay, Hub)
-     * @param {Function|Object} optionsOrCallback - Callback onSuccess ou objet { onSuccess, onClose }
+     * MODE 1 : Ouvre le paiement dans une modale / Pop-up in-app sans redirection de page
+     * @param {string} sessionTokenOrUrl - Token de session ou URL directe
+     * @param {Function|Object} optionsOrCallback - Callback onSuccess ou { onSuccess, onClose }
      */
-    open(sessionTokenOrUrl, optionsOrCallback) {
+    openModal(sessionTokenOrUrl, optionsOrCallback) {
         if (!sessionTokenOrUrl) {
             console.error('HubWidget: sessionToken ou checkoutUrl est requis');
             return;
@@ -422,6 +442,8 @@ class HubWidgetClass {
         let url = sessionTokenOrUrl;
         if (!url.startsWith('http')) {
             url = `${this.hubUrl}/checkout/${sessionTokenOrUrl}?mode=widget`;
+        } else if (!url.includes('mode=')) {
+            url += (url.includes('?') ? '&' : '?') + 'mode=widget';
         }
 
         // Afficher le loader pendant le chargement de l'iframe
@@ -451,6 +473,91 @@ class HubWidgetClass {
             this.overlay.classList.add('show');
             this.container.classList.add('show');
         });
+    }
+
+    /**
+     * Alias de openModal pour ouvrir en pop-up in-app sans redirection
+     */
+    open(sessionTokenOrUrl, optionsOrCallback) {
+        this.openModal(sessionTokenOrUrl, optionsOrCallback);
+    }
+
+    openPopup(sessionTokenOrUrl, optionsOrCallback) {
+        this.openModal(sessionTokenOrUrl, optionsOrCallback);
+    }
+
+    /**
+     * MODE 1 BIS : Ouvre le paiement dans une fenêtre Pop-up flottante indépendante (Sans recharger votre site)
+     * @param {string} sessionTokenOrUrl - Token de session ou URL directe
+     * @param {Function|Object} optionsOrCallback - Callback onSuccess ou { onSuccess, onClose }
+     */
+    openWindow(sessionTokenOrUrl, optionsOrCallback) {
+        if (!sessionTokenOrUrl) {
+            console.error('HubWidget: sessionToken ou checkoutUrl est requis');
+            return;
+        }
+
+        if (typeof optionsOrCallback === 'function') {
+            this.onSuccessCallback = optionsOrCallback;
+        } else if (typeof optionsOrCallback === 'object' && optionsOrCallback !== null) {
+            this.onSuccessCallback = optionsOrCallback.onSuccess || null;
+            this.onCloseCallback = optionsOrCallback.onClose || null;
+        }
+
+        let url = sessionTokenOrUrl;
+        if (!url.startsWith('http')) {
+            url = `${this.hubUrl}/checkout/${sessionTokenOrUrl}?mode=popup`;
+        } else if (!url.includes('mode=')) {
+            url += (url.includes('?') ? '&' : '?') + 'mode=popup';
+        }
+
+        const width = 480;
+        const height = 740;
+        const left = Math.max(0, (window.screen.width - width) / 2);
+        const top = Math.max(0, (window.screen.height - height) / 2);
+
+        const popup = window.open(
+            url,
+            'SaaSHubPaymentPopup',
+            `width=${width},height=${height},top=${top},left=${left},scrollbars=yes,resizable=yes,status=no,toolbar=no,menubar=no`
+        );
+
+        if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+            console.warn('[HubWidget] Pop-up bloquée par le navigateur, bascule automatique sur la modale in-app.');
+            this.openModal(url, optionsOrCallback);
+            return;
+        }
+
+        popup.focus();
+
+        const timer = setInterval(() => {
+            if (popup.closed) {
+                clearInterval(timer);
+                if (typeof this.onCloseCallback === 'function') {
+                    this.onCloseCallback();
+                }
+            }
+        }, 500);
+    }
+
+    /**
+     * MODE 2 : Redirige la page entière de l'utilisateur vers le tunnel de paiement (Redirection classique)
+     * @param {string} sessionTokenOrUrl - Token de session ou URL directe de paiement
+     */
+    openRedirect(sessionTokenOrUrl) {
+        if (!sessionTokenOrUrl) {
+            console.error('HubWidget: sessionToken ou checkoutUrl est requis');
+            return;
+        }
+        let url = sessionTokenOrUrl;
+        if (!url.startsWith('http')) {
+            url = `${this.hubUrl}/checkout/${sessionTokenOrUrl}`;
+        }
+        window.location.href = url;
+    }
+
+    redirectToCheckout(sessionTokenOrUrl) {
+        this.openRedirect(sessionTokenOrUrl);
     }
 
     /**

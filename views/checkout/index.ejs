@@ -637,10 +637,16 @@
                 const data = await response.json();
 
                 if (data.checkoutUrl) {
-                    showOverlayLoader("Redirection en cours...", "Ouverture de votre espace de paiement");
-                    if (window.self !== window.top) {
+                    showOverlayLoader("Connexion en cours...", "Ouverture de votre espace de paiement");
+                    const isWidgetOrPopup = "<%= mode %>" === "widget" || "<%= mode %>" === "popup";
+
+                    if (isWidgetOrPopup) {
+                        // Mode POP-UP SANS REDIRECTION : on reste dans la frame/popup sans rediriger le site parent
+                        window.location.href = data.checkoutUrl;
+                    } else if (window.self !== window.top) {
                         window.top.location.href = data.checkoutUrl;
                     } else {
+                        // Mode REDIRECTION CLASSIQUE : navigation pleine page normale
                         window.location.href = data.checkoutUrl;
                     }
                 } else {
@@ -663,6 +669,8 @@
                     orderId: "<%= session.orderId %>"
                 };
 
+                const isWidgetOrPopup = "<%= mode %>" === "widget" || "<%= mode %>" === "popup";
+
                 // 1. Détection Iframe (Modale Pop-up intégrée sur le site)
                 if (window.parent && window.parent !== window) {
                     try {
@@ -672,8 +680,8 @@
                         window.parent.postMessage('payment_cancel', '*');
                     } catch (err) {}
 
-                    // Si une URL d'annulation externe est configurée, rediriger le parent (top)
-                    if (cancelUrl && cancelUrl.startsWith('http') && !cancelUrl.includes('mode=widget')) {
+                    // En mode widget/popup, on ne redirige pas le parent : la modale se ferme sur place
+                    if (!isWidgetOrPopup && cancelUrl && cancelUrl.startsWith('http') && !cancelUrl.includes('mode=widget')) {
                         setTimeout(() => {
                             try {
                                 window.top.location.href = cancelUrl;
