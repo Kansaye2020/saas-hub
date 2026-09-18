@@ -3,6 +3,81 @@ import { IPaymentProvider } from "./base";
 import { CreatePaymentRequest, UnifiedPaymentResponse, UnifiedWebhookPayload } from "../types";
 import { getAppProviderConfig } from "../config";
 
+export const DEPIPAY_NETWORKS: Record<string, {
+  name: string;
+  chainId: number;
+  tokens: Record<string, { name: string; symbol: string; acceptedToken: string }>;
+}> = {
+  bsc: {
+    name: "BNB Smart Chain (BSC)",
+    chainId: 56,
+    tokens: {
+      USDT: {
+        name: "Tether USD (BEP-20)",
+        symbol: "USDT",
+        acceptedToken: "56:0x55d398326f99059ff775485246999027b3197955",
+      },
+      USDC: {
+        name: "USD Coin (BEP-20)",
+        symbol: "USDC",
+        acceptedToken: "56:0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d",
+      },
+      BNB: {
+        name: "BNB (BEP-20)",
+        symbol: "BNB",
+        acceptedToken: "56:0x0000000000000000000000000000000000000000",
+      },
+    },
+  },
+  tron: {
+    name: "TRON",
+    chainId: 728126428,
+    tokens: {
+      USDT: {
+        name: "Tether USD (TRC-20)",
+        symbol: "USDT",
+        acceptedToken: "tron:TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
+      },
+      TRON: {
+        name: "TRON (TRX)",
+        symbol: "TRX",
+        acceptedToken: "tron:TRX",
+      },
+      TRX: {
+        name: "TRON (TRX)",
+        symbol: "TRX",
+        acceptedToken: "tron:TRX",
+      },
+    },
+  },
+  ethereum: {
+    name: "Ethereum",
+    chainId: 1,
+    tokens: {
+      ETHER: {
+        name: "Ether (ETH)",
+        symbol: "ETH",
+        acceptedToken: "1:0x0000000000000000000000000000000000000000",
+      },
+      ETH: {
+        name: "Ether (ETH)",
+        symbol: "ETH",
+        acceptedToken: "1:0x0000000000000000000000000000000000000000",
+      },
+      USDT: {
+        name: "Tether USD (ERC-20)",
+        symbol: "USDT",
+        acceptedToken: "1:0xdac17f958d2ee523a2206206994597c13d831ec7",
+      },
+      USDC: {
+        name: "USD Coin (ERC-20)",
+        symbol: "USDC",
+        acceptedToken: "1:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+      },
+    },
+  },
+};
+
 export interface DepiPayExtraConfig {
   network?: string;
   chainId?: number;
@@ -78,39 +153,38 @@ export class DepiPayProvider implements IPaymentProvider {
       const conf: DepiPayExtraConfig = typeof extraConfig === "string" ? JSON.parse(extraConfig || "{}") : (extraConfig || {});
 
       // Détermination intelligente du réseau et tokens acceptés
-      const network = (request.metadata?.network || conf.network || "").toLowerCase().trim();
+      let requestedNet = (request.metadata?.network || request.metadata?.cryptoNetwork || conf.network || "").toLowerCase().trim();
       let chainId = Number(request.metadata?.chainId || conf.chainId || 0);
 
-      if (!chainId) {
-        if (network === "ethereum" || network === "eth" || network === "erc20") {
-          chainId = 1;
-        } else if (network === "polygon" || network === "matic") {
-          chainId = 137;
-        } else {
-          // Par défaut : BNB Smart Chain (BSC - chainId 56) pour des frais minimes (<0.10$)
-          chainId = 56;
-        }
-      }
-      
-      // Tokens par défaut selon la blockchain
-      let defaultTokens: string[];
-      if (network === "tron" || network === "trc20") {
-        defaultTokens = ["tron:TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"];
-      } else if (chainId === 56) {
-        // BSC (BNB Smart Chain) : USDT BEP-20
-        defaultTokens = [
-          "56:0x55d398326f99059ff775485246999027b3197955",
-          "56:0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d"
-        ];
-      } else if (chainId === 137) {
-        // Polygon : USDT
-        defaultTokens = ["137:0xc2132d05d31c914a87c6611c10748aeb04b58e8f"];
-      } else {
-        // Ethereum Mainnet (chainId 1) : USDT ERC-20
-        defaultTokens = ["1:0xdac17f958d2ee523a2206206994597c13d831ec7"];
+      if (!requestedNet) {
+        if (chainId === 1) requestedNet = "ethereum";
+        else if (chainId === 728126428) requestedNet = "tron";
+        else requestedNet = "bsc";
       }
 
-      const acceptedTokens: string[] = request.metadata?.acceptedTokens || conf.acceptedTokens || defaultTokens;
+      const netConfig = DEPIPAY_NETWORKS[requestedNet] || DEPIPAY_NETWORKS.bsc;
+      if (!chainId) {
+        chainId = netConfig.chainId;
+      }
+
+      // Détermination du Jeton (Token)
+      let requestedToken = (request.metadata?.token || request.metadata?.cryptoToken || "").toUpperCase().trim();
+      if (requestedToken === "ETH") requestedToken = "ETHER";
+      if (requestedToken === "TRX") requestedToken = "TRON";
+
+      let acceptedTokens: string[];
+      if (requestedToken && netConfig.tokens[requestedToken]) {
+        // Le jeton spécifique choisi
+        acceptedTokens = [netConfig.tokens[requestedToken].acceptedToken];
+      } else if (request.metadata?.acceptedTokens && Array.isArray(request.metadata.acceptedTokens)) {
+        acceptedTokens = request.metadata.acceptedTokens;
+      } else if (conf.acceptedTokens && Array.isArray(conf.acceptedTokens) && conf.acceptedTokens.length > 0) {
+        acceptedTokens = conf.acceptedTokens;
+      } else {
+        // Tous les jetons autorisés sur ce réseau
+        acceptedTokens = Object.values(netConfig.tokens).map((t) => t.acceptedToken);
+      }
+
       const deadlineSecs = Number(request.metadata?.deadlineSecs || conf.deadlineSecs || 86400); // 24 heures par défaut
 
       // Conversion de devise si nécessaire (ex: XOF -> USD)

@@ -187,7 +187,7 @@ checkoutRouter.get("/:token", async (req: Request, res: Response) => {
 
 // Process payment from the checkout page
 checkoutRouter.post("/pay", async (req: Request, res: Response) => {
-  const { token, provider, customerEmail, customerName, email, name } = req.body;
+  const { token, provider, customerEmail, customerName, email, name, cryptoNetwork, cryptoToken } = req.body;
 
   try {
     const session = await dbGet("SELECT * FROM checkout_sessions WHERE token = ?", [token]);
@@ -230,7 +230,13 @@ checkoutRouter.post("/pay", async (req: Request, res: Response) => {
         name: finalName
       },
       returnUrl: returnUrl,
-      cancelUrl: cancelUrl || returnUrl
+      cancelUrl: cancelUrl || returnUrl,
+      metadata: {
+        network: cryptoNetwork,
+        token: cryptoToken,
+        cryptoNetwork,
+        cryptoToken
+      }
     });
 
     if (result.success && result.checkoutUrl) {

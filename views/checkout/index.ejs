@@ -248,61 +248,116 @@
                     </label>
                     <div class="flex flex-col gap-2.5">
                         <% providers.forEach(function(provider, index) { %>
-                            <label class="flex items-center gap-3.5 p-3.5 sm:p-4 border-2 border-base-300 rounded-2xl cursor-pointer hover:border-primary/60 hover:bg-base-200/40 transition-all bg-base-100 active:scale-[0.99] group">
-                                <input type="radio" name="provider" value="<%= provider.id %>" class="radio radio-primary radio-sm sm:radio-md" <%= index === 0 ? 'checked' : '' %> required />
-                                
-                                <div class="flex-1 flex items-center justify-between">
-                                    <div class="flex items-center gap-3">
-                                        <% if (provider.id === 'saspay') { %>
-                                            <div class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center font-bold text-base shrink-0">
-                                                📱💳
-                                            </div>
-                                            <div>
-                                                <div class="font-bold text-base-content text-sm sm:text-base">Mobile Money & Carte Bancaire</div>
-                                                <div class="text-xs text-base-content/60 mt-0.5">Wave, Orange Money, MTN MoMo, Moov, Visa, Mastercard</div>
-                                            </div>
-                                        <% } else if (provider.id === 'lomopay' || provider.id === 'chariow' || provider.id === 'ikeepay') { %>
-                                            <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold text-lg shrink-0">
-                                                📱
-                                            </div>
-                                            <div>
-                                                <div class="font-bold text-base-content text-sm sm:text-base">Mobile Money</div>
-                                                <div class="text-xs text-base-content/60 mt-0.5">Wave, Orange Money, MTN MoMo, Moov</div>
-                                            </div>
-                                        <% } else if (provider.id === 'stripe' || provider.id === 'whop') { %>
-                                            <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center font-bold text-lg shrink-0">
-                                                💳
-                                            </div>
-                                            <div>
-                                                <div class="font-bold text-base-content text-sm sm:text-base">Carte Bancaire</div>
-                                                <div class="text-xs text-base-content/60 mt-0.5">Visa, Mastercard, Apple Pay, Google Pay</div>
-                                            </div>
-                                        <% } else if (provider.id === 'depipay') { %>
-                                            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold text-lg shrink-0">
-                                                🪙
-                                            </div>
-                                            <div>
-                                                <div class="font-bold text-base-content text-sm sm:text-base">Crypto-monnaies (DepiPay)</div>
-                                                <div class="text-xs text-base-content/60 mt-0.5">USDT, USDC, ETH, Polygon, BSC (Paiement direct)</div>
-                                            </div>
-                                        <% } else { %>
-                                            <div class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-lg shrink-0">
-                                                ⚡
-                                            </div>
-                                            <div>
-                                                <div class="font-bold text-base-content text-sm sm:text-base"><%= provider.name %></div>
-                                                <div class="text-xs text-base-content/60 mt-0.5">Paiement sécurisé</div>
-                                            </div>
-                                        <% } %>
-                                    </div>
+                            <div class="flex flex-col">
+                                <label class="flex items-center gap-3.5 p-3.5 sm:p-4 border-2 border-base-300 rounded-2xl cursor-pointer hover:border-primary/60 hover:bg-base-200/40 transition-all bg-base-100 active:scale-[0.99] group">
+                                    <input type="radio" name="provider" value="<%= provider.id %>" class="radio radio-primary radio-sm sm:radio-md" <%= index === 0 ? 'checked' : '' %> required onchange="handleProviderChange(this.value)" />
+                                    
+                                    <div class="flex-1 flex items-center justify-between">
+                                        <div class="flex items-center gap-3">
+                                            <% if (provider.id === 'saspay') { %>
+                                                <div class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center font-bold text-base shrink-0">
+                                                    📱💳
+                                                </div>
+                                                <div>
+                                                    <div class="font-bold text-base-content text-sm sm:text-base">Mobile Money & Carte Bancaire</div>
+                                                    <div class="text-xs text-base-content/60 mt-0.5">Wave, Orange Money, MTN MoMo, Moov, Visa, Mastercard</div>
+                                                </div>
+                                            <% } else if (provider.id === 'lomopay' || provider.id === 'chariow' || provider.id === 'ikeepay') { %>
+                                                <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold text-lg shrink-0">
+                                                    📱
+                                                </div>
+                                                <div>
+                                                    <div class="font-bold text-base-content text-sm sm:text-base">Mobile Money</div>
+                                                    <div class="text-xs text-base-content/60 mt-0.5">Wave, Orange Money, MTN MoMo, Moov</div>
+                                                </div>
+                                            <% } else if (provider.id === 'stripe' || provider.id === 'whop') { %>
+                                                <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center font-bold text-lg shrink-0">
+                                                    💳
+                                                </div>
+                                                <div>
+                                                    <div class="font-bold text-base-content text-sm sm:text-base">Carte Bancaire</div>
+                                                    <div class="text-xs text-base-content/60 mt-0.5">Visa, Mastercard, Apple Pay, Google Pay</div>
+                                                </div>
+                                            <% } else if (provider.id === 'depipay') { %>
+                                                <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold text-lg shrink-0">
+                                                    🪙
+                                                </div>
+                                                <div>
+                                                    <div class="font-bold text-base-content text-sm sm:text-base">Crypto-monnaies (DepiPay)</div>
+                                                    <div class="text-xs text-base-content/60 mt-0.5">BSC, TRON, Ethereum (USDT, USDC, BNB, TRX, ETH)</div>
+                                                </div>
+                                            <% } else { %>
+                                                <div class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-lg shrink-0">
+                                                    ⚡
+                                                </div>
+                                                <div>
+                                                    <div class="font-bold text-base-content text-sm sm:text-base"><%= provider.name %></div>
+                                                    <div class="text-xs text-base-content/60 mt-0.5">Paiement sécurisé</div>
+                                                </div>
+                                            <% } %>
+                                        </div>
 
-                                    <div class="text-xs font-bold text-base-content/40 uppercase tracking-wider group-hover:text-primary transition-colors">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                                        </svg>
+                                        <div class="text-xs font-bold text-base-content/40 uppercase tracking-wider group-hover:text-primary transition-colors">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                            </svg>
+                                        </div>
                                     </div>
-                                </div>
-                            </label>
+                                </label>
+
+                                <% if (provider.id === 'depipay') { %>
+                                    <!-- Étape intermédiaire de sélection Crypto (Blockchain & Jeton) -->
+                                    <div id="depipay-selection-panel" class="hidden mt-2 p-3 sm:p-4 bg-base-100 rounded-2xl border-2 border-emerald-500/40 shadow-sm space-y-3.5">
+                                        <div>
+                                            <div class="flex items-center justify-between mb-2">
+                                                <span class="text-xs font-black uppercase tracking-wider text-base-content/80 flex items-center gap-1.5">
+                                                    <span class="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[11px] font-bold">1</span>
+                                                    Choisissez la Blockchain
+                                                </span>
+                                                <span class="text-[10px] text-base-content/50 font-medium">Étape 1/2</span>
+                                            </div>
+                                            <div class="grid grid-cols-3 gap-2" id="crypto-network-group">
+                                                <button type="button" class="crypto-net-btn flex flex-col items-center justify-center p-2.5 rounded-xl border-2 transition-all border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-bold shadow-xs" data-net="bsc" onclick="selectCryptoNetwork('bsc')">
+                                                    <span class="text-lg">🟡</span>
+                                                    <span class="text-xs font-black mt-0.5">BSC</span>
+                                                    <span class="text-[9px] text-emerald-600 dark:text-emerald-400 font-medium">Frais ~0.05$</span>
+                                                </button>
+                                                <button type="button" class="crypto-net-btn flex flex-col items-center justify-center p-2.5 rounded-xl border-2 transition-all bg-base-200/60 border-base-300 text-base-content/70 font-bold hover:border-base-content/30" data-net="tron" onclick="selectCryptoNetwork('tron')">
+                                                    <span class="text-lg">🔴</span>
+                                                    <span class="text-xs font-black mt-0.5">TRON</span>
+                                                    <span class="text-[9px] text-base-content/50 font-medium">Frais ~1$</span>
+                                                </button>
+                                                <button type="button" class="crypto-net-btn flex flex-col items-center justify-center p-2.5 rounded-xl border-2 transition-all bg-base-200/60 border-base-300 text-base-content/70 font-bold hover:border-base-content/30" data-net="ethereum" onclick="selectCryptoNetwork('ethereum')">
+                                                    <span class="text-lg">🔷</span>
+                                                    <span class="text-xs font-black mt-0.5">Ethereum</span>
+                                                    <span class="text-[9px] text-base-content/50 font-medium">ERC-20</span>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <div class="flex items-center justify-between mb-2">
+                                                <span class="text-xs font-black uppercase tracking-wider text-base-content/80 flex items-center gap-1.5">
+                                                    <span class="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[11px] font-bold">2</span>
+                                                    Choisissez le Jeton (Token)
+                                                </span>
+                                                <span class="text-[10px] text-base-content/50 font-medium">Étape 2/2</span>
+                                            </div>
+                                            <div class="grid grid-cols-3 gap-2" id="crypto-tokens-container">
+                                                <!-- Rempli dynamiquement en JS -->
+                                            </div>
+                                        </div>
+
+                                        <div class="text-xs font-semibold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/30 p-2.5 rounded-xl border border-emerald-200/80 dark:border-emerald-800/60 flex items-center justify-between">
+                                            <span class="flex items-center gap-1.5">
+                                                <span class="text-base text-emerald-600">✓</span>
+                                                <span>Paiement en <strong id="summary-token-name" class="font-black text-emerald-900 dark:text-emerald-200">USDT</strong> sur <strong id="summary-net-name" class="font-black text-emerald-900 dark:text-emerald-200">BSC (BNB Chain)</strong></span>
+                                            </span>
+                                            <span class="badge badge-sm badge-success text-[10px] font-bold text-white uppercase">Prêt</span>
+                                        </div>
+                                    </div>
+                                <% } %>
+                            </div>
                         <% }); %>
                     </div>
                 </div>
@@ -340,8 +395,139 @@
         const loaderTitle = document.getElementById('loader-title-text');
         const loaderSub = document.getElementById('loader-sub-text');
 
-        // Animation d'entrée douce au chargement de la page
+        // Configuration multi-chain & tokens DepiPay
+        const CRYPTO_CONFIG = {
+            bsc: {
+                name: 'BSC (BNB Chain)',
+                badge: 'Frais minimes (~0.05$)',
+                tokens: [
+                    { symbol: 'USDC', name: 'USD Coin', icon: '💲', badge: 'BEP-20' },
+                    { symbol: 'USDT', name: 'Tether USD', icon: '₮', badge: 'BEP-20' },
+                    { symbol: 'BNB', name: 'BNB', icon: '🟡', badge: 'Natif' }
+                ]
+            },
+            tron: {
+                name: 'TRON Network',
+                badge: 'Frais faibles (~1$)',
+                tokens: [
+                    { symbol: 'USDT', name: 'Tether USD', icon: '₮', badge: 'TRC-20' },
+                    { symbol: 'TRON', name: 'TRON (TRX)', icon: '🔴', badge: 'Natif' }
+                ]
+            },
+            ethereum: {
+                name: 'Ethereum (ERC-20)',
+                badge: 'Frais standard',
+                tokens: [
+                    { symbol: 'ETHER', name: 'Ether (ETH)', icon: '🔷', badge: 'Natif' },
+                    { symbol: 'USDT', name: 'Tether USD', icon: '₮', badge: 'ERC-20' },
+                    { symbol: 'USDC', name: 'USD Coin', icon: '💲', badge: 'ERC-20' }
+                ]
+            }
+        };
+
+        let selectedCryptoNetwork = 'bsc';
+        let selectedCryptoToken = 'USDT';
+
+        function renderCryptoTokens() {
+            const container = document.getElementById('crypto-tokens-container');
+            if (!container) return;
+
+            const netData = CRYPTO_CONFIG[selectedCryptoNetwork];
+            if (!netData) return;
+
+            // Vérifier si le jeton sélectionné est valide pour ce réseau, sinon prendre le 1er ou USDT
+            const hasCurrent = netData.tokens.some(t => t.symbol === selectedCryptoToken);
+            if (!hasCurrent) {
+                const hasUsdt = netData.tokens.find(t => t.symbol === 'USDT');
+                selectedCryptoToken = hasUsdt ? 'USDT' : netData.tokens[0].symbol;
+            }
+
+            container.innerHTML = '';
+            netData.tokens.forEach(tok => {
+                const isSelected = tok.symbol === selectedCryptoToken;
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `crypto-token-btn flex flex-col items-center justify-center p-2.5 rounded-xl border-2 transition-all font-bold ${
+                    isSelected 
+                        ? 'border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 shadow-xs' 
+                        : 'bg-base-200/60 border-base-300 text-base-content/70 hover:border-base-content/30'
+                }`;
+                btn.onclick = () => selectCryptoToken(tok.symbol);
+                btn.innerHTML = `
+                    <span class="text-base">${tok.icon}</span>
+                    <span class="text-xs font-black mt-0.5">${tok.symbol}</span>
+                    <span class="text-[9px] ${isSelected ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-base-content/50 font-medium'}">${tok.badge}</span>
+                `;
+                container.appendChild(btn);
+            });
+
+            updateCryptoSummary();
+        }
+
+        function selectCryptoNetwork(net) {
+            selectedCryptoNetwork = net;
+
+            const netButtons = document.querySelectorAll('#crypto-network-group .crypto-net-btn');
+            netButtons.forEach(btn => {
+                const btnNet = btn.getAttribute('data-net');
+                if (btnNet === net) {
+                    btn.className = 'crypto-net-btn flex flex-col items-center justify-center p-2.5 rounded-xl border-2 transition-all border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-bold shadow-xs';
+                    const sub = btn.querySelector('span:last-child');
+                    if (sub) sub.className = 'text-[9px] text-emerald-600 dark:text-emerald-400 font-medium';
+                } else {
+                    btn.className = 'crypto-net-btn flex flex-col items-center justify-center p-2.5 rounded-xl border-2 transition-all bg-base-200/60 border-base-300 text-base-content/70 font-bold hover:border-base-content/30';
+                    const sub = btn.querySelector('span:last-child');
+                    if (sub) sub.className = 'text-[9px] text-base-content/50 font-medium';
+                }
+            });
+
+            renderCryptoTokens();
+        }
+
+        function selectCryptoToken(symbol) {
+            selectedCryptoToken = symbol;
+            renderCryptoTokens();
+        }
+
+        function updateCryptoSummary() {
+            const summaryToken = document.getElementById('summary-token-name');
+            const summaryNet = document.getElementById('summary-net-name');
+            if (summaryToken) summaryToken.textContent = selectedCryptoToken;
+            if (summaryNet && CRYPTO_CONFIG[selectedCryptoNetwork]) {
+                summaryNet.textContent = CRYPTO_CONFIG[selectedCryptoNetwork].name;
+            }
+
+            const providerInput = document.querySelector('input[name="provider"]:checked');
+            if (providerInput && providerInput.value === 'depipay' && submitBtn) {
+                submitBtn.innerHTML = `<span>Payer en ${selectedCryptoToken} (${selectedCryptoNetwork.toUpperCase()})</span>`;
+            }
+        }
+
+        function handleProviderChange(providerVal) {
+            const depiPanel = document.getElementById('depipay-selection-panel');
+            if (depiPanel) {
+                if (providerVal === 'depipay') {
+                    depiPanel.classList.remove('hidden');
+                    renderCryptoTokens();
+                    if (submitBtn) {
+                        submitBtn.innerHTML = `<span>Payer en ${selectedCryptoToken} (${selectedCryptoNetwork.toUpperCase()})</span>`;
+                    }
+                } else {
+                    depiPanel.classList.add('hidden');
+                    if (submitBtn) {
+                        submitBtn.innerHTML = '<span>Payer</span>';
+                    }
+                }
+            }
+        }
+
+        // Animation d'entrée douce au chargement de la page & initialisation
         window.addEventListener('DOMContentLoaded', () => {
+            const checkedProvider = document.querySelector('input[name="provider"]:checked');
+            if (checkedProvider) {
+                handleProviderChange(checkedProvider.value);
+            }
+
             setTimeout(() => {
                 if (loaderOverlay) {
                     loaderOverlay.classList.add('opacity-0', 'pointer-events-none', 'scale-95');
@@ -400,18 +586,29 @@
             else if (providerVal === 'ikeepay') providerDisplay = 'Mobile Money';
             else if (providerVal === 'whop') providerDisplay = 'Carte Bancaire';
             else if (providerVal === 'stripe') providerDisplay = 'Carte Bancaire';
+            else if (providerVal === 'depipay') {
+                const netName = CRYPTO_CONFIG[selectedCryptoNetwork]?.name || selectedCryptoNetwork.toUpperCase();
+                providerDisplay = `Crypto (${selectedCryptoToken} sur ${netName})`;
+            }
 
             showOverlayLoader("Connexion sécurisée...", `Ouverture du tunnel ${providerDisplay}`);
+
+            const payload = {
+                token: document.querySelector('input[name="token"]').value,
+                provider: providerVal,
+                customerEmail: customerEmail
+            };
+
+            if (providerVal === 'depipay') {
+                payload.cryptoNetwork = selectedCryptoNetwork;
+                payload.cryptoToken = selectedCryptoToken;
+            }
 
             try {
                 const response = await fetch('/checkout/pay', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        token: document.querySelector('input[name="token"]').value,
-                        provider: providerVal,
-                        customerEmail: customerEmail
-                    })
+                    body: JSON.stringify(payload)
                 });
 
                 const data = await response.json();
