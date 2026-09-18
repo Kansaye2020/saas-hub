@@ -141,6 +141,24 @@ checkoutRouter.get("/:token", async (req: Request, res: Response) => {
       return res.status(400).send("Session is already completed or cancelled");
     }
 
+    // Préremplissage intelligent de l'email et du nom depuis les paramètres URL (?email=... ou ?customerEmail=...)
+    const queryEmail = ((req.query.customerEmail || req.query.email) as string || "").trim();
+    const queryName = ((req.query.customerName || req.query.name) as string || "").trim();
+
+    if (queryEmail && (!session.customerEmail && !session.customeremail)) {
+      session.customerEmail = queryEmail;
+      try {
+        await dbRun("UPDATE checkout_sessions SET customerEmail = ? WHERE token = ?", [queryEmail, token]);
+      } catch (e) {}
+    }
+
+    if (queryName && (!session.customerName && !session.customername)) {
+      session.customerName = queryName;
+      try {
+        await dbRun("UPDATE checkout_sessions SET customerName = ? WHERE token = ?", [queryName, token]);
+      } catch (e) {}
+    }
+
     // Fetch the client app config to get the store name and logo
     const clientApp = await getClientAppById(session.appId);
     const storeName = clientApp ? clientApp.name : session.appId;

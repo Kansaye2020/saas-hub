@@ -230,10 +230,19 @@
 
                 <!-- Client Email Badge ou Saisie -->
                 <% if (session.customerEmail) { %>
-                    <div class="flex items-center justify-between mb-4 bg-base-200/60 p-2.5 px-3.5 rounded-xl border border-base-300 text-xs">
-                        <span class="text-base-content/60">Email client :</span>
-                        <span class="font-bold text-base-content truncate"><%= session.customerEmail %></span>
+                    <div id="email-badge-container" class="flex items-center justify-between mb-4 bg-base-200/60 p-2.5 px-3.5 rounded-xl border border-base-300 text-xs">
+                        <div class="flex items-center gap-2 truncate">
+                            <span class="text-base-content/60 shrink-0">Email client :</span>
+                            <span id="email-display-badge" class="font-bold text-base-content truncate"><%= session.customerEmail %></span>
+                        </div>
+                        <button type="button" onclick="toggleEditEmail()" class="btn btn-ghost btn-xs text-[11px] text-primary hover:bg-primary/10 font-medium shrink-0 ml-2">
+                            Modifier
+                        </button>
                         <input type="hidden" id="checkout-customerEmail" value="<%= session.customerEmail %>">
+                    </div>
+                    <div id="email-input-container" class="form-control mb-4 hidden">
+                        <label class="label py-1"><span class="label-text font-bold text-xs text-base-content/70">Votre adresse email (pour le reçu de paiement)</span></label>
+                        <input type="email" id="checkout-customerEmail-edit" value="<%= session.customerEmail %>" placeholder="nom@exemple.com" class="input input-bordered input-sm sm:input-md w-full rounded-xl text-xs sm:text-sm font-medium" oninput="document.getElementById('checkout-customerEmail').value = this.value" />
                     </div>
                 <% } else { %>
                     <div class="form-control mb-4">
@@ -394,6 +403,20 @@
         const loaderOverlay = document.getElementById('checkout-loader-overlay');
         const loaderTitle = document.getElementById('loader-title-text');
         const loaderSub = document.getElementById('loader-sub-text');
+
+        function toggleEditEmail() {
+            const badge = document.getElementById('email-badge-container');
+            const inputContainer = document.getElementById('email-input-container');
+            if (badge && inputContainer) {
+                badge.classList.add('hidden');
+                inputContainer.classList.remove('hidden');
+                const editInput = document.getElementById('checkout-customerEmail-edit');
+                if (editInput) {
+                    editInput.focus();
+                    editInput.select();
+                }
+            }
+        }
 
         // Configuration multi-chain & tokens DepiPay
         const CRYPTO_CONFIG = {
