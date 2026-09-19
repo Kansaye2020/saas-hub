@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import crypto from "crypto";
 import { requireAdminAuth, getExpectedSessionToken } from "../middleware/adminAuth";
-import { dbQuery, dbRun, dbGet } from "../database/db";
+import { dbQuery, dbRun, dbGet, fixProvidersConfigPrimaryKey } from "../database/db";
 import { encryptSecret, decryptSecret, maskSecret } from "../utils/encryption";
 
 export const adminRouter = Router();
@@ -205,11 +205,11 @@ adminRouter.get("/apps", async (req: Request, res: Response) => {
 
 // Tableau de bord dédié pour un Site / SaaS spécifique
 adminRouter.get("/app/:appId", async (req: Request, res: Response) => {
-  const appId = req.params.appId;
+  const appId = (req.params.appId || '').trim().toLowerCase();
 
   try {
     const allApps = await dbQuery("SELECT * FROM client_apps ORDER BY createdAt DESC");
-    const currentApp = allApps.find((a: any) => a.id === appId);
+    const currentApp = allApps.find((a: any) => (a.id || '').toLowerCase() === appId);
 
     if (!currentApp) {
       return res.redirect("/admin/apps?error=" + encodeURIComponent(`Le site "${appId}" n'existe pas.`));
@@ -370,7 +370,7 @@ adminRouter.post("/apps/delete", async (req: Request, res: Response) => {
 
 // Ajouter ou modifier un processeur pour un Site spécifique
 adminRouter.post("/app/:appId/provider", async (req: Request, res: Response) => {
-  const appId = req.params.appId;
+  const appId = (req.params.appId || '').trim().toLowerCase();
   try {
     let { providerId, publicKey, secretKey, extraConfig } = req.body;
     if (Array.isArray(providerId)) {
@@ -384,7 +384,7 @@ adminRouter.post("/app/:appId/provider", async (req: Request, res: Response) => 
     providerId = providerId.trim().toLowerCase();
     const isActive = (req.body.isActive === '1' || req.body.isActive === 'on' || req.body.isActive === true || req.body.isActive === 1) ? 1 : 0;
 
-    const existing = await dbQuery("SELECT * FROM providers_config WHERE appId = ? AND providerId = ?", [appId, providerId]);
+    const existing = await dbQuery("SELECT * FROM providers_config WHERE LOWER(appId) = ? AND LOWER(providerId) = ?", [appId, providerId]);
     const isAlreadyConfigured = existing.length > 0;
 
     let finalSecretKey = '';
@@ -396,14 +396,40 @@ adminRouter.post("/app/:appId/provider", async (req: Request, res: Response) => 
 
     if (isAlreadyConfigured) {
       await dbRun(
-        `UPDATE providers_config SET isActive = ?, publicKey = ?, secretKey = ?, extraConfig = ? WHERE appId = ? AND providerId = ?`,
+        `UPDATE providers_config SET isActive = ?, publicKey = ?, secretKey = ?, extraConfig = ? WHERE LOWER(appId) = ? AND LOWER(providerId) = ?`,
         [isActive, publicKey ? publicKey.trim() : '', finalSecretKey, extraConfig ? extraConfig.trim() : '', appId, providerId]
       );
     } else {
-      await dbRun(
-        `INSERT INTO providers_config (appId, providerId, isActive, publicKey, secretKey, extraConfig) VALUES (?, ?, ?, ?, ?, ?)`,
-        [appId, providerId, isActive, publicKey ? publicKey.trim() : '', finalSecretKey, extraConfig ? extraConfig.trim() : '']
-      );
+      try {
+        await dbRun(
+          `INSERT INTO providers_config (appId, providerId, isActive, publicKey, secretKey, extraConfig) VALUES (?, ?, ?, ?, ?, ?)`,
+          [appId, providerId, isActive, publicKey ? publicKey.trim() : '', finalSecretKey, extraConfig ? extraConfig.trim() : '']
+        );
+      } catch (insertErr: any) {
+        if (
+          insertErr?.code === '23505' ||
+          insertErr?.message?.includes('providers_config_pkey') ||
+          insertErr?.message?.includes('unique constraint') ||
+          insertErr?.message?.includes('UNIQUE')
+        ) {
+          console.warn(`[Admin] Conflit détecté lors de l'enregistrement de ${providerId} pour ${appId}. Réparation de la clé primaire et réessai...`);
+          await fixProvidersConfigPrimaryKey();
+          const checkAgain = await dbQuery("SELECT * FROM providers_config WHERE LOWER(appId) = ? AND LOWER(providerId) = ?", [appId, providerId]);
+          if (checkAgain.length > 0) {
+            await dbRun(
+              `UPDATE providers_config SET isActive = ?, publicKey = ?, secretKey = ?, extraConfig = ? WHERE LOWER(appId) = ? AND LOWER(providerId) = ?`,
+              [isActive, publicKey ? publicKey.trim() : '', finalSecretKey, extraConfig ? extraConfig.trim() : '', appId, providerId]
+            );
+          } else {
+            await dbRun(
+              `INSERT INTO providers_config (appId, providerId, isActive, publicKey, secretKey, extraConfig) VALUES (?, ?, ?, ?, ?, ?)`,
+              [appId, providerId, isActive, publicKey ? publicKey.trim() : '', finalSecretKey, extraConfig ? extraConfig.trim() : '']
+            );
+          }
+        } else {
+          throw insertErr;
+        }
+      }
     }
 
     const match = ALL_PROVIDERS.find(p => p.id === providerId);
@@ -419,7 +445,7 @@ adminRouter.post("/app/:appId/provider", async (req: Request, res: Response) => 
 
 // Basculer le statut d'un processeur pour un Site spécifique
 adminRouter.post("/app/:appId/provider/toggle", async (req: Request, res: Response) => {
-  const appId = req.params.appId;
+  const appId = (req.params.appId || '').trim().toLowerCase();
   const isAjax = req.xhr || req.headers["x-requested-with"] === "XMLHttpRequest" || req.headers.accept?.includes("application/json");
   try {
     let { providerId } = req.body;
@@ -434,7 +460,7 @@ adminRouter.post("/app/:appId/provider/toggle", async (req: Request, res: Respon
 
     providerId = providerId.trim().toLowerCase();
 
-    const row = await dbGet("SELECT * FROM providers_config WHERE appId = ? AND providerId = ?", [appId, providerId]);
+    const row = await dbGet("SELECT * FROM providers_config WHERE LOWER(appId) = ? AND LOWER(providerId) = ?", [appId, providerId]);
     if (!row) {
       if (isAjax) return res.status(404).json({ success: false, error: "Processeur non configuré pour ce site." });
       return res.redirect(`/admin/app/${appId}?tab=processors&error=` + encodeURIComponent("Processeur non configuré pour ce site."));
@@ -445,7 +471,7 @@ adminRouter.post("/app/:appId/provider/toggle", async (req: Request, res: Respon
     const currentIsActive = (row.isActive === 1 || row.isactive === 1 || row.isActive === true) ? 1 : 0;
     const newStatus = currentIsActive === 1 ? 0 : 1;
 
-    await dbRun("UPDATE providers_config SET isActive = ? WHERE appId = ? AND providerId = ?", [newStatus, appId, providerId]);
+    await dbRun("UPDATE providers_config SET isActive = ? WHERE LOWER(appId) = ? AND LOWER(providerId) = ?", [newStatus, appId, providerId]);
 
     const statusText = newStatus === 1 ? 'Actif' : 'Inactif';
     const message = `Le processeur ${providerName} est maintenant ${statusText.toLowerCase()} pour ce site.`;
@@ -464,7 +490,7 @@ adminRouter.post("/app/:appId/provider/toggle", async (req: Request, res: Respon
 
 // Supprimer un processeur configuré pour un Site spécifique
 adminRouter.post("/app/:appId/provider/delete", async (req: Request, res: Response) => {
-  const appId = req.params.appId;
+  const appId = (req.params.appId || '').trim().toLowerCase();
   const isAjax = req.xhr || req.headers["x-requested-with"] === "XMLHttpRequest" || req.headers.accept?.includes("application/json");
   try {
     let { providerId } = req.body;
@@ -479,7 +505,7 @@ adminRouter.post("/app/:appId/provider/delete", async (req: Request, res: Respon
 
     providerId = providerId.trim().toLowerCase();
 
-    await dbRun("DELETE FROM providers_config WHERE appId = ? AND providerId = ?", [appId, providerId]);
+    await dbRun("DELETE FROM providers_config WHERE LOWER(appId) = ? AND LOWER(providerId) = ?", [appId, providerId]);
 
     const match = ALL_PROVIDERS.find(p => p.id === providerId);
     const providerName = match ? match.name : providerId;

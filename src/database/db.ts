@@ -106,6 +106,64 @@ export const dbGet = async (sql: string, params: any[] = []): Promise<any> => {
   return undefined;
 };
 
+export const fixProvidersConfigPrimaryKey = async (): Promise<void> => {
+  if (!isPg || !pgPool) return;
+  try {
+    // 1. Colonnes requises
+    await dbRun(`ALTER TABLE providers_config ADD COLUMN IF NOT EXISTS appId VARCHAR(50) NOT NULL DEFAULT 'verifsms'`);
+    await dbRun(`ALTER TABLE providers_config ADD COLUMN IF NOT EXISTS extraConfig TEXT`);
+    await dbRun(`UPDATE providers_config SET appId = 'verifsms' WHERE appId IS NULL OR appId = ''`);
+    await dbRun(`ALTER TABLE providers_config ALTER COLUMN appId SET NOT NULL`);
+
+    // 2. Vérifier les colonnes de la clé primaire actuelle
+    const pkRows = await dbQuery(`
+      SELECT kcu.column_name
+      FROM information_schema.table_constraints tc
+      JOIN information_schema.key_column_usage kcu
+        ON tc.constraint_name = kcu.constraint_name
+        AND tc.table_schema = kcu.table_schema
+      WHERE tc.table_name = 'providers_config'
+        AND tc.constraint_type = 'PRIMARY KEY'
+    `);
+    const pkCols = pkRows.map((r: any) => (r.column_name || '').toLowerCase());
+    const hasAppIdInPk = pkCols.includes('appid');
+
+    if (!hasAppIdInPk) {
+      console.log("🔄 Migration PostgreSQL : mise à niveau de la clé primaire providers_config vers (appId, providerId)...");
+
+      // 3. Dédupliquer avant application de la nouvelle contrainte
+      await dbRun(`
+        DELETE FROM providers_config a USING providers_config b
+        WHERE a.ctid < b.ctid AND a.appId = b.appId AND a.providerId = b.providerId
+      `);
+
+      // 4. Supprimer l'ancienne contrainte PRIMARY KEY (ex: providers_config_pkey)
+      const constraintRows = await dbQuery(`
+        SELECT tc.constraint_name
+        FROM information_schema.table_constraints tc
+        WHERE tc.table_name = 'providers_config'
+          AND tc.constraint_type = 'PRIMARY KEY'
+      `);
+      for (const c of constraintRows) {
+        if (c.constraint_name) {
+          await dbRun(`ALTER TABLE providers_config DROP CONSTRAINT IF EXISTS "${c.constraint_name}" CASCADE`);
+        }
+      }
+
+      // 5. Supprimer l'index séparé idx_providers_app_provider si présent
+      try {
+        await dbRun(`DROP INDEX IF EXISTS idx_providers_app_provider`);
+      } catch (e) {}
+
+      // 6. Ajouter la nouvelle clé primaire composite (appId, providerId)
+      await dbRun(`ALTER TABLE providers_config ADD CONSTRAINT providers_config_pkey PRIMARY KEY (appId, providerId)`);
+      console.log("✅ Clé primaire providers_config(appId, providerId) migrée avec succès sur PostgreSQL !");
+    }
+  } catch (err) {
+    console.error("⚠️ Note migration providers_config PostgreSQL:", err);
+  }
+};
+
 // Initialisation et migration automatique des tables
 export const initDB = async () => {
   try {
@@ -166,11 +224,7 @@ export const initDB = async () => {
           PRIMARY KEY (appId, providerId)
         )
       `);
-      try {
-        await dbRun(`ALTER TABLE providers_config ADD COLUMN IF NOT EXISTS appId VARCHAR(50) NOT NULL DEFAULT 'verifsms'`);
-        await dbRun(`ALTER TABLE providers_config ADD COLUMN IF NOT EXISTS extraConfig TEXT`);
-        await dbRun(`CREATE UNIQUE INDEX IF NOT EXISTS idx_providers_app_provider ON providers_config(appId, providerId)`);
-      } catch (e) {}
+      await fixProvidersConfigPrimaryKey();
       
       // 4. Client Apps
       await dbRun(`
