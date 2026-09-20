@@ -442,28 +442,20 @@ adminRouter.post("/app/:appId/provider", async (req: Request, res: Response) => 
           [appId, providerId, isActive, publicKey ? publicKey.trim() : '', finalSecretKey, extraConfig ? extraConfig.trim() : '']
         );
       } catch (insertErr: any) {
-        if (
-          insertErr?.code === '23505' ||
-          insertErr?.message?.includes('providers_config_pkey') ||
-          insertErr?.message?.includes('unique constraint') ||
-          insertErr?.message?.includes('UNIQUE')
-        ) {
-          console.warn(`[Admin] Conflit détecté lors de l'enregistrement de ${providerId} pour ${appId}. Réparation de la clé primaire et réessai...`);
-          await fixProvidersConfigPrimaryKey();
-          const checkAgain = await dbQuery("SELECT * FROM providers_config WHERE LOWER(appId) = ? AND LOWER(providerId) = ?", [appId, providerId]);
-          if (checkAgain.length > 0) {
-            await dbRun(
-              `UPDATE providers_config SET isActive = ?, publicKey = ?, secretKey = ?, extraConfig = ? WHERE LOWER(appId) = ? AND LOWER(providerId) = ?`,
-              [isActive, publicKey ? publicKey.trim() : '', finalSecretKey, extraConfig ? extraConfig.trim() : '', appId, providerId]
-            );
-          } else {
-            await dbRun(
-              `INSERT INTO providers_config (appId, providerId, isActive, publicKey, secretKey, extraConfig) VALUES (?, ?, ?, ?, ?, ?)`,
-              [appId, providerId, isActive, publicKey ? publicKey.trim() : '', finalSecretKey, extraConfig ? extraConfig.trim() : '']
-            );
-          }
+        console.warn(`[Admin] Erreur INSERT sur providers_config (${insertErr?.message}). Réparation et bascule automatique en UPDATE...`);
+        await fixProvidersConfigPrimaryKey();
+        const checkAgain = await dbQuery("SELECT * FROM providers_config WHERE LOWER(appId) = ? AND LOWER(providerId) = ?", [appId, providerId]);
+        if (checkAgain.length > 0) {
+          await dbRun(
+            `UPDATE providers_config SET isActive = ?, publicKey = ?, secretKey = ?, extraConfig = ? WHERE LOWER(appId) = ? AND LOWER(providerId) = ?`,
+            [isActive, publicKey ? publicKey.trim() : '', finalSecretKey, extraConfig ? extraConfig.trim() : '', appId, providerId]
+          );
         } else {
-          throw insertErr;
+          // Si le conflit persiste (ex: ancienne clé primaire bloquant sur providerId seul)
+          await dbRun(
+            `UPDATE providers_config SET appId = ?, isActive = ?, publicKey = ?, secretKey = ?, extraConfig = ? WHERE LOWER(providerId) = ?`,
+            [appId, isActive, publicKey ? publicKey.trim() : '', finalSecretKey, extraConfig ? extraConfig.trim() : '', providerId]
+          );
         }
       }
     }

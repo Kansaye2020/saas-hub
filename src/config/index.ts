@@ -11,20 +11,25 @@ export const config = {
 
 import { decryptSecret } from "../utils/encryption";
 
-export async function getClientAppById(appId: string): Promise<ClientAppConfig | undefined> {
+export async function getClientAppById(appId: string) {
   const { dbGet } = require("../database/db");
-  const row = await dbGet("SELECT * FROM client_apps WHERE id = ?", [appId]);
+  const cleanAppId = (appId || "").trim().toLowerCase();
+  const row = await dbGet("SELECT * FROM client_apps WHERE LOWER(id) = ?", [cleanAppId]);
   if (row) {
-    row.webhookSecret = decryptSecret(row.webhookSecret);
+    const rawSecret = row.webhookSecret !== undefined ? row.webhookSecret : row.webhooksecret;
+    row.webhookSecret = decryptSecret(rawSecret || "");
+    if (!row.logoUrl && row.logourl) row.logoUrl = row.logourl;
   }
   return row;
 }
 
-export async function getClientAppByApiKey(apiKey: string): Promise<ClientAppConfig | undefined> {
+export async function getClientAppByApiKey(apiKey: string) {
   const { dbGet } = require("../database/db");
   const row = await dbGet("SELECT * FROM client_apps WHERE apiKey = ?", [apiKey]);
   if (row) {
-    row.webhookSecret = decryptSecret(row.webhookSecret);
+    const rawSecret = row.webhookSecret !== undefined ? row.webhookSecret : row.webhooksecret;
+    row.webhookSecret = decryptSecret(rawSecret || "");
+    if (!row.logoUrl && row.logourl) row.logoUrl = row.logourl;
   }
   return row;
 }
@@ -32,16 +37,31 @@ export async function getClientAppByApiKey(apiKey: string): Promise<ClientAppCon
 export async function getAppProviderConfig(appId: string, providerId: string): Promise<{ publicKey: string; secretKey: string; isActive: boolean; extraConfig?: any }> {
   try {
     const { dbGet } = require("../database/db");
-    const row = await dbGet("SELECT * FROM providers_config WHERE appId = ? AND providerId = ?", [appId, providerId]);
+    const cleanAppId = (appId || "").trim().toLowerCase();
+    const cleanProviderId = (providerId || "").trim().toLowerCase();
+    const row = await dbGet(
+      "SELECT * FROM providers_config WHERE LOWER(appId) = ? AND LOWER(providerId) = ?",
+      [cleanAppId, cleanProviderId]
+    );
     if (row) {
+      const rawExtra = row.extraConfig !== undefined ? row.extraConfig : row.extraconfig;
       let extra = {};
-      if (row.extraConfig) {
-        try { extra = JSON.parse(row.extraConfig); } catch (e) {}
+      if (rawExtra) {
+        if (typeof rawExtra === "object") {
+          extra = rawExtra;
+        } else {
+          try { extra = JSON.parse(rawExtra); } catch (e) {}
+        }
       }
+      const rawActive = row.isActive !== undefined ? row.isActive : row.isactive;
+      const isActiveBool = (rawActive === 1 || rawActive === "1" || rawActive === true || rawActive === "t");
+      const rawPublic = row.publicKey !== undefined ? row.publicKey : row.publickey;
+      const rawSecret = row.secretKey !== undefined ? row.secretKey : row.secretkey;
+
       return {
-        isActive: row.isActive === 1,
-        publicKey: row.publicKey || "",
-        secretKey: decryptSecret(row.secretKey || ""),
+        isActive: isActiveBool,
+        publicKey: rawPublic || "",
+        secretKey: decryptSecret(rawSecret || ""),
         extraConfig: extra
       };
     }
@@ -55,19 +75,40 @@ export async function getAppProviderConfig(appId: string, providerId: string): P
 export async function getAppActiveProviders(appId: string): Promise<Array<{ providerId: string; publicKey: string; secretKey: string; extraConfig?: any }>> {
   try {
     const { dbQuery } = require("../database/db");
-    const rows = await dbQuery("SELECT * FROM providers_config WHERE appId = ? AND isActive = 1", [appId]);
-    return rows.map((row: any) => {
+    const cleanAppId = (appId || "").trim().toLowerCase();
+    const rows = await dbQuery(
+      "SELECT * FROM providers_config WHERE LOWER(appId) = ?",
+      [cleanAppId]
+    );
+    const result: Array<{ providerId: string; publicKey: string; secretKey: string; extraConfig?: any }> = [];
+
+    for (const row of rows) {
+      const rawActive = row.isActive !== undefined ? row.isActive : row.isactive;
+      const isActiveBool = (rawActive === 1 || rawActive === "1" || rawActive === true || rawActive === "t");
+      if (!isActiveBool) continue;
+
+      const rawExtra = row.extraConfig !== undefined ? row.extraConfig : row.extraconfig;
       let extra = {};
-      if (row.extraConfig) {
-        try { extra = JSON.parse(row.extraConfig); } catch (e) {}
+      if (rawExtra) {
+        if (typeof rawExtra === "object") {
+          extra = rawExtra;
+        } else {
+          try { extra = JSON.parse(rawExtra); } catch (e) {}
+        }
       }
-      return {
-        providerId: row.providerId,
-        publicKey: row.publicKey || "",
-        secretKey: decryptSecret(row.secretKey || ""),
+      const rawPublic = row.publicKey !== undefined ? row.publicKey : row.publickey;
+      const rawSecret = row.secretKey !== undefined ? row.secretKey : row.secretkey;
+      const rawProviderId = row.providerId !== undefined ? row.providerId : row.providerid;
+
+      result.push({
+        providerId: (rawProviderId || "").trim().toLowerCase(),
+        publicKey: rawPublic || "",
+        secretKey: decryptSecret(rawSecret || ""),
         extraConfig: extra
-      };
-    });
+      });
+    }
+
+    return result;
   } catch (error) {
     console.error(`Erreur lecture active providers pour app ${appId}:`, error);
     return [];
