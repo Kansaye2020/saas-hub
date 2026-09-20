@@ -176,6 +176,80 @@ export class SaasPaymentClient {
   }
 
   /**
+   * Effectue un retrait Mobile Money direct via SasPay (Payout)
+   */
+  async saspayPayout(options: {
+    amount: number;
+    currency: string;
+    country: string;
+    method: string;
+    phoneNumber: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    description?: string;
+  }) {
+    const url = `${this.hubBaseUrl}/api/v1/payments/saspay/payout`;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Hub-Api-Key": this.apiKey,
+      },
+      body: JSON.stringify(options),
+    });
+    return await response.json();
+  }
+
+  /**
+   * Récupère les soldes du Wallet SasPay
+   */
+  async saspayBalances() {
+    const url = `${this.hubBaseUrl}/api/v1/payments/saspay/balances`;
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Hub-Api-Key": this.apiKey,
+      },
+    });
+    return await response.json();
+  }
+
+  /**
+   * Liste les passerelles de paiement disponibles et actives
+   */
+  async listProviders() {
+    const url = `${this.hubBaseUrl}/api/v1/payments/providers`;
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Hub-Api-Key": this.apiKey,
+      },
+    });
+    return (await response.json()) as { success: boolean; providers: string[] };
+  }
+
+  /**
+   * Vérifie le statut en direct d'une session de paiement
+   */
+  async getSessionStatus(token: string) {
+    const url = `${this.hubBaseUrl}/checkout/status/${encodeURIComponent(token)}`;
+    const response = await fetch(url, {
+      method: "GET",
+    });
+    return (await response.json()) as {
+      status: "pending" | "processing" | "succeeded" | "failed" | "canceled";
+      orderId: string;
+      provider?: string;
+      amount?: number;
+      currency?: string;
+      error?: string;
+    };
+  }
+
+  /**
    * Vérifie la signature du webhook transmis par le Payment Hub à votre SaaS
    */
   verifyWebhook(rawBody: string, signatureHeader: string | null): boolean {
