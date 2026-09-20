@@ -39,8 +39,24 @@ export class WhopProvider implements IPaymentProvider {
       request.metadata?.paymentMethods ||
       request.metadata?.payment_methods;
 
-    let allPaymentMethods = extraConfig.allPaymentMethods !== false;
+    const isCustomMode =
+      extraConfig.allPaymentMethods === false ||
+      extraConfig.allPaymentMethods === "false" ||
+      extraConfig.allPaymentMethods === 0 ||
+      extraConfig.allPaymentMethods === "0";
+
+    let allPaymentMethods = !isCustomMode;
     let enabledMethods: string[] = [];
+
+    let rawMethods = extraConfig.enabledPaymentMethods;
+    if (typeof rawMethods === "string") {
+      try {
+        const parsed = JSON.parse(rawMethods);
+        if (Array.isArray(parsed)) rawMethods = parsed;
+      } catch (e) {
+        rawMethods = rawMethods.split(",").map((m: string) => m.trim()).filter(Boolean);
+      }
+    }
 
     if (requestedMethods) {
       if (Array.isArray(requestedMethods)) {
@@ -55,18 +71,32 @@ export class WhopProvider implements IPaymentProvider {
           allPaymentMethods = false;
         }
       }
-    } else if (extraConfig.allPaymentMethods === false && Array.isArray(extraConfig.enabledPaymentMethods)) {
-      enabledMethods = extraConfig.enabledPaymentMethods.map((m: any) => String(m).trim().toLowerCase()).filter(Boolean);
+    } else if (isCustomMode && Array.isArray(rawMethods)) {
+      enabledMethods = rawMethods.map((m: any) => String(m).trim().toLowerCase()).filter(Boolean);
       allPaymentMethods = false;
     }
 
+    // Tous les types de moyens de paiement standards supportés par Whop
+    const ALL_WHOP_METHODS = [
+      "card",
+      "apple_pay",
+      "google_pay",
+      "crypto",
+      "coinbase",
+      "coinflow",
+      "us_bank_account",
+      "sepa_debit",
+      "paypal",
+      "cashapp"
+    ];
+
     // Mapping des méthodes utilisateur vers les identifiants techniques Whop (conformes OpenAPI PaymentMethodTypes)
     const methodAliases: Record<string, string[]> = {
-      card: ["card"],
-      cards: ["card"],
-      credit_card: ["card"],
-      crypto: ["crypto", "coinbase"],
-      cryptocurrency: ["crypto", "coinbase"],
+      card: ["card", "apple_pay", "google_pay"],
+      cards: ["card", "apple_pay", "google_pay"],
+      credit_card: ["card", "apple_pay", "google_pay"],
+      crypto: ["crypto", "coinbase", "coinflow"],
+      cryptocurrency: ["crypto", "coinbase", "coinflow"],
       ach: ["us_bank_account"],
       ach_debit: ["us_bank_account"],
       us_bank_account: ["us_bank_account"],
@@ -75,9 +105,6 @@ export class WhopProvider implements IPaymentProvider {
       paypal: ["paypal"],
       cashapp: ["cashapp"],
       cash_app: ["cashapp"],
-      klarna: ["klarna"],
-      ideal: ["ideal"],
-      bancontact: ["bancontact"],
     };
 
     let whopMethods: string[] = [];
@@ -92,6 +119,9 @@ export class WhopProvider implements IPaymentProvider {
       whopMethods = Array.from(new Set(whopMethods));
     }
 
+    // Calcul des méthodes explicitement désactivées
+    const disabledMethods = ALL_WHOP_METHODS.filter((m) => !whopMethods.includes(m));
+
     const apiBaseUrl = isSandbox
       ? "https://sandbox-api.whop.com/api/v1/checkout_configurations"
       : "https://api.whop.com/api/v1/checkout_configurations";
@@ -100,7 +130,9 @@ export class WhopProvider implements IPaymentProvider {
     const customerName = request.customer?.name || (request as any).customerName || (request as any).name;
 
     try {
-      const methodsLabel = allPaymentMethods ? "Tous les moyens autorisés" : `Moyens filtrés: [${whopMethods.join(", ")}]`;
+      const methodsLabel = allPaymentMethods
+        ? "Tous les moyens autorisés"
+        : `Moyens autorisés: [${whopMethods.join(", ")}], Désactivés: [${disabledMethods.join(", ")}]`;
       console.log(`[Whop] Envoi de la requête pour ${request.appId}: ${amountUSD} USD (${methodsLabel}, Client: ${customerEmail || 'anonyme'})`);
 
       const whopPayload: any = {
@@ -131,8 +163,10 @@ export class WhopProvider implements IPaymentProvider {
         };
 
         if (!allPaymentMethods && whopMethods.length > 0) {
+          // Selon la doc OpenAPI Whop, les champs 'enabled' et 'disabled' sont tous deux obligatoires
           whopPayload.plan.payment_method_configuration = {
             enabled: whopMethods,
+            disabled: disabledMethods,
             include_platform_defaults: false,
           };
         }
@@ -147,10 +181,29 @@ export class WhopProvider implements IPaymentProvider {
         body: JSON.stringify(whopPayload),
       });
 
-      // Repli automatique sans échec : si l'API Whop rejette payment_method_configuration (moyens non activés sur le compte, etc.)
+      // Si Whop rejette avec include_platform_defaults: false, tenter avec include_platform_defaults: true et disabled explicite
+      if (!response.ok && !allPaymentMethods && whopPayload.plan?.payment_method_configuration?.include_platform_defaults === false) {
+        const errorCloned = await response.clone().text();
+        console.warn(`[Whop] Whop API note (${response.status}: ${errorCloned.substring(0, 150)}). Réessai avec include_platform_defaults: true...`);
+        whopPayload.plan.payment_method_configuration = {
+          enabled: whopMethods,
+          disabled: disabledMethods,
+          include_platform_defaults: true,
+        };
+        response = await fetch(apiBaseUrl, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey.trim()}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(whopPayload),
+        });
+      }
+
+      // Repli ultime sans faire échouer la vente si le compte Whop du marchand n'a pas accès à la personnalisation des plans
       if (!response.ok && !allPaymentMethods && whopPayload.plan?.payment_method_configuration) {
         const errorCloned = await response.clone().text();
-        console.warn(`[Whop] L'API Whop a refusé la sélection restreinte (${response.status}: ${errorCloned.substring(0, 150)}). Bascule automatique immédiate sur la configuration standard Whop...`);
+        console.warn(`[Whop] L'API Whop ne permet pas la personnalisation des méthodes sur ce compte (${response.status}: ${errorCloned.substring(0, 150)}). Repli standard...`);
         delete whopPayload.plan.payment_method_configuration;
         response = await fetch(apiBaseUrl, {
           method: "POST",

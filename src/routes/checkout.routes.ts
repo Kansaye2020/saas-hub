@@ -181,18 +181,20 @@ checkoutRouter.get("/:token", async (req: Request, res: Response) => {
           if (typeof wExtra === 'string') {
             try { wExtra = JSON.parse(wExtra); } catch (e) {}
           }
-          if (wExtra.allPaymentMethods !== false) {
+          const isCustom = wExtra.allPaymentMethods === false || wExtra.allPaymentMethods === 'false' || wExtra.allPaymentMethods === 0 || wExtra.allPaymentMethods === '0';
+          if (!isCustom) {
             name = 'Carte Bancaire, Apple Pay, Crypto, ACH';
-          } else if (Array.isArray(wExtra.enabledPaymentMethods)) {
-            const hasCard = wExtra.enabledPaymentMethods.includes('card');
-            const hasCrypto = wExtra.enabledPaymentMethods.includes('crypto');
-            const hasAch = wExtra.enabledPaymentMethods.includes('ach');
+          } else {
+            let methodsArr = Array.isArray(wExtra.enabledPaymentMethods) ? wExtra.enabledPaymentMethods : (typeof wExtra.enabledPaymentMethods === 'string' ? wExtra.enabledPaymentMethods.split(',') : []);
+            methodsArr = methodsArr.map((m: any) => String(m).trim().toLowerCase());
+            const hasCard = methodsArr.includes('card');
+            const hasCrypto = methodsArr.includes('crypto');
+            const hasAch = methodsArr.includes('ach') || methodsArr.includes('us_bank_account');
             if (hasCard && hasCrypto) name = 'Carte Bancaire & Cryptomonnaies';
             else if (hasCrypto && !hasCard) name = 'Cryptomonnaies (Whop)';
             else if (hasAch && !hasCard && !hasCrypto) name = 'Virement bancaire ACH';
+            else if (hasCard) name = 'Carte Bancaire';
             else name = 'Carte Bancaire';
-          } else {
-            name = 'Carte Bancaire';
           }
         }
         providers.push({

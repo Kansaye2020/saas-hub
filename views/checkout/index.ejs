@@ -311,8 +311,10 @@
                                                 <%
                                                     let wExtra = provider.extraConfig || {};
                                                     if (typeof wExtra === 'string') { try { wExtra = JSON.parse(wExtra); } catch (e) {} }
-                                                    const isAll = (wExtra.allPaymentMethods !== false);
-                                                    const methods = Array.isArray(wExtra.enabledPaymentMethods) ? wExtra.enabledPaymentMethods : [];
+                                                    const isCustom = (wExtra.allPaymentMethods === false || wExtra.allPaymentMethods === 'false' || wExtra.allPaymentMethods === 0 || wExtra.allPaymentMethods === '0');
+                                                    const isAll = !isCustom;
+                                                    let methods = Array.isArray(wExtra.enabledPaymentMethods) ? wExtra.enabledPaymentMethods : (typeof wExtra.enabledPaymentMethods === 'string' ? wExtra.enabledPaymentMethods.split(',') : []);
+                                                    methods = methods.map(m => String(m).trim().toLowerCase());
                                                     const hasCard = isAll || methods.includes('card');
                                                     const hasCrypto = isAll || methods.includes('crypto');
                                                     const hasAch = isAll || methods.includes('ach') || methods.includes('us_bank_account');
