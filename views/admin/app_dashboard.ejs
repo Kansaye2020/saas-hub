@@ -271,6 +271,20 @@
                                         <span class="text-base-content/60"><%= prov.secretKeyLabel || prov.meta?.secretKeyLabel || 'Clé Secrète' %>:</span>
                                         <span class="font-bold truncate max-w-[160px]"><%= prov.maskedSecretKey || (prov.secretKey ? '••••••••' : 'Non configurée') %></span>
                                     </div>
+                                    <% if (prov.providerId === 'whop') { %>
+                                        <% 
+                                            let whopExtra = {}; 
+                                            try { whopExtra = JSON.parse(prov.extraConfig || '{}'); } catch (e) {} 
+                                            const isAll = (whopExtra.allPaymentMethods !== false);
+                                            const mList = Array.isArray(whopExtra.enabledPaymentMethods) ? whopExtra.enabledPaymentMethods : [];
+                                        %>
+                                        <div class="flex items-center justify-between pt-1 border-t border-base-300/40">
+                                            <span class="text-base-content/60">Moyens acceptés :</span>
+                                            <span class="badge badge-sm <%= isAll ? 'badge-primary' : 'badge-neutral' %> font-mono font-bold">
+                                                <%= isAll ? 'Tous les moyens' : (mList.map(m => m.toUpperCase()).join(', ') || 'Tous') %>
+                                            </span>
+                                        </div>
+                                    <% } %>
                                 </div>
 
                                 <div class="card-actions justify-end gap-2 pt-2 border-t border-base-200">
@@ -278,7 +292,7 @@
                                         <input type="hidden" name="providerId" value="<%= prov.providerId %>">
                                         <button type="submit" class="btn btn-ghost btn-sm text-error font-bold rounded-lg hover:bg-error/10">Supprimer</button>
                                     </form>
-                                    <button type="button" class="btn btn-outline btn-primary btn-sm font-bold rounded-lg" onclick="openEditProcessorModal('<%= prov.providerId %>', '<%= (prov.publicKey || '').replace(/'/g, "\\'") %>', '', '<%= (prov.extraConfig || '').replace(/'/g, "\\'") %>', <%= prov.isActive ? 1 : 0 %>)">
+                                    <button type="button" class="btn btn-outline btn-primary btn-sm font-bold rounded-lg" onclick="openEditProcessorModal('<%= prov.providerId %>', '<%= (prov.publicKey || '').replace(/'/g, "\\'") %>', '', '<%= (prov.extraConfig || '').replace(/'/g, "\\'").replace(/\r?\n/g, '') %>', <%= prov.isActive ? 1 : 0 %>)">
                                         Modifier les clés
                                     </button>
                                 </div>
@@ -363,7 +377,7 @@
                 <button type="button" class="btn btn-sm btn-circle btn-ghost" onclick="document.getElementById('processor_modal').close()">✕</button>
             </div>
 
-            <form method="POST" action="/admin/app/<%= currentApp.id %>/provider" id="processor-form">
+            <form method="POST" action="/admin/app/<%= currentApp.id %>/provider" id="processor-form" onsubmit="if (document.getElementById('proc-form-providerId-input').value === 'whop') updateWhopExtraConfigJson()">
                 <input type="hidden" name="isEdit" id="proc-form-isEdit" value="0">
                 <input type="hidden" name="providerId" id="proc-form-providerId-input" value="">
                 
@@ -399,6 +413,121 @@
                     <div class="relative">
                         <input type="password" name="secretKey" id="proc-form-secretKey" class="input input-bordered input-sm sm:input-md w-full font-mono text-xs rounded-xl pr-10" placeholder="sk_..." autocomplete="new-password" />
                         <button type="button" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-base-content/40 hover:text-base-content text-sm" onclick="togglePasswordVisibility('proc-form-secretKey', this)">👁️</button>
+                    </div>
+                </div>
+
+                <!-- Section dédiée pour la sélection des moyens de paiement Whop -->
+                <div class="border border-base-300 bg-base-200/60 rounded-2xl p-4 mb-4" id="proc-wrapper-whopOptions" style="display: none;">
+                    <div class="flex items-center justify-between mb-2.5">
+                        <label class="font-bold text-xs flex items-center gap-1.5 text-base-content">
+                            <span>⚡ Moyens de paiement acceptés (Whop)</span>
+                        </label>
+                        <span class="badge badge-primary badge-outline text-[10px] font-bold">Personnalisable</span>
+                    </div>
+
+                    <!-- Choix : Tous les moyens OU Sélection personnalisée -->
+                    <div class="grid grid-cols-2 gap-2 mb-3">
+                        <label class="cursor-pointer border border-base-300 rounded-xl p-2.5 flex items-center gap-2 bg-base-100 hover:bg-base-200/80 transition-all has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                            <input type="radio" name="whopMethodsMode" value="all" id="whop-mode-all" class="radio radio-primary radio-xs" checked onchange="onWhopModeChange(this.value)">
+                            <span class="text-xs font-bold">Tous les moyens</span>
+                        </label>
+                        <label class="cursor-pointer border border-base-300 rounded-xl p-2.5 flex items-center gap-2 bg-base-100 hover:bg-base-200/80 transition-all has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                            <input type="radio" name="whopMethodsMode" value="custom" id="whop-mode-custom" class="radio radio-primary radio-xs" onchange="onWhopModeChange(this.value)">
+                            <span class="text-xs font-bold">Sélection précise</span>
+                        </label>
+                    </div>
+
+                    <!-- Info banner si "Tous les moyens" -->
+                    <div id="whop-all-info" class="text-[11px] text-base-content/70 bg-base-100 p-2.5 rounded-xl border border-base-300 mb-3 leading-relaxed">
+                        🌐 <strong>Tous les moyens disponibles</strong> sur votre compte Whop (Cartes, Apple Pay, Google Pay, Cryptos, ACH, etc.) seront automatiquement affichés selon le pays du client.
+                    </div>
+
+                    <!-- Liste des cases à cocher si "Sélection précise" -->
+                    <div id="whop-custom-methods-list" class="space-y-1.5 mb-3 hidden">
+                        <div class="text-[11px] font-semibold text-base-content/70 mb-1">Cochez les moyens que vous souhaitez autoriser :</div>
+                        
+                        <label class="flex items-center justify-between p-2 rounded-xl bg-base-100 border border-base-300 hover:bg-base-200/50 cursor-pointer transition-colors">
+                            <div class="flex items-center gap-2">
+                                <span class="text-base">💳</span>
+                                <div>
+                                    <span class="text-xs font-bold block text-base-content">Cartes Bancaires</span>
+                                    <span class="text-[10px] text-base-content/60">Visa, Mastercard, Amex, Apple Pay, Google Pay</span>
+                                </div>
+                            </div>
+                            <input type="checkbox" name="whopPaymentMethods" value="card" checked class="checkbox checkbox-primary checkbox-sm whop-pm-cb" onchange="updateWhopExtraConfigJson()">
+                        </label>
+
+                        <label class="flex items-center justify-between p-2 rounded-xl bg-base-100 border border-base-300 hover:bg-base-200/50 cursor-pointer transition-colors">
+                            <div class="flex items-center gap-2">
+                                <span class="text-base">🪙</span>
+                                <div>
+                                    <span class="text-xs font-bold block text-base-content">Cryptomonnaies (Crypto)</span>
+                                    <span class="text-[10px] text-base-content/60">Bitcoin, Ethereum, USDT, Solana (Coinbase)</span>
+                                </div>
+                            </div>
+                            <input type="checkbox" name="whopPaymentMethods" value="crypto" class="checkbox checkbox-primary checkbox-sm whop-pm-cb" onchange="updateWhopExtraConfigJson()">
+                        </label>
+
+                        <label class="flex items-center justify-between p-2 rounded-xl bg-base-100 border border-base-300 hover:bg-base-200/50 cursor-pointer transition-colors">
+                            <div class="flex items-center gap-2">
+                                <span class="text-base">🏦</span>
+                                <div>
+                                    <span class="text-xs font-bold block text-base-content">Virement Bancaire US (ACH)</span>
+                                    <span class="text-[10px] text-base-content/60">ACH Direct Debit pour les comptes aux USA</span>
+                                </div>
+                            </div>
+                            <input type="checkbox" name="whopPaymentMethods" value="ach" class="checkbox checkbox-primary checkbox-sm whop-pm-cb" onchange="updateWhopExtraConfigJson()">
+                        </label>
+
+                        <label class="flex items-center justify-between p-2 rounded-xl bg-base-100 border border-base-300 hover:bg-base-200/50 cursor-pointer transition-colors">
+                            <div class="flex items-center gap-2">
+                                <span class="text-base">🇪🇺</span>
+                                <div>
+                                    <span class="text-xs font-bold block text-base-content">Prélèvement SEPA</span>
+                                    <span class="text-[10px] text-base-content/60">Virement bancaire européen (Zone Euro)</span>
+                                </div>
+                            </div>
+                            <input type="checkbox" name="whopPaymentMethods" value="sepa_debit" class="checkbox checkbox-primary checkbox-sm whop-pm-cb" onchange="updateWhopExtraConfigJson()">
+                        </label>
+
+                        <label class="flex items-center justify-between p-2 rounded-xl bg-base-100 border border-base-300 hover:bg-base-200/50 cursor-pointer transition-colors">
+                            <div class="flex items-center gap-2">
+                                <span class="text-base">🅿️</span>
+                                <div>
+                                    <span class="text-xs font-bold block text-base-content">PayPal</span>
+                                    <span class="text-[10px] text-base-content/60">Paiement avec compte PayPal</span>
+                                </div>
+                            </div>
+                            <input type="checkbox" name="whopPaymentMethods" value="paypal" class="checkbox checkbox-primary checkbox-sm whop-pm-cb" onchange="updateWhopExtraConfigJson()">
+                        </label>
+
+                        <label class="flex items-center justify-between p-2 rounded-xl bg-base-100 border border-base-300 hover:bg-base-200/50 cursor-pointer transition-colors">
+                            <div class="flex items-center gap-2">
+                                <span class="text-base">💵</span>
+                                <div>
+                                    <span class="text-xs font-bold block text-base-content">Cash App Pay</span>
+                                    <span class="text-[10px] text-base-content/60">Paiement mobile instantané</span>
+                                </div>
+                            </div>
+                            <input type="checkbox" name="whopPaymentMethods" value="cashapp" class="checkbox checkbox-primary checkbox-sm whop-pm-cb" onchange="updateWhopExtraConfigJson()">
+                        </label>
+                    </div>
+
+                    <!-- Options avancées Whop (Sandbox & Plan ID) -->
+                    <div class="pt-2.5 border-t border-base-300/80 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <span class="text-xs font-bold block text-base-content">Mode Sandbox / Test</span>
+                                <span class="text-[10px] text-base-content/60">Utiliser sandbox.whop.com pour les tests</span>
+                            </div>
+                            <input type="checkbox" name="whopIsSandbox" value="1" id="whop-isSandbox" class="toggle toggle-warning toggle-sm" onchange="updateWhopExtraConfigJson()">
+                        </div>
+
+                        <div class="mt-2">
+                            <label class="text-[11px] font-bold text-base-content/80 block mb-1">Plan ID Whop existant (Optionnel)</label>
+                            <input type="text" name="whopPlanId" id="whop-planId" class="input input-bordered input-xs sm:input-sm w-full font-mono text-xs rounded-lg" placeholder="plan_xxxxxxxx (laisser vide pour création automatique)" oninput="updateWhopExtraConfigJson()">
+                            <span class="text-[10px] text-base-content/50 block mt-0.5">Si renseigné, ce plan Whop existant sera utilisé directement.</span>
+                        </div>
                     </div>
                 </div>
 
@@ -505,6 +634,46 @@
             onProviderSelectChange(providerId);
         }
 
+        function onWhopModeChange(mode) {
+            const isAll = (mode === 'all');
+            const allInfo = document.getElementById('whop-all-info');
+            const customList = document.getElementById('whop-custom-methods-list');
+            if (allInfo) allInfo.classList.toggle('hidden', !isAll);
+            if (customList) customList.classList.toggle('hidden', isAll);
+            updateWhopExtraConfigJson();
+        }
+
+        function updateWhopExtraConfigJson() {
+            const customRadio = document.getElementById('whop-mode-custom');
+            const isCustom = customRadio ? customRadio.checked : false;
+            const sandboxToggle = document.getElementById('whop-isSandbox');
+            const isSandbox = sandboxToggle ? sandboxToggle.checked : false;
+            const planIdInput = document.getElementById('whop-planId');
+            const planId = planIdInput ? planIdInput.value.trim() : '';
+
+            const selectedMethods = [];
+            if (isCustom) {
+                document.querySelectorAll('.whop-pm-cb:checked').forEach(cb => {
+                    selectedMethods.push(cb.value);
+                });
+            }
+
+            const extraObj = {
+                allPaymentMethods: !isCustom,
+                enabledPaymentMethods: isCustom ? selectedMethods : [],
+                isSandbox: isSandbox
+            };
+
+            if (planId) {
+                extraObj.planId = planId;
+            }
+
+            const extraConfigInput = document.getElementById('proc-form-extraConfig');
+            if (extraConfigInput) {
+                extraConfigInput.value = JSON.stringify(extraObj);
+            }
+        }
+
         function onProviderSelectChange(providerId) {
             const meta = providersMeta[providerId];
             if (!meta) return;
@@ -515,13 +684,23 @@
             document.getElementById('proc-label-secretKey').innerText = meta.secLabel || 'Clé Secrète / API Key';
             document.getElementById('proc-form-secretKey').placeholder = meta.secPlaceholder || 'sk_...';
 
+            const whopWrapper = document.getElementById('proc-wrapper-whopOptions');
             const extraWrapper = document.getElementById('proc-wrapper-extraConfig');
-            if (meta.hasExtra) {
-                extraWrapper.style.display = 'block';
-                document.getElementById('proc-label-extraConfig').innerText = meta.extraLabel || 'Configuration additionnelle';
-                document.getElementById('proc-form-extraConfig').placeholder = meta.extraPlaceholder || '{"option": "valeur"}';
+
+            if (providerId === 'whop') {
+                if (whopWrapper) whopWrapper.style.display = 'block';
+                if (extraWrapper) extraWrapper.style.display = 'none';
             } else {
-                extraWrapper.style.display = 'none';
+                if (whopWrapper) whopWrapper.style.display = 'none';
+                if (extraWrapper) {
+                    if (meta.hasExtra) {
+                        extraWrapper.style.display = 'block';
+                        document.getElementById('proc-label-extraConfig').innerText = meta.extraLabel || 'Configuration additionnelle';
+                        document.getElementById('proc-form-extraConfig').placeholder = meta.extraPlaceholder || '{"option": "valeur"}';
+                    } else {
+                        extraWrapper.style.display = 'none';
+                    }
+                }
             }
         }
 
@@ -540,6 +719,23 @@
             document.getElementById('proc-form-secretKey').value = "";
             document.getElementById('proc-form-extraConfig').value = "";
             document.getElementById('proc-form-isActive').checked = true;
+
+            // Réinitialisation des contrôles Whop
+            const whopModeAll = document.getElementById('whop-mode-all');
+            const whopModeCustom = document.getElementById('whop-mode-custom');
+            if (whopModeAll) whopModeAll.checked = true;
+            if (whopModeCustom) whopModeCustom.checked = false;
+            const allInfo = document.getElementById('whop-all-info');
+            const customList = document.getElementById('whop-custom-methods-list');
+            if (allInfo) allInfo.classList.remove('hidden');
+            if (customList) customList.classList.add('hidden');
+            document.querySelectorAll('.whop-pm-cb').forEach(cb => {
+                cb.checked = (cb.value === 'card');
+            });
+            const whopSandbox = document.getElementById('whop-isSandbox');
+            if (whopSandbox) whopSandbox.checked = false;
+            const whopPlan = document.getElementById('whop-planId');
+            if (whopPlan) whopPlan.value = '';
 
             const firstOption = selectEl.querySelector('option:not([disabled])');
             if (firstOption) {
@@ -570,6 +766,34 @@
             document.getElementById('proc-form-secretKey').placeholder = 'Laisser vide pour conserver la clé chiffrée actuelle';
             document.getElementById('proc-form-extraConfig').value = extraConfig || '';
             document.getElementById('proc-form-isActive').checked = (isActive === 1 || isActive === true || isActive === '1');
+
+            // Hydratation des options Whop si c'est Whop
+            if (providerId === 'whop') {
+                let wExtra = {};
+                try { wExtra = JSON.parse(extraConfig || '{}'); } catch (e) {}
+
+                const isCustom = (wExtra.allPaymentMethods === false);
+                const whopModeAll = document.getElementById('whop-mode-all');
+                const whopModeCustom = document.getElementById('whop-mode-custom');
+                if (whopModeAll) whopModeAll.checked = !isCustom;
+                if (whopModeCustom) whopModeCustom.checked = isCustom;
+
+                const allInfo = document.getElementById('whop-all-info');
+                const customList = document.getElementById('whop-custom-methods-list');
+                if (allInfo) allInfo.classList.toggle('hidden', isCustom);
+                if (customList) customList.classList.toggle('hidden', !isCustom);
+
+                const methods = Array.isArray(wExtra.enabledPaymentMethods) ? wExtra.enabledPaymentMethods : ['card'];
+                document.querySelectorAll('.whop-pm-cb').forEach(cb => {
+                    cb.checked = methods.includes(cb.value);
+                });
+
+                const whopSandbox = document.getElementById('whop-isSandbox');
+                if (whopSandbox) whopSandbox.checked = Boolean(wExtra.isSandbox || wExtra.sandbox);
+                const whopPlan = document.getElementById('whop-planId');
+                if (whopPlan) whopPlan.value = wExtra.planId || '';
+                updateWhopExtraConfigJson();
+            }
 
             document.getElementById('processor_modal').showModal();
         }

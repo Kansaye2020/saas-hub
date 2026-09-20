@@ -72,14 +72,15 @@ export const ALL_PROVIDERS = [
   {
     id: "whop",
     name: "Whop",
-    tagline: "Cartes Bancaires Internationales, Apple Pay, Google Pay",
-    category: "Carte Bancaire",
+    tagline: "Cartes Bancaires Internationales, Apple Pay, Google Pay, Crypto, ACH",
+    category: "Carte & Crypto",
     publicKeyLabel: "Company ID (biz_...)",
     publicKeyPlaceholder: "Ex: biz_...",
     secretKeyLabel: "Company API Key",
     secretKeyPlaceholder: "Ex: clé API Whop",
-    hasExtraConfig: false,
-    extraConfigLabel: "",
+    hasExtraConfig: true,
+    extraConfigLabel: "Configuration Whop (JSON)",
+    extraConfigPlaceholder: '{"allPaymentMethods": true}',
   },
   {
     id: "stripe",
@@ -392,6 +393,39 @@ adminRouter.post("/app/:appId/provider", async (req: Request, res: Response) => 
       finalSecretKey = existing[0].secretKey || existing[0].secretkey || '';
     } else if (secretKey && secretKey.trim() !== '') {
       finalSecretKey = encryptSecret(secretKey.trim());
+    }
+
+    // Traitement spécifique des options avancées Whop (moyens de paiement, sandbox, etc.)
+    if (providerId === 'whop') {
+      let extraObj: any = {};
+      if (extraConfig && typeof extraConfig === 'string' && extraConfig.trim()) {
+        try { extraObj = JSON.parse(extraConfig.trim()); } catch (e) {}
+      }
+
+      if (req.body.whopMethodsMode !== undefined) {
+        const isAll = req.body.whopMethodsMode === 'all';
+        extraObj.allPaymentMethods = isAll;
+        
+        let methods: string[] = [];
+        if (!isAll && req.body.whopPaymentMethods) {
+          if (Array.isArray(req.body.whopPaymentMethods)) {
+            methods = req.body.whopPaymentMethods;
+          } else if (typeof req.body.whopPaymentMethods === 'string') {
+            methods = req.body.whopPaymentMethods.split(',').map((m: string) => m.trim()).filter(Boolean);
+          }
+        }
+        extraObj.enabledPaymentMethods = methods;
+      }
+
+      if (req.body.whopIsSandbox !== undefined) {
+        extraObj.isSandbox = req.body.whopIsSandbox === '1' || req.body.whopIsSandbox === 'on' || req.body.whopIsSandbox === true;
+      }
+
+      if (req.body.whopPlanId !== undefined && req.body.whopPlanId.trim()) {
+        extraObj.planId = req.body.whopPlanId.trim();
+      }
+
+      extraConfig = JSON.stringify(extraObj);
     }
 
     if (isAlreadyConfigured) {

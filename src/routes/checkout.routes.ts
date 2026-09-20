@@ -166,7 +166,7 @@ checkoutRouter.get("/:token", async (req: Request, res: Response) => {
 
     // Fetch active providers configured specifically for THIS site
     const appActiveProviders = await getAppActiveProviders(session.appId);
-    const providers: Array<{ id: string; name: string }> = [];
+    const providers: Array<{ id: string; name: string; extraConfig?: any }> = [];
 
     for (const p of appActiveProviders) {
       const pId = p.providerId || (p as any).providerid || '';
@@ -176,9 +176,29 @@ checkoutRouter.get("/:token", async (req: Request, res: Response) => {
         else if (pId === 'lomopay') name = 'Mobile Money';
         else if (pId === 'ikeepay') name = 'Mobile Money';
         else if (pId === 'depipay') name = 'Crypto-monnaies (DepiPay)';
+        else if (pId === 'whop') {
+          let wExtra: any = p.extraConfig || {};
+          if (typeof wExtra === 'string') {
+            try { wExtra = JSON.parse(wExtra); } catch (e) {}
+          }
+          if (wExtra.allPaymentMethods !== false) {
+            name = 'Carte Bancaire, Apple Pay, Crypto, ACH';
+          } else if (Array.isArray(wExtra.enabledPaymentMethods)) {
+            const hasCard = wExtra.enabledPaymentMethods.includes('card');
+            const hasCrypto = wExtra.enabledPaymentMethods.includes('crypto');
+            const hasAch = wExtra.enabledPaymentMethods.includes('ach');
+            if (hasCard && hasCrypto) name = 'Carte Bancaire & Cryptomonnaies';
+            else if (hasCrypto && !hasCard) name = 'Cryptomonnaies (Whop)';
+            else if (hasAch && !hasCard && !hasCrypto) name = 'Virement bancaire ACH';
+            else name = 'Carte Bancaire';
+          } else {
+            name = 'Carte Bancaire';
+          }
+        }
         providers.push({
           id: pId,
-          name
+          name,
+          extraConfig: p.extraConfig
         });
       }
     }

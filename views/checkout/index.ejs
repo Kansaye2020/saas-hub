@@ -299,13 +299,34 @@
                                                     <div class="font-bold text-base-content text-sm sm:text-base">Mobile Money</div>
                                                     <div class="text-xs text-base-content/60 mt-0.5">Wave, Orange Money, MTN MoMo, Moov</div>
                                                 </div>
-                                            <% } else if (provider.id === 'stripe' || provider.id === 'whop') { %>
+                                            <% } else if (provider.id === 'stripe') { %>
                                                 <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center font-bold text-lg shrink-0">
                                                     💳
                                                 </div>
                                                 <div>
-                                                    <div class="font-bold text-base-content text-sm sm:text-base">Carte Bancaire</div>
-                                                    <div class="text-xs text-base-content/60 mt-0.5">Visa, Mastercard, Apple Pay, Google Pay</div>
+                                                    <div class="font-bold text-base-content text-sm sm:text-base">Carte Bancaire (Stripe)</div>
+                                                    <div class="text-xs text-base-content/60 mt-0.5">Visa, Mastercard, American Express</div>
+                                                </div>
+                                            <% } else if (provider.id === 'whop') { %>
+                                                <%
+                                                    let wExtra = provider.extraConfig || {};
+                                                    if (typeof wExtra === 'string') { try { wExtra = JSON.parse(wExtra); } catch (e) {} }
+                                                    const isAll = (wExtra.allPaymentMethods !== false);
+                                                    const methods = Array.isArray(wExtra.enabledPaymentMethods) ? wExtra.enabledPaymentMethods : [];
+                                                    const hasCard = isAll || methods.includes('card');
+                                                    const hasCrypto = isAll || methods.includes('crypto');
+                                                    const hasAch = isAll || methods.includes('ach') || methods.includes('us_bank_account');
+                                                %>
+                                                <div class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center font-bold text-lg shrink-0">
+                                                    <%= (hasCard && hasCrypto) ? '💳' : (hasCrypto ? '🪙' : (hasAch ? '🏦' : '💳')) %>
+                                                </div>
+                                                <div>
+                                                    <div class="font-bold text-base-content text-sm sm:text-base">
+                                                        <%= isAll ? 'Cartes, Apple Pay, Crypto, ACH' : (methods.length > 0 ? methods.map(m => m === 'card' ? 'Cartes' : (m === 'crypto' ? 'Crypto' : (m === 'ach' ? 'ACH' : m.toUpperCase()))).join(', ') : 'Carte Bancaire') %>
+                                                    </div>
+                                                    <div class="text-xs text-base-content/60 mt-0.5">
+                                                        <%= isAll ? 'Visa, Mastercard, Apple Pay, Cryptomonnaies, ACH US' : (hasCrypto && hasCard ? 'Cartes, Apple Pay, Cryptomonnaies (BTC, ETH, USDT)' : (hasCrypto ? 'Bitcoin, Ethereum, USDT, Solana via Whop' : 'Visa, Mastercard, Apple Pay, Google Pay')) %>
+                                                    </div>
                                                 </div>
                                             <% } else if (provider.id === 'depipay') { %>
                                                 <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold text-lg shrink-0">
@@ -1014,7 +1035,7 @@
             if (providerVal === 'lomopay') providerDisplay = 'Mobile Money';
             else if (providerVal === 'saspay') providerDisplay = 'Mobile Money & Carte Bancaire';
             else if (providerVal === 'ikeepay') providerDisplay = 'Mobile Money';
-            else if (providerVal === 'whop') providerDisplay = 'Carte Bancaire';
+            else if (providerVal === 'whop') providerDisplay = 'Whop Checkout';
             else if (providerVal === 'stripe') providerDisplay = 'Carte Bancaire';
             else if (providerVal === 'depipay') {
                 const netName = CRYPTO_CONFIG[selectedCryptoNetwork]?.name || selectedCryptoNetwork.toUpperCase();

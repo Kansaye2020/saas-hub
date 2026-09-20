@@ -9,7 +9,8 @@ export class WhopProvider implements IPaymentProvider {
     const providerConfig = await getAppProviderConfig(request.appId, this.name);
     const companyId = providerConfig.publicKey;
     const apiKey = providerConfig.secretKey;
-    const isSandbox = Boolean(providerConfig.extraConfig?.isSandbox || providerConfig.extraConfig?.sandbox);
+    const extraConfig = providerConfig.extraConfig || {};
+    const isSandbox = Boolean(extraConfig?.isSandbox || extraConfig?.sandbox);
 
     if (!apiKey || !companyId) {
       return {
@@ -29,6 +30,68 @@ export class WhopProvider implements IPaymentProvider {
       amountUSD = Number((request.amount * 1.08).toFixed(2));
     }
 
+    // Détermination des moyens de paiement souhaités
+    // 1. Paramètre de la requête dynamique (si un appel API spécifie ses propres moyens)
+    // 2. Ou configuration enregistrée pour le site
+    const requestedMethods =
+      (request as any).paymentMethods ||
+      (request as any).payment_methods ||
+      request.metadata?.paymentMethods ||
+      request.metadata?.payment_methods;
+
+    let allPaymentMethods = extraConfig.allPaymentMethods !== false;
+    let enabledMethods: string[] = [];
+
+    if (requestedMethods) {
+      if (Array.isArray(requestedMethods)) {
+        enabledMethods = requestedMethods;
+        allPaymentMethods = false;
+      } else if (typeof requestedMethods === "string") {
+        if (requestedMethods.toLowerCase() === "all" || requestedMethods.trim() === "*") {
+          allPaymentMethods = true;
+          enabledMethods = [];
+        } else {
+          enabledMethods = requestedMethods.split(",").map((m: string) => m.trim().toLowerCase()).filter(Boolean);
+          allPaymentMethods = false;
+        }
+      }
+    } else if (extraConfig.allPaymentMethods === false && Array.isArray(extraConfig.enabledPaymentMethods)) {
+      enabledMethods = extraConfig.enabledPaymentMethods.map((m: any) => String(m).trim().toLowerCase()).filter(Boolean);
+      allPaymentMethods = false;
+    }
+
+    // Mapping des méthodes utilisateur vers les identifiants techniques Whop / Stripe
+    const methodAliases: Record<string, string[]> = {
+      card: ["card"],
+      cards: ["card"],
+      credit_card: ["card"],
+      crypto: ["crypto", "coinbase"],
+      cryptocurrency: ["crypto", "coinbase"],
+      ach: ["us_bank_account", "ach_debit", "ach"],
+      ach_debit: ["us_bank_account", "ach_debit", "ach"],
+      us_bank_account: ["us_bank_account", "ach_debit", "ach"],
+      sepa: ["sepa_debit"],
+      sepa_debit: ["sepa_debit"],
+      paypal: ["paypal"],
+      cashapp: ["cashapp"],
+      cash_app: ["cashapp"],
+      klarna: ["klarna"],
+      ideal: ["ideal"],
+      bancontact: ["bancontact"],
+    };
+
+    let whopMethods: string[] = [];
+    if (!allPaymentMethods && enabledMethods.length > 0) {
+      for (const m of enabledMethods) {
+        if (methodAliases[m]) {
+          whopMethods.push(...methodAliases[m]);
+        } else {
+          whopMethods.push(m);
+        }
+      }
+      whopMethods = Array.from(new Set(whopMethods));
+    }
+
     const apiBaseUrl = isSandbox
       ? "https://sandbox-api.whop.com/api/v1/checkout_configurations"
       : "https://api.whop.com/api/v1/checkout_configurations";
@@ -37,16 +100,11 @@ export class WhopProvider implements IPaymentProvider {
     const customerName = request.customer?.name || (request as any).customerName || (request as any).name;
 
     try {
-      console.log(`[Whop] Envoi de la requête pour ${request.appId}: ${amountUSD} USD (Client: ${customerEmail || 'anonyme'})`);
+      const methodsLabel = allPaymentMethods ? "Tous les moyens autorisés" : `Moyens filtrés: [${whopMethods.join(", ")}]`;
+      console.log(`[Whop] Envoi de la requête pour ${request.appId}: ${amountUSD} USD (${methodsLabel}, Client: ${customerEmail || 'anonyme'})`);
 
       const whopPayload: any = {
         redirect_url: request.returnUrl,
-        plan: {
-          company_id: companyId.trim(),
-          initial_price: amountUSD,
-          plan_type: "one_time",
-          currency: "usd",
-        },
         metadata: {
           appId: request.appId,
           orderId: request.orderId,
@@ -56,11 +114,38 @@ export class WhopProvider implements IPaymentProvider {
           name: customerName || "",
           originalAmount: request.amount.toString(),
           originalCurrency: request.currency || "XOF",
+          allPaymentMethods: String(allPaymentMethods),
+          ...(whopMethods.length > 0 ? { allowedPaymentMethods: whopMethods.join(",") } : {}),
           ...(request.metadata || {}),
         },
       };
 
-      const response = await fetch(apiBaseUrl, {
+      if (extraConfig.planId && typeof extraConfig.planId === "string" && extraConfig.planId.trim()) {
+        whopPayload.plan_id = extraConfig.planId.trim();
+      } else {
+        whopPayload.plan = {
+          company_id: companyId.trim(),
+          initial_price: amountUSD,
+          plan_type: "one_time",
+          currency: "usd",
+        };
+
+        if (!allPaymentMethods && whopMethods.length > 0) {
+          whopPayload.plan.payment_method_configuration = {
+            enabled: whopMethods,
+            include_platform_defaults: false,
+          };
+        }
+      }
+
+      if (!allPaymentMethods && whopMethods.length > 0) {
+        whopPayload.payment_method_configuration = {
+          enabled: whopMethods,
+          include_platform_defaults: false,
+        };
+      }
+
+      let response = await fetch(apiBaseUrl, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${apiKey.trim()}`,
@@ -68,6 +153,28 @@ export class WhopProvider implements IPaymentProvider {
         },
         body: JSON.stringify(whopPayload),
       });
+
+      // Si l'API refuse payment_method_configuration en mode standard, repli automatique sans faire échouer la session
+      if (!response.ok && !allPaymentMethods && (whopPayload.payment_method_configuration || whopPayload.plan?.payment_method_configuration)) {
+        const errorCloned = await response.clone().text();
+        if (
+          errorCloned.toLowerCase().includes("payment_method_configuration") ||
+          errorCloned.toLowerCase().includes("unknown field") ||
+          errorCloned.toLowerCase().includes("unrecognized")
+        ) {
+          console.warn("[Whop] Whop API a refusé payment_method_configuration dans le body, bascule sur paramètre URL...");
+          delete whopPayload.payment_method_configuration;
+          if (whopPayload.plan) delete whopPayload.plan.payment_method_configuration;
+          response = await fetch(apiBaseUrl, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${apiKey.trim()}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(whopPayload),
+          });
+        }
+      }
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -84,6 +191,12 @@ export class WhopProvider implements IPaymentProvider {
         : "https://whop.com/checkout";
 
       let paymentUrl = checkoutConfig.purchase_url || checkoutConfig.url || `${baseCheckoutUrl}/${checkoutConfig.id}`;
+
+      // Si des méthodes restreintes sont sélectionnées, ajouter en query parameter pour guider la page Whop
+      if (!allPaymentMethods && whopMethods.length > 0) {
+        const sep = paymentUrl.includes("?") ? "&" : "?";
+        paymentUrl += `${sep}payment_methods=${encodeURIComponent(whopMethods.join(","))}&methods=${encodeURIComponent(whopMethods.join(","))}`;
+      }
 
       // Transmission directe de l'email et masquage du champ email sur la page Whop
       if (customerEmail) {
