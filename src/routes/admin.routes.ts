@@ -417,12 +417,14 @@ adminRouter.post("/app/:appId/provider", async (req: Request, res: Response) => 
         extraObj.enabledPaymentMethods = methods;
       }
 
-      if (req.body.whopIsSandbox !== undefined) {
-        extraObj.isSandbox = req.body.whopIsSandbox === '1' || req.body.whopIsSandbox === 'on' || req.body.whopIsSandbox === true;
-      }
+      extraObj.isSandbox = req.body.whopIsSandbox === '1' || req.body.whopIsSandbox === 'on' || req.body.whopIsSandbox === true;
 
-      if (req.body.whopPlanId !== undefined && req.body.whopPlanId.trim()) {
-        extraObj.planId = req.body.whopPlanId.trim();
+      if (req.body.whopPlanId !== undefined) {
+        if (req.body.whopPlanId && req.body.whopPlanId.trim()) {
+          extraObj.planId = req.body.whopPlanId.trim();
+        } else {
+          delete extraObj.planId;
+        }
       }
 
       extraConfig = JSON.stringify(extraObj);

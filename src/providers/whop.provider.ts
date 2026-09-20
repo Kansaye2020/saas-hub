@@ -60,16 +60,16 @@ export class WhopProvider implements IPaymentProvider {
       allPaymentMethods = false;
     }
 
-    // Mapping des méthodes utilisateur vers les identifiants techniques Whop / Stripe
+    // Mapping des méthodes utilisateur vers les identifiants techniques Whop (conformes OpenAPI PaymentMethodTypes)
     const methodAliases: Record<string, string[]> = {
       card: ["card"],
       cards: ["card"],
       credit_card: ["card"],
       crypto: ["crypto", "coinbase"],
       cryptocurrency: ["crypto", "coinbase"],
-      ach: ["us_bank_account", "ach_debit", "ach"],
-      ach_debit: ["us_bank_account", "ach_debit", "ach"],
-      us_bank_account: ["us_bank_account", "ach_debit", "ach"],
+      ach: ["us_bank_account"],
+      ach_debit: ["us_bank_account"],
+      us_bank_account: ["us_bank_account"],
       sepa: ["sepa_debit"],
       sepa_debit: ["sepa_debit"],
       paypal: ["paypal"],
@@ -138,13 +138,6 @@ export class WhopProvider implements IPaymentProvider {
         }
       }
 
-      if (!allPaymentMethods && whopMethods.length > 0) {
-        whopPayload.payment_method_configuration = {
-          enabled: whopMethods,
-          include_platform_defaults: false,
-        };
-      }
-
       let response = await fetch(apiBaseUrl, {
         method: "POST",
         headers: {
@@ -154,26 +147,19 @@ export class WhopProvider implements IPaymentProvider {
         body: JSON.stringify(whopPayload),
       });
 
-      // Si l'API refuse payment_method_configuration en mode standard, repli automatique sans faire échouer la session
-      if (!response.ok && !allPaymentMethods && (whopPayload.payment_method_configuration || whopPayload.plan?.payment_method_configuration)) {
+      // Repli automatique sans échec : si l'API Whop rejette payment_method_configuration (moyens non activés sur le compte, etc.)
+      if (!response.ok && !allPaymentMethods && whopPayload.plan?.payment_method_configuration) {
         const errorCloned = await response.clone().text();
-        if (
-          errorCloned.toLowerCase().includes("payment_method_configuration") ||
-          errorCloned.toLowerCase().includes("unknown field") ||
-          errorCloned.toLowerCase().includes("unrecognized")
-        ) {
-          console.warn("[Whop] Whop API a refusé payment_method_configuration dans le body, bascule sur paramètre URL...");
-          delete whopPayload.payment_method_configuration;
-          if (whopPayload.plan) delete whopPayload.plan.payment_method_configuration;
-          response = await fetch(apiBaseUrl, {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${apiKey.trim()}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(whopPayload),
-          });
-        }
+        console.warn(`[Whop] L'API Whop a refusé la sélection restreinte (${response.status}: ${errorCloned.substring(0, 150)}). Bascule automatique immédiate sur la configuration standard Whop...`);
+        delete whopPayload.plan.payment_method_configuration;
+        response = await fetch(apiBaseUrl, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey.trim()}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(whopPayload),
+        });
       }
 
       if (!response.ok) {

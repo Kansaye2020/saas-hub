@@ -292,7 +292,12 @@
                                         <input type="hidden" name="providerId" value="<%= prov.providerId %>">
                                         <button type="submit" class="btn btn-ghost btn-sm text-error font-bold rounded-lg hover:bg-error/10">Supprimer</button>
                                     </form>
-                                    <button type="button" class="btn btn-outline btn-primary btn-sm font-bold rounded-lg" onclick="openEditProcessorModal('<%= prov.providerId %>', '<%= (prov.publicKey || '').replace(/'/g, "\\'") %>', '', '<%= (prov.extraConfig || '').replace(/'/g, "\\'").replace(/\r?\n/g, '') %>', <%= prov.isActive ? 1 : 0 %>)">
+                                    <button type="button" class="btn btn-outline btn-primary btn-sm font-bold rounded-lg"
+                                        data-provider="<%= prov.providerId %>"
+                                        data-publickey="<%= prov.publicKey || '' %>"
+                                        data-extraconfig="<%- Buffer.from(prov.extraConfig || '').toString('base64') %>"
+                                        data-isactive="<%= prov.isActive ? 1 : 0 %>"
+                                        onclick="handleEditProcessorClick(this)">
                                         Modifier les clés
                                     </button>
                                 </div>
@@ -690,6 +695,7 @@
             if (providerId === 'whop') {
                 if (whopWrapper) whopWrapper.style.display = 'block';
                 if (extraWrapper) extraWrapper.style.display = 'none';
+                updateWhopExtraConfigJson();
             } else {
                 if (whopWrapper) whopWrapper.style.display = 'none';
                 if (extraWrapper) {
@@ -745,6 +751,20 @@
             }
             
             document.getElementById('processor_modal').showModal();
+        }
+
+        function handleEditProcessorClick(btn) {
+            const providerId = btn.getAttribute('data-provider') || '';
+            const publicKey = btn.getAttribute('data-publickey') || '';
+            let extraConfig = '';
+            try {
+                const b64 = btn.getAttribute('data-extraconfig') || '';
+                extraConfig = b64 ? decodeURIComponent(escape(atob(b64))) : '';
+            } catch (e) {
+                extraConfig = '';
+            }
+            const isActive = btn.getAttribute('data-isactive') === '1';
+            openEditProcessorModal(providerId, publicKey, '', extraConfig, isActive);
         }
 
         function openEditProcessorModal(providerId, publicKey, secretKey, extraConfig, isActive) {
