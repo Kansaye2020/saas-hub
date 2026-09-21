@@ -514,6 +514,45 @@
                 </div>
             </div>
 
+            <!-- Écran d'attente pour paiement externe (LomoPay, Mobile Money, etc.) en mode Widget/Iframe -->
+            <div id="external-pay-waiting-container" class="hidden space-y-4 text-center pt-1">
+                <div class="bg-amber-500/10 border-2 border-amber-500/30 rounded-2xl p-4 text-amber-900 dark:text-amber-200">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-600 flex items-center justify-center mx-auto mb-2 text-2xl font-bold">
+                        📱
+                    </div>
+                    <h3 class="font-black text-base text-base-content" id="external-pay-title">Paiement Mobile Money en cours...</h3>
+                    <p class="text-xs text-base-content/70 mt-1 max-w-xs mx-auto" id="external-pay-desc">
+                        Veuillez finaliser votre paiement sur la page sécurisée. Cette fenêtre se validera automatiquement dès confirmation.
+                    </p>
+                </div>
+
+                <div class="flex flex-col gap-2 pt-1">
+                    <a id="external-pay-btn" href="#" target="_blank" class="btn btn-primary btn-block rounded-xl font-bold text-sm shadow-md flex items-center justify-center gap-2">
+                        <span>Ouvrir l'espace de paiement</span>
+                        <span>↗</span>
+                    </a>
+                    <button type="button" id="external-redirect-top-btn" class="btn btn-outline btn-sm btn-block rounded-xl text-xs font-semibold text-base-content/70 hover:text-base-content">
+                        Rediriger cette page vers le paiement
+                    </button>
+                    <button type="button" onclick="cancelExternalPay()" class="btn btn-ghost btn-xs text-error font-medium text-[11px] mt-1">
+                        Annuler / Choisir un autre moyen
+                    </button>
+                </div>
+
+                <div class="bg-base-200/60 rounded-xl p-3 border border-base-300 flex items-center gap-3 text-left">
+                    <div class="w-8 h-8 rounded-full bg-amber-500/20 text-amber-600 flex items-center justify-center shrink-0">
+                        <span class="loading loading-spinner loading-xs text-amber-600"></span>
+                    </div>
+                    <div class="text-xs">
+                        <div class="font-bold text-base-content flex items-center gap-1.5">
+                            <span>En attente de validation</span>
+                            <span class="flex h-1.5 w-1.5 relative"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span><span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span></span>
+                        </div>
+                        <div class="text-[11px] text-base-content/60">Dès que vous validez sur votre téléphone, votre compte sera crédité ici.</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Écran de Succès in-page SANS REDIRECTION -->
             <div id="direct-pay-success-container" class="hidden space-y-4 text-center py-6">
                 <div class="w-16 h-16 rounded-full bg-success/20 text-success mx-auto flex items-center justify-center text-3xl font-black animate-bounce">
@@ -906,8 +945,10 @@
 
                         // Affichage écran de succès in-page
                         const cryptoContainer = document.getElementById('crypto-direct-pay-container');
+                        const externalContainer = document.getElementById('external-pay-waiting-container');
                         const successContainer = document.getElementById('direct-pay-success-container');
                         if (cryptoContainer) cryptoContainer.classList.add('hidden');
+                        if (externalContainer) externalContainer.classList.add('hidden');
                         if (successContainer) successContainer.classList.remove('hidden');
 
                         const payload = {
@@ -952,6 +993,70 @@
                 cryptoPollingTimer = null;
             }
         }
+
+        function renderExternalPaymentWaiting(checkoutUrl, providerDisplay) {
+            const formEl = document.getElementById('payment-form');
+            const externalContainer = document.getElementById('external-pay-waiting-container');
+            if (formEl) formEl.classList.add('hidden');
+            if (externalContainer) externalContainer.classList.remove('hidden');
+
+            const titleEl = document.getElementById('external-pay-title');
+            const openBtn = document.getElementById('external-pay-btn');
+            const redirectBtn = document.getElementById('external-redirect-top-btn');
+
+            if (titleEl) titleEl.textContent = `Paiement ${providerDisplay || 'Mobile Money'} en cours...`;
+            if (openBtn && checkoutUrl) {
+                openBtn.href = checkoutUrl;
+                openBtn.onclick = (e) => {
+                    e.preventDefault();
+                    const width = 480;
+                    const height = 740;
+                    const left = Math.max(0, (window.screen.width - width) / 2);
+                    const top = Math.max(0, (window.screen.height - height) / 2);
+                    window.open(checkoutUrl, 'SaaSHubPaymentPopup', `width=${width},height=${height},top=${top},left=${left},scrollbars=yes,resizable=yes`);
+                };
+            }
+            if (redirectBtn && checkoutUrl) {
+                redirectBtn.onclick = () => {
+                    window.top.location.href = checkoutUrl;
+                };
+            }
+        }
+
+        function cancelExternalPay() {
+            stopSessionStatusPolling();
+            const formEl = document.getElementById('payment-form');
+            const externalContainer = document.getElementById('external-pay-waiting-container');
+            if (externalContainer) externalContainer.classList.add('hidden');
+            if (formEl) formEl.classList.remove('hidden');
+            showAllProviders();
+        }
+
+        // Écouter les messages provenant d'une popup ouverte pour confirmer le paiement
+        window.addEventListener('message', (event) => {
+            const data = event.data;
+            if (!data) return;
+
+            const isSuccess =
+                data === 'ikeepay-success' ||
+                data === 'payment_success' ||
+                data === 'whop:payment:success' ||
+                (typeof data === 'object' && (data.type === 'HUB_PAYMENT_SUCCESS' || data.status === 'success'));
+
+            if (isSuccess) {
+                stopSessionStatusPolling();
+                const externalContainer = document.getElementById('external-pay-waiting-container');
+                const successContainer = document.getElementById('direct-pay-success-container');
+                if (externalContainer) externalContainer.classList.add('hidden');
+                if (successContainer) successContainer.classList.remove('hidden');
+
+                if (window.parent && window.parent !== window) {
+                    try {
+                        window.parent.postMessage(data, '*');
+                    } catch (e) {}
+                }
+            }
+        });
 
         // Animation d'entrée douce au chargement de la page & initialisation
         window.addEventListener('DOMContentLoaded', () => {
@@ -1076,15 +1181,40 @@
 
                 if (data.checkoutUrl) {
                     showOverlayLoader("Connexion en cours...", "Ouverture de votre espace de paiement");
-                    const isWidgetOrPopup = "<%= mode %>" === "widget" || "<%= mode %>" === "popup";
+                    const isWidget = "<%= mode %>" === "widget";
+                    const isPopup = "<%= mode %>" === "popup";
 
-                    if (isWidgetOrPopup) {
-                        // Mode POP-UP SANS REDIRECTION : on reste dans la frame/popup sans rediriger le site parent
+                    // Les processeurs comme LomoPay (X-Frame-Options: SAMEORIGIN) et Stripe (DENY)
+                    // interdisent d'être intégrés dans une Iframe (Widget SDK).
+                    const isAntiIframeProvider = (providerVal === 'lomopay' || providerVal === 'stripe' || providerVal === 'saspay' || providerVal === 'chariow');
+
+                    if (isWidget && isAntiIframeProvider) {
+                        hideOverlayLoader();
+                        // 1. Tenter d'ouvrir la popup automatiquement
+                        let popup = null;
+                        try {
+                            const width = 480;
+                            const height = 740;
+                            const left = Math.max(0, (window.screen.width - width) / 2);
+                            const top = Math.max(0, (window.screen.height - height) / 2);
+                            popup = window.open(data.checkoutUrl, 'SaaSHubPaymentPopup', `width=${width},height=${height},top=${top},left=${left},scrollbars=yes,resizable=yes`);
+                        } catch (e) {}
+
+                        // 2. Afficher l'écran d'attente in-app élégant et lancer la scrutation du statut
+                        renderExternalPaymentWaiting(data.checkoutUrl, providerDisplay);
+                        startSessionStatusPolling();
+
+                        // 3. Si la popup est bloquée par le navigateur, informer poliment via les boutons
+                        if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+                            console.log('[Checkout] Popup bloquée par le navigateur, bouton prêt pour ouverture manuelle.');
+                        }
+                    } else if (isWidget) {
+                        // Processeur compatible Iframe (ex: Whop Embed)
                         window.location.href = data.checkoutUrl;
                     } else if (window.self !== window.top) {
                         window.top.location.href = data.checkoutUrl;
                     } else {
-                        // Mode REDIRECTION CLASSIQUE : navigation pleine page normale
+                        // Mode REDIRECTION CLASSIQUE ou fenêtre popup autonome
                         window.location.href = data.checkoutUrl;
                     }
                 } else {

@@ -47,8 +47,13 @@ checkoutRouter.post("/session", requireAppAuth, async (req: AuthenticatedRequest
 
 // Confirmation de paiement intelligente (Popup vs Redirection directe)
 checkoutRouter.get("/complete", async (req: Request, res: Response) => {
-  const token = (req.query.token as string) || "";
-  const orderId = (req.query.orderId as string) || (req.query.order_id as string) || "";
+  let token = (req.query.token as string) || "";
+  let orderId = (req.query.orderId as string) || (req.query.order_id as string) || "";
+  const externalRef = (req.query.external_reference as string) || (req.query.externalReference as string) || "";
+
+  if (!orderId && externalRef) {
+    orderId = externalRef.includes(":::") ? externalRef.split(":::")[1] : externalRef;
+  }
 
   try {
     let session = null;
@@ -258,6 +263,10 @@ checkoutRouter.post("/pay", async (req: Request, res: Response) => {
     let returnUrl = session.returnUrl || session.returnurl;
     if (!returnUrl || !returnUrl.startsWith("http")) {
       returnUrl = `${protocol}://${host}${returnUrl && returnUrl.startsWith("/") ? returnUrl : "/public/test-redirect.html?status=success"}`;
+    }
+
+    if (returnUrl.includes("/checkout/complete") && !returnUrl.includes("token=")) {
+      returnUrl += (returnUrl.includes("?") ? "&" : "?") + `token=${encodeURIComponent(token)}&orderId=${encodeURIComponent(session.orderId || session.orderid || "")}`;
     }
 
     let cancelUrl = session.cancelUrl || session.cancelurl;
