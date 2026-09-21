@@ -228,7 +228,23 @@ checkoutRouter.get("/:token", async (req: Request, res: Response) => {
 
 // Process payment from the checkout page
 checkoutRouter.post("/pay", async (req: Request, res: Response) => {
-  const { token, provider, customerEmail, customerName, email, name, cryptoNetwork, cryptoToken } = req.body;
+  const {
+    token,
+    provider,
+    customerEmail,
+    customerName,
+    email,
+    name,
+    cryptoNetwork,
+    cryptoToken,
+    phoneNumber,
+    phone,
+    customerPhone,
+    operator,
+    country,
+    otp,
+    mode
+  } = req.body;
 
   try {
     const session = await dbGet("SELECT * FROM checkout_sessions WHERE token = ?", [token]);
@@ -251,6 +267,7 @@ checkoutRouter.post("/pay", async (req: Request, res: Response) => {
 
     const finalEmail = (customerEmail || email || session.customerEmail || session.customeremail || "").trim() || undefined;
     const finalName = (customerName || name || session.customerName || session.customername || "").trim() || undefined;
+    const finalPhone = (customerPhone || phoneNumber || phone || "").trim() || undefined;
 
     if (finalEmail && (!session.customerEmail && !session.customeremail)) {
       try {
@@ -268,7 +285,8 @@ checkoutRouter.post("/pay", async (req: Request, res: Response) => {
       orderId: session.orderId || session.orderid,
       customer: {
         email: finalEmail,
-        name: finalName
+        name: finalName,
+        phone: finalPhone,
       },
       returnUrl: returnUrl,
       cancelUrl: cancelUrl || returnUrl,
@@ -276,16 +294,24 @@ checkoutRouter.post("/pay", async (req: Request, res: Response) => {
         network: cryptoNetwork,
         token: cryptoToken,
         cryptoNetwork,
-        cryptoToken
+        cryptoToken,
+        phoneNumber: finalPhone,
+        phone: finalPhone,
+        operator: operator ? String(operator).toUpperCase() : undefined,
+        country: country ? String(country).toUpperCase() : undefined,
+        otp: otp ? String(otp).trim() : undefined,
+        mode: mode || (operator ? "h2h" : undefined)
       }
     });
 
-    if (result.success && result.checkoutUrl) {
+    if (result.success && (result.checkoutUrl || result.paymentId || result.status === 'pending' || result.status === 'completed')) {
       // Update session status and provider
       await dbRun("UPDATE checkout_sessions SET provider = ?, status = 'processing' WHERE token = ?", [provider, token]);
       return res.json({
         success: true,
-        checkoutUrl: result.checkoutUrl,
+        checkoutUrl: result.checkoutUrl || undefined,
+        isPushPayment: !result.checkoutUrl,
+        message: result.rawProviderData?.message || (!result.checkoutUrl ? "Veuillez valider le paiement sur votre téléphone mobile." : undefined),
         provider: provider,
         paymentId: result.paymentId,
         cryptoDetails: (provider === "depipay" && result.rawProviderData) ? {

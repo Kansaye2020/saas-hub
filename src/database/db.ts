@@ -2,6 +2,9 @@ import { Pool } from "pg";
 import sqlite3 from "sqlite3";
 import path from "path";
 import fs from "fs";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const dbUrl = process.env.DATABASE_URL;
 

@@ -51,8 +51,10 @@ export class LomoPayProvider implements IPaymentProvider {
 
     const isWebhookPrivate = isPrivateUrl(webhookUrl);
 
+    const customerPhone = (request.customer?.phone || request.metadata?.phoneNumber || request.metadata?.phone || "").trim();
+
     const payload: any = {
-      amount: Number(request.amount),
+      amount: Math.round(Number(request.amount)),
       currency: currency,
       description: request.description || `Commande #${request.orderId}`,
       external_reference: externalRef,
@@ -61,8 +63,8 @@ export class LomoPayProvider implements IPaymentProvider {
       email: request.customer?.email || "",
       customer_name: request.customer?.name || "",
       name: request.customer?.name || "",
-      customer_phone: request.customer?.phone || "",
-      phone: request.customer?.phone || "",
+      customer_phone: customerPhone,
+      phone: customerPhone,
     };
 
     // On n'envoie les champs de webhook que si l'URL est publique (en local, évite le rejet SSRF de LomoPay)
