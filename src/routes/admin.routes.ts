@@ -98,7 +98,7 @@ export const ALL_PROVIDERS = [
   {
     id: "ikeepay",
     name: "iKeepay",
-    tagline: "Mobile Money & Cartes Virtuelles en Afrique (Checkout Inline & H2H)",
+    tagline: "Mobile Money & Cartes Bancaires en Afrique (Checkout Inline & H2H)",
     category: "Mobile Money & Cartes",
     publicKeyLabel: "Clé Publique pk (Checkout Inline)",
     publicKeyPlaceholder: "Ex: votre_cle_publique",

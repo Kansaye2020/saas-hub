@@ -62,6 +62,7 @@
             try {
                 window.parent.postMessage(paymentSuccessPayload, '*');
                 window.parent.postMessage('payment_success', '*');
+                window.parent.postMessage('ikeepay-success', '*');
                 window.parent.postMessage('whop:payment:success', '*');
             } catch (e) {
                 console.error("Erreur postMessage parent:", e);
@@ -76,6 +77,7 @@
             try {
                 window.opener.postMessage(paymentSuccessPayload, '*');
                 window.opener.postMessage('payment_success', '*');
+                window.opener.postMessage('ikeepay-success', '*');
             } catch (e) {
                 console.error("Erreur postMessage opener:", e);
             }
